@@ -15,22 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef APP_H_
-#define APP_H_
+#ifndef UTIL_H_
+#define UTIL_H_
 
-unsigned int bgtex;
-unsigned long msec;
+char *get_home_dir(void);
+char *get_config_path(void);
 
-int scr_width, scr_height;
-
-int app_init(int argc, char **argv);
-void app_cleanup(void);
-
-void app_draw(void);
-void app_reshape(int x, int y);
-
-void app_keyboard(int key, int pressed);
-
-void app_quit(void);
-
-#endif	/* APP_H_ */
+#endif	/* UTIL_H_ */

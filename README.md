@@ -1,7 +1,7 @@
-xlivebg - live wallpaper for X11
-================================
+xlivebg - live wallpapers for X11
+=================================
 
-Live wallpaper system for the X window system.
+Live wallpapers for the X window system.
 
 License
 -------

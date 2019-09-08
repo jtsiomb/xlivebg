@@ -1,49 +1,89 @@
+/*
+xlivebg - live wallpapers for the X window system
+Copyright (C) 2019  John Tsiombikas <nuclear@member.fsf.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+#include <stdio.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <dlfcn.h>
 #include "app.h"
-
-
-static void draw_cube(void);
-
-static int win_width, win_height;
+#include "plugin.h"
 
 
 int app_init(int argc, char **argv)
 {
+	int i, num_plugins;
+
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+
+	init_plugins();
+
+	num_plugins = get_plugin_count();
+	for(i=0; i<num_plugins; i++) {
+		struct xlivebg_plugin *plugin = get_plugin(i);
+
+		if(plugin->init && plugin->init(plugin->data) == -1) {
+			fprintf(stderr, "xlivebg: plugin %s failed to initialize\n", plugin->name);
+			remove_plugin(i--);
+			continue;
+		}
+
+		if(!get_active_plugin()) {
+			activate_plugin(plugin);
+		}
+	}
+
+
 	return 0;
 }
 
 void app_cleanup(void)
 {
+	int i, num_plugins;
+
+	num_plugins = get_plugin_count();
+	for(i=0; i<num_plugins; i++) {
+		struct xlivebg_plugin *plugin = get_plugin(i);
+		void *so = plugin->so;
+
+		if(plugin->cleanup) {
+			plugin->cleanup(plugin->data);
+		}
+
+		dlclose(so);
+	}
 }
 
 void app_draw(void)
 {
-	float tm = (float)msec / 10.0f;
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	struct xlivebg_plugin *plugin = get_active_plugin();
 
-	glViewport(0, 0, win_width, win_height);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(50.0, (float)win_width / (float)win_height, 0.5, 500.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glTranslatef(0, 0, -5);
-
-	glPushMatrix();
-	glRotatef(tm, 1, 0, 0);
-	glRotatef(tm, 0, 1, 0);
-	draw_cube();
-	glPopMatrix();
+	if(plugin) {
+		plugin->draw(msec, plugin->data);
+	} else {
+		glClearColor(0.2, 0.1, 0.1, 1);
+		glClear(GL_COLOR_BUFFER_BIT);
+	}
 }
 
 void app_reshape(int x, int y)
 {
-	win_width = x;
-	win_height = y;
+	scr_width = x;
+	scr_height = y;
 }
 
 void app_keyboard(int key, int pressed)
@@ -53,46 +93,4 @@ void app_keyboard(int key, int pressed)
 		app_quit();
 		break;
 	}
-}
-
-static void draw_cube(void)
-{
-	glBegin(GL_QUADS);
-	/* -Z */
-	glColor3f(1, 0, 1);
-	glVertex3f(1, -1, -1);
-	glVertex3f(-1, -1, -1);
-	glVertex3f(-1, 1, -1);
-	glVertex3f(1, 1, -1);
-	/* -Y */
-	glColor3f(0, 1, 1);
-	glVertex3f(-1, -1, -1);
-	glVertex3f(1, -1, -1);
-	glVertex3f(1, -1, 1);
-	glVertex3f(-1, -1, 1);
-	/* -X */
-	glColor3f(1, 1, 0);
-	glVertex3f(-1, -1, -1);
-	glVertex3f(-1, -1, 1);
-	glVertex3f(-1, 1, 1);
-	glVertex3f(-1, 1, -1);
-	/* +X */
-	glColor3f(1, 0, 0);
-	glVertex3f(1, -1, 1);
-	glVertex3f(1, -1, -1);
-	glVertex3f(1, 1, -1);
-	glVertex3f(1, 1, 1);
-	/* +Y */
-	glColor3f(0, 1, 0);
-	glVertex3f(-1, 1, 1);
-	glVertex3f(1, 1, 1);
-	glVertex3f(1, 1, -1);
-	glVertex3f(-1, 1, -1);
-	/* +Z */
-	glColor3f(0, 0, 1);
-	glVertex3f(-1, -1, 1);
-	glVertex3f(1, -1, 1);
-	glVertex3f(1, 1, 1);
-	glVertex3f(-1, 1, 1);
-	glEnd();
 }

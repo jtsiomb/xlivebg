@@ -1,0 +1,4 @@
+#!/bin/sh
+
+mkdir -p ~/.local/lib/xlivebg
+make PREFIX=~/.local install-plugins

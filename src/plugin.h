@@ -15,22 +15,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef APP_H_
-#define APP_H_
+#ifndef PLUGIN_H_
+#define PLUGIN_H_
 
-unsigned int bgtex;
-unsigned long msec;
+#include "xlivebg.h"
 
-int scr_width, scr_height;
+void init_plugins(void);
 
-int app_init(int argc, char **argv);
-void app_cleanup(void);
+struct xlivebg_plugin *get_plugin(int idx);
+int get_plugin_count(void);
 
-void app_draw(void);
-void app_reshape(int x, int y);
+void activate_plugin(struct xlivebg_plugin *plugin);
+struct xlivebg_plugin *get_active_plugin(void);
 
-void app_keyboard(int key, int pressed);
+int remove_plugin(int idx);
 
-void app_quit(void);
-
-#endif	/* APP_H_ */
+#endif	/* PLUGIN_H_ */
