@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <assert.h>
 #include <signal.h>
+#include <sys/select.h>
 #include <sys/time.h>
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -48,7 +49,7 @@ static struct timeval tv, tv0;
 
 int main(int argc, char **argv)
 {
-	int i;
+	int i, xfd;
 
 	for(i=1; i<argc; i++) {
 		if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "-window") == 0) {
@@ -71,6 +72,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "failed to open connection to the X server\n");
 		return 1;
 	}
+	xfd = ConnectionNumber(dpy);
 	scr = DefaultScreen(dpy);
 	root = RootWindow(dpy, scr);
 
@@ -89,6 +91,7 @@ int main(int argc, char **argv)
 		XCloseDisplay(dpy);
 		return 1;
 	}
+	XSelectInput(dpy, win, ExposureMask | StructureNotifyMask);
 
 	if(app_init(argc, argv) == -1) {
 		destroy_gl();
@@ -99,6 +102,9 @@ int main(int argc, char **argv)
 	gettimeofday(&tv0, 0);
 
 	while(!quit) {
+		fd_set rdset;
+		struct timeval *timeout;
+
 		while(XPending(dpy)) {
 			XEvent ev;
 			XNextEvent(dpy, &ev);
@@ -116,6 +122,22 @@ int main(int argc, char **argv)
 		} else {
 			glFlush();
 		}
+
+		/* wait for as long as requested by the live wallpaper, or until an
+		 * event arrives
+		 */
+		FD_ZERO(&rdset);
+		FD_SET(xfd, &rdset);
+
+		if(upd_interval_usec > 0) {
+			tv.tv_sec = upd_interval_usec / 1000000;
+			tv.tv_usec = upd_interval_usec % 1000000;
+			timeout = &tv;
+		} else {
+			timeout = 0;
+		}
+
+		select(xfd + 1, &rdset, 0, 0, timeout);
 	}
 
 done:
@@ -215,9 +237,6 @@ static int proc_xevent(XEvent *ev)
 		if((sym = XLookupKeysym(&ev->xkey, 0))) {
 			app_keyboard(sym, ev->type == KeyPress);
 		}
-		break;
-
-	case Expose:
 		break;
 
 	default:

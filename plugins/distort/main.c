@@ -105,12 +105,6 @@ static void draw(long tmsec, void *cls)
 		scr = xlivebg_screen(i);
 		glViewport(scr->x, scr->y, scr->width, scr->height);
 
-		/*
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glScalef(1.0f, scr->aspect, 1.0f);
-		*/
-
 		if((img = xlivebg_bgimage(i)) && img->tex) {
 			glBindTexture(GL_TEXTURE_2D, img->tex);
 			glEnable(GL_TEXTURE_2D);

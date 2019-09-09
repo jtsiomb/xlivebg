@@ -109,6 +109,8 @@ void activate_plugin(struct xlivebg_plugin *plugin)
 	if(plugin->start) {
 		plugin->start(msec, plugin->data);
 	}
+
+	upd_interval_usec = act->upd_interval;
 }
 
 struct xlivebg_plugin *get_active_plugin(void)
