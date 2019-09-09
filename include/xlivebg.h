@@ -36,6 +36,8 @@ typedef void (*xlivebg_draw_func)(long, void*);
 struct xlivebg_image {
 	int width, height;
 	uint32_t *pixels;
+	char *path;
+	unsigned int tex;
 };
 
 struct xlivebg_screen {
@@ -63,6 +65,7 @@ int xlivebg_register_plugin(struct xlivebg_plugin *plugin);
 int xlivebg_screen_count(void);
 struct xlivebg_screen *xlivebg_screen(int idx);
 
+struct xlivebg_image *xlivebg_bgimage(int scr);
 
 
 #endif	/* XLIVEBG_H_ */

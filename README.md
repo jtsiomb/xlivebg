@@ -35,10 +35,16 @@ any later version published by the Free Software Foundation.
 
 Installation
 ------------
-xlivebg has no dependencies other than Xlib and OpenGL, and is written in
-ANSI/ISO C89, making it extremely easy to build. Just type `make`, and then
-`make install` as root, to install system-wide. This will only install the main
-executable and header file for building live wallpapers.
+xlivebg depends on the following libraries, which must be installed first:
+
+  - libimago: http://github.com/jtsiomb/libimago
+    - libpng: http://libpng.org
+      - zlib: http://www.zlib.net
+    - jpeglib: http://www.ijg.org
+
+After installing all dependencies, just type `make`, and then `make install` as
+root, to install system-wide. This will only install the main executable and
+header file for building live wallpapers.
 
 To also install the bundled live wallpapers, run `make install-all` as root.
 

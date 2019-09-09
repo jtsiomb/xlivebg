@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <dlfcn.h>
 #include "xlivebg.h"
 #include "app.h"
+#include "imageman.h"
 #include "util.h"
 
 static int load_plugins(const char *dirpath);
@@ -138,7 +139,7 @@ int remove_plugin(int idx)
 
 int xlivebg_register_plugin(struct xlivebg_plugin *plugin)
 {
-	if(num_plugins + 1 > max_plugins) {
+	if(num_plugins >= max_plugins) {
 		int nmax = max_plugins ? max_plugins * 2 : 16;
 		struct xlivebg_plugin **tmp = realloc(plugins, nmax * sizeof *plugins);
 		if(!tmp) {
@@ -166,4 +167,9 @@ struct xlivebg_screen *xlivebg_screen(int idx)
 	scr.height = scr_height;
 	scr.aspect = (float)scr_width / (float)scr_height;
 	return &scr;
+}
+
+struct xlivebg_image *xlivebg_bgimage(int scr)
+{
+	return get_image(get_image_count() - 1);	/* TODO */
 }

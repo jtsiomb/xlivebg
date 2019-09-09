@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <GL/glu.h>
 #include <dlfcn.h>
 #include "app.h"
+#include "imageman.h"
 #include "plugin.h"
 
 
@@ -27,9 +28,7 @@ int app_init(int argc, char **argv)
 {
 	int i, num_plugins;
 
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-
+	init_imgman();
 	init_plugins();
 
 	num_plugins = get_plugin_count();
@@ -47,7 +46,7 @@ int app_init(int argc, char **argv)
 		}
 	}
 
-
+	glViewport(0, 0, scr_width, scr_height);
 	return 0;
 }
 

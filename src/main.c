@@ -217,6 +217,9 @@ static int proc_xevent(XEvent *ev)
 		}
 		break;
 
+	case Expose:
+		break;
+
 	default:
 		break;
 	}

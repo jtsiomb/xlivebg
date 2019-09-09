@@ -8,10 +8,14 @@ obj = $(src:.c=.o)
 bin = $(name)
 
 CFLAGS = -std=gnu89 -pedantic -Wall -g -DPREFIX=\"$(PREFIX)\" -Isrc -Iinclude
-LDFLAGS = -rdynamic -lX11 -lGL -lGLU -ldl
+LDFLAGS = -rdynamic -lX11 -lGL -lGLU -ldl -limago
 
 .PHONY: all
-all: $(bin) plugins
+all: $(bin) plugins bgimage.jpg
+
+# download test image
+bgimage.jpg:
+	wget http://nuclear.mutantstargoat.com/sw/xlivebg/tmp/bgimage.jpg
 
 $(bin): $(obj)
 	$(CC) -o $@ $(obj) $(LDFLAGS)
