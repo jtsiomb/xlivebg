@@ -77,6 +77,21 @@ void app_draw(void)
 		glClearColor(0.2, 0.1, 0.1, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
+
+#ifdef PRINT_FPS
+	{
+		static long frame, prev_fps_upd;
+		frame++;
+		if(msec - prev_fps_upd >= 1000) {
+			long fps = 10000 * frame / (msec - prev_fps_upd);
+			printf("\rframerate: %4ld.%02ld fps", fps / 10, fps % 10);
+
+			frame = 0;
+			prev_fps_upd = msec;
+			fflush(stdout);
+		}
+	}
+#endif
 }
 
 void app_reshape(int x, int y)

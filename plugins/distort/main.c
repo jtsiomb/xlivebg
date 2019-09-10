@@ -26,8 +26,8 @@ static int init(void *cls)
 	return 0;
 }
 
-#define USUB	24
-#define VSUB	20
+#define USUB	30
+#define VSUB	18
 
 static float wave(float x, float frq, float amp, float t)
 {

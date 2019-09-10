@@ -130,8 +130,16 @@ int main(int argc, char **argv)
 		FD_SET(xfd, &rdset);
 
 		if(upd_interval_usec > 0) {
-			tv.tv_sec = upd_interval_usec / 1000000;
-			tv.tv_usec = upd_interval_usec % 1000000;
+			struct timeval now;
+			long usec;
+
+			gettimeofday(&now, 0);
+
+			usec = upd_interval_usec - (now.tv_sec - tv.tv_sec) * 1000000 - (now.tv_usec - tv.tv_usec);
+			if(usec < 0) usec = 0;
+
+			tv.tv_sec = usec / 1000000;
+			tv.tv_usec = usec % 1000000;
 			timeout = &tv;
 		} else {
 			timeout = 0;
