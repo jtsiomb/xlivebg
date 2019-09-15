@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define XLIVEBG_NOUPD	0
 #define XLIVEBG_15FPS	66666
 #define XLIVEBG_20FPS	50000
+#define XLIVEBG_25FPS	40000
 #define XLIVEBG_30FPS	33333
 
 

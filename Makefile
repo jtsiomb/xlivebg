@@ -7,8 +7,11 @@ src = $(wildcard src/*.c)
 obj = $(src:.c=.o)
 bin = $(name)
 
-CFLAGS = -std=gnu89 -pedantic -Wall -g -DPREFIX=\"$(PREFIX)\" -Isrc -Iinclude
-LDFLAGS = -rdynamic -lX11 -lGL -lGLU -ldl -limago
+incdir = -Isrc -Iinclude -Ilibs/treestore/src
+libdir = -Llibs/treestore
+
+CFLAGS = -std=gnu89 -pedantic -Wall -g -DPREFIX=\"$(PREFIX)\" $(incdir)
+LDFLAGS = -rdynamic $(libdir) -lX11 -lGL -ldl -limago -ltreestore
 
 .PHONY: all
 all: $(bin) plugins bgimage.jpg
@@ -17,7 +20,7 @@ all: $(bin) plugins bgimage.jpg
 bgimage.jpg:
 	wget http://nuclear.mutantstargoat.com/sw/xlivebg/tmp/bgimage.jpg
 
-$(bin): $(obj)
+$(bin): $(obj) libs
 	$(CC) -o $@ $(obj) $(LDFLAGS)
 
 .PHONY: clean
@@ -63,3 +66,13 @@ install-plugins:
 .PHONY: uninstall-plugins
 uninstall-plugins:
 	$(MAKE) -C plugins uninstall
+
+
+# ---- libs rules ----
+.PHONY: libs
+libs:
+	$(MAKE) -C libs
+
+.PHONY: clean-libs
+clean-libs:
+	$(MAKE) -C libs
