@@ -15,14 +15,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#ifndef UTIL_H_
-#define UTIL_H_
+#ifndef CFG_H_
+#define CFG_H_
 
-struct color {
-	float r, g, b, a;
-};
+#include "util.h"
 
-char *get_home_dir(void);
-char *get_config_path(void);
+struct cfg {
+	char *image, *anm_mask;
+	struct color color[2];
+	int fps_override;
+} cfg;
 
-#endif	/* UTIL_H_ */
+void init_cfg(void);
+
+#endif	/* CFG_H_ */

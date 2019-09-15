@@ -5,7 +5,7 @@ lib = libtreestore.a
 CFLAGS = -pedantic -Wall -g -O3
 
 $(lib): $(obj)
-	$(AR) rcs $@ $<
+	$(AR) rcs $@ $(obj)
 
 .PHONY: clean
 clean:

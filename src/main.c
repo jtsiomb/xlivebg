@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 #include "app.h"
+#include "cfg.h"
 
 /* defined in toon_root.c */
 Window ToonGetRootWindow(Display *dpy, int scr, Window *par);
@@ -85,6 +86,8 @@ int main(int argc, char **argv)
 	signal(SIGINT, sighandler);
 	signal(SIGILL, sighandler);
 	signal(SIGSEGV, sighandler);
+
+	init_cfg();
 
 	if(init_gl() == -1) {
 		fprintf(stderr, "failed to create OpenGL context\n");
