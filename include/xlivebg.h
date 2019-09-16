@@ -66,7 +66,14 @@ int xlivebg_register_plugin(struct xlivebg_plugin *plugin);
 int xlivebg_screen_count(void);
 struct xlivebg_screen *xlivebg_screen(int idx);
 
-struct xlivebg_image *xlivebg_bgimage(int scr);
+struct xlivebg_image *xlivebg_bg_image(int scr);
+struct xlivebg_image *xlivebg_anim_mask(int scr);
 
+/* plugin configuration interface */
+int xlivebg_havecfg(const char *cfgpath);
+const char *xlivebg_getcfg_str(const char *cfgpath, const char *def_val);
+float xlivebg_getcfg_num(const char *cfgpath, float def_val);
+int xlivebg_getcfg_int(const char *cfgpath, int def_val);
+float *xlivebg_getcfg_vec(const char *cfgpath, float *def_val);
 
 #endif	/* XLIVEBG_H_ */

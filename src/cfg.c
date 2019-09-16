@@ -34,16 +34,18 @@ void init_cfg(void)
 	if((str = ts_lookup_str(ts, "xlivebg.image", 0))) {
 		cfg.image = strdup(str);
 	}
-	if((str = ts_lookup_str(ts, "xlivebg.anim-mask", 0))) {
+	if((str = ts_lookup_str(ts, "xlivebg.anim_mask", 0))) {
 		cfg.anm_mask = strdup(str);
 	}
 	if((vec = ts_lookup_vec(ts, "xlivebg.color", 0))) {
 		memcpy(def_col, vec, sizeof def_col);
 	}
-	vec = ts_lookup_vec(ts, "xlivebg.color-top", def_col);
+	vec = ts_lookup_vec(ts, "xlivebg.color_top", def_col);
 	memcpy(cfg.color, vec, sizeof *cfg.color);
-	vec = ts_lookup_vec(ts, "xlivebg.color-bottom", def_col);
+	vec = ts_lookup_vec(ts, "xlivebg.color_bottom", def_col);
 	memcpy(cfg.color + 1, vec, sizeof *cfg.color);
 
 	cfg.fps_override = ts_lookup_int(ts, "xlivebg.fps", -1);
+
+	cfg.ts = ts;
 }

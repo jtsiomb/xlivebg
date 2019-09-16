@@ -21,11 +21,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <GL/gl.h>
 #include <imago2.h>
 #include "imageman.h"
+#include "cfg.h"
 
 static int gen_test_image(struct xlivebg_image *img, int width, int height);
+static void update_texture(struct xlivebg_image *img);
 
 static struct xlivebg_image **images;
 static int num_images, max_images;
+
+static struct xlivebg_image *bg, *bgmask;
+
 
 void init_imgman(void)
 {
@@ -39,11 +44,24 @@ void init_imgman(void)
 		}
 	}
 
-	if((img = malloc(sizeof *img))) {
-		if(load_image(img, "bgimage.jpg") == -1) {
-			free(img);
-		} else {
-			add_image(img);
+	if(cfg.image) {
+		if((img = malloc(sizeof *img))) {
+			if(load_image(img, cfg.image) == -1) {
+				free(img);
+			} else {
+				add_image(img);
+				bg = img;
+			}
+		}
+	}
+	if(cfg.anm_mask) {
+		if((img = malloc(sizeof *img))) {
+			if(load_image(img, cfg.anm_mask) == -1) {
+				free(img);
+			} else {
+				add_image(img);
+				bgmask = img;
+			}
 		}
 	}
 }
@@ -112,20 +130,26 @@ struct xlivebg_image *get_image(int idx)
 	}
 
 	img = images[idx];
-	if(!img->tex) {
-		glGenTextures(1, &img->tex);
-		glBindTexture(GL_TEXTURE_2D, img->tex);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, 1);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
-	}
+	update_texture(img);
 	return img;
 }
 
 int get_image_count(void)
 {
 	return num_images;
+}
+
+struct xlivebg_image *get_bg_image(int scr)
+{
+	struct xlivebg_image *img = bg ? bg : images[0];
+	update_texture(img);
+	return img;
+}
+
+struct xlivebg_image *get_anim_mask(int scr)
+{
+	update_texture(bgmask);
+	return bgmask;
 }
 
 static int gen_test_image(struct xlivebg_image *img, int width, int height)
@@ -151,4 +175,18 @@ static int gen_test_image(struct xlivebg_image *img, int width, int height)
 	}
 
 	return 0;
+}
+
+static void update_texture(struct xlivebg_image *img)
+{
+	if(!img) return;
+
+	if(!img->tex) {
+		glGenTextures(1, &img->tex);
+		glBindTexture(GL_TEXTURE_2D, img->tex);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, 1);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
+	}
 }

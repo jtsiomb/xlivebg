@@ -19,11 +19,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define CFG_H_
 
 #include "util.h"
+#include "treestore.h"
 
 struct cfg {
 	char *image, *anm_mask;
 	struct color color[2];
 	int fps_override;
+
+	struct ts_node *ts;
 } cfg;
 
 void init_cfg(void);

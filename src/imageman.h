@@ -31,4 +31,7 @@ int add_image(struct xlivebg_image *img);
 struct xlivebg_image *get_image(int idx);
 int get_image_count(void);
 
+struct xlivebg_image *get_bg_image(int scr);
+struct xlivebg_image *get_anim_mask(int scr);
+
 #endif	/* IMAGEMAN_H_ */

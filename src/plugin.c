@@ -26,6 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "app.h"
 #include "imageman.h"
 #include "util.h"
+#include "cfg.h"
+#include "treestore.h"
 
 static int load_plugins(const char *dirpath);
 
@@ -171,7 +173,43 @@ struct xlivebg_screen *xlivebg_screen(int idx)
 	return &scr;
 }
 
-struct xlivebg_image *xlivebg_bgimage(int scr)
+struct xlivebg_image *xlivebg_bg_image(int scr)
 {
-	return get_image(get_image_count() - 1);	/* TODO */
+	return get_bg_image(scr);
+}
+
+struct xlivebg_image *xlivebg_anim_mask(int scr)
+{
+	return get_anim_mask(scr);
+}
+
+/* plugin configuration interface */
+int xlivebg_havecfg(const char *cfgpath)
+{
+	if(!cfg.ts) return 0;
+	return ts_lookup(cfg.ts, cfgpath) ? 1 : 0;
+}
+
+const char *xlivebg_getcfg_str(const char *cfgpath, const char *def_val)
+{
+	if(!cfg.ts) return def_val;
+	return ts_lookup_str(cfg.ts, cfgpath, def_val);
+}
+
+float xlivebg_getcfg_num(const char *cfgpath, float def_val)
+{
+	if(!cfg.ts) return def_val;
+	return ts_lookup_num(cfg.ts, cfgpath, def_val);
+}
+
+int xlivebg_getcfg_int(const char *cfgpath, int def_val)
+{
+	if(!cfg.ts) return def_val;
+	return ts_lookup_int(cfg.ts, cfgpath, def_val);
+}
+
+float *xlivebg_getcfg_vec(const char *cfgpath, float *def_val)
+{
+	if(!cfg.ts) return def_val;
+	return ts_lookup_vec(cfg.ts, cfgpath, def_val);
 }
