@@ -28,6 +28,6 @@ char *get_home_dir(void);
 char *get_config_path(void);
 
 int get_num_outputs(Display *dpy);
-void get_output_viewport(Display *dpy, int idx, int *vp);
+void get_output_viewport(Display *dpy, int idx, int *vp, int *phys);
 
 #endif	/* UTIL_H_ */

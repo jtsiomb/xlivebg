@@ -84,7 +84,7 @@ done:	cfgfile = fname;
 	return cfgfile;
 }
 
-static int xrr_get_output_viewport(Display *dpy, XRRScreenResources *res, int idx, int *vp)
+static int xrr_get_output_viewport(Display *dpy, XRRScreenResources *res, int idx, int *vp, int *phys)
 {
 	XRROutputInfo *out;
 	XRRCrtcInfo *crtc;
@@ -107,6 +107,10 @@ static int xrr_get_output_viewport(Display *dpy, XRRScreenResources *res, int id
 		vp[2] = crtc->width;
 		vp[3] = crtc->height;
 	}
+	if(phys) {
+		phys[0] = out->mm_width;
+		phys[1] = out->mm_height;
+	}
 
 	XRRFreeCrtcInfo(crtc);
 	XRRFreeOutputInfo(out);
@@ -123,7 +127,7 @@ int get_num_outputs(Display *dpy)
 	if(!res) return 1;
 
 	for(i=0; i<res->noutput; i++) {
-		if(xrr_get_output_viewport(dpy, res, i, 0) != -1) {
+		if(xrr_get_output_viewport(dpy, res, i, 0, 0) != -1) {
 			count++;
 		}
 	}
@@ -132,7 +136,7 @@ int get_num_outputs(Display *dpy)
 	return count;
 }
 
-void get_output_viewport(Display *dpy, int idx, int *vp)
+void get_output_viewport(Display *dpy, int idx, int *vp, int *phys)
 {
 	int i, count = 0;
 	Window root = DefaultRootWindow(dpy);
@@ -141,21 +145,26 @@ void get_output_viewport(Display *dpy, int idx, int *vp)
 	if(!res) goto fallback;
 
 	for(i=0; i<res->noutput; i++) {
-		if(xrr_get_output_viewport(dpy, res, i, vp) != -1) {
+		if(xrr_get_output_viewport(dpy, res, i, vp, phys) != -1) {
 			if(count++ >= idx) break;
 		}
 	}
 
 	if(i >= res->noutput) {
 fallback:
-		if(idx == 0) {
-			XWindowAttributes wattr;
-			XGetWindowAttributes(dpy, root, &wattr);
-			vp[0] = vp[1] = 0;
-			vp[2] = wattr.width;
-			vp[3] = wattr.height;
-		} else {
-			vp[0] = vp[1] = vp[2] = vp[3] = 0;
+		if(vp) {
+			if(idx == 0) {
+				XWindowAttributes wattr;
+				XGetWindowAttributes(dpy, root, &wattr);
+				vp[0] = vp[1] = 0;
+				vp[2] = wattr.width;
+				vp[3] = wattr.height;
+			} else {
+				vp[0] = vp[1] = vp[2] = vp[3] = 0;
+			}
+		}
+		if(phys) {
+			phys[0] = phys[1] = 0;
 		}
 	}
 }

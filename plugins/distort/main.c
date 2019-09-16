@@ -75,14 +75,13 @@ static void emit_vertex(float x, float y, float u, float v, float au, float av,
 	glVertex2f(x, y);
 }
 
-static void distquad(float aspect, float t)
+static void distquad(float aspect, float t, struct xlivebg_image *amask)
 {
 	int i, j;
 	float du = 1.0f / (float)(USUB - 1);
 	float dv = 1.0f / (float)(VSUB - 1);
 	float dx = du * 2.0f;
 	float dy = dv * 2.0f;
-	struct xlivebg_image *amask = xlivebg_anim_mask(0);
 
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
@@ -117,7 +116,7 @@ static void distquad(float aspect, float t)
 
 static void draw(long tmsec, void *cls)
 {
-	int i, num_scr;
+	int i, num_scr, sy;
 	struct xlivebg_screen *scr;
 	struct xlivebg_image *img;
 	float t = (float)tmsec / 1000.0f;
@@ -128,13 +127,16 @@ static void draw(long tmsec, void *cls)
 	num_scr = xlivebg_screen_count();
 	for(i=0; i<num_scr; i++) {
 		scr = xlivebg_screen(i);
-		glViewport(scr->x, scr->y, scr->width, scr->height);
+		sy = scr->root_height - scr->height - scr->y;
+		glViewport(scr->x, sy, scr->width, scr->height);
 
 		if((img = xlivebg_bg_image(i)) && img->tex) {
+			struct xlivebg_image *amask = xlivebg_anim_mask(i);
+
 			glBindTexture(GL_TEXTURE_2D, img->tex);
 			glEnable(GL_TEXTURE_2D);
 
-			distquad(scr->aspect, t);
+			distquad(scr->aspect, t, amask);
 		}
 	}
 }

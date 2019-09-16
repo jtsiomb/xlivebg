@@ -43,6 +43,7 @@ struct xlivebg_image {
 
 struct xlivebg_screen {
 	int x, y, width, height;
+	int root_width, root_height;
 	int phys_width, phys_height;
 	float aspect;
 

@@ -216,14 +216,18 @@ static int init_gl(void)
 	/* detect number of screens and initialize screen structures */
 	num_screens = get_num_outputs(dpy);
 	for(i=0; i<num_screens; i++) {
-		int vp[4];
-		get_output_viewport(dpy, i, vp);
+		int vp[4], phys[2];
+		get_output_viewport(dpy, i, vp, phys);
 		printf("Output %d: %dx%d+%d+%d\n", i, vp[2], vp[3], vp[0], vp[1]);
 
 		screen[i].x = vp[0];
 		screen[i].y = vp[1];
 		screen[i].width = vp[2];
 		screen[i].height = vp[3];
+		screen[i].root_width = scr_width;
+		screen[i].root_height = scr_height;
+		screen[i].phys_width = phys[0];
+		screen[i].phys_height = phys[1];
 		screen[i].aspect = (float)vp[2] / (float)vp[3];
 	}
 
