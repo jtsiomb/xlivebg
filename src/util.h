@@ -18,11 +18,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <X11/Xlib.h>
+
 struct color {
 	float r, g, b, a;
 };
 
 char *get_home_dir(void);
 char *get_config_path(void);
+
+int get_num_outputs(Display *dpy);
+void get_output_viewport(Display *dpy, int idx, int *vp);
 
 #endif	/* UTIL_H_ */

@@ -11,7 +11,7 @@ incdir = -Isrc -Iinclude -Ilibs/treestore/src
 libdir = -Llibs/treestore
 
 CFLAGS = -std=gnu89 -pedantic -Wall -g -DPREFIX=\"$(PREFIX)\" $(incdir)
-LDFLAGS = -rdynamic $(libdir) -lX11 -lGL -ldl -limago -ltreestore
+LDFLAGS = -rdynamic $(libdir) -lX11 -lXrandr -lGL -ldl -limago -ltreestore
 
 .PHONY: all
 all: $(bin) plugins bgimage.jpg

@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
 #include "util.h"
 
 static char *homedir, *cfgfile;
@@ -80,4 +82,80 @@ done:	cfgfile = fname;
 	}
 
 	return cfgfile;
+}
+
+static int xrr_get_output_viewport(Display *dpy, XRRScreenResources *res, int idx, int *vp)
+{
+	XRROutputInfo *out;
+	XRRCrtcInfo *crtc;
+
+	if(!res || idx < 0 || idx >= res->noutput) {
+		return -1;
+	}
+
+	if(!res->outputs[idx] || !(out = XRRGetOutputInfo(dpy, res, res->outputs[idx]))) {
+		return -1;
+	}
+	if(!out->crtc || !(crtc = XRRGetCrtcInfo(dpy, res, out->crtc))) {
+		XRRFreeOutputInfo(out);
+		return -1;
+	}
+
+	if(vp) {
+		vp[0] = crtc->x;
+		vp[1] = crtc->y;
+		vp[2] = crtc->width;
+		vp[3] = crtc->height;
+	}
+
+	XRRFreeCrtcInfo(crtc);
+	XRRFreeOutputInfo(out);
+	return 0;
+}
+
+
+int get_num_outputs(Display *dpy)
+{
+	int i, count = 0;
+	Window root = DefaultRootWindow(dpy);
+	XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
+
+	if(!res) return 1;
+
+	for(i=0; i<res->noutput; i++) {
+		if(xrr_get_output_viewport(dpy, res, i, 0) != -1) {
+			count++;
+		}
+	}
+
+	XRRFreeScreenResources(res);
+	return count;
+}
+
+void get_output_viewport(Display *dpy, int idx, int *vp)
+{
+	int i, count = 0;
+	Window root = DefaultRootWindow(dpy);
+	XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
+
+	if(!res) goto fallback;
+
+	for(i=0; i<res->noutput; i++) {
+		if(xrr_get_output_viewport(dpy, res, i, vp) != -1) {
+			if(count++ >= idx) break;
+		}
+	}
+
+	if(i >= res->noutput) {
+fallback:
+		if(idx == 0) {
+			XWindowAttributes wattr;
+			XGetWindowAttributes(dpy, root, &wattr);
+			vp[0] = vp[1] = 0;
+			vp[2] = wattr.width;
+			vp[3] = wattr.height;
+		} else {
+			vp[0] = vp[1] = vp[2] = vp[3] = 0;
+		}
+	}
 }
