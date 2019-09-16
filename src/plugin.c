@@ -160,17 +160,12 @@ int xlivebg_register_plugin(struct xlivebg_plugin *plugin)
 
 int xlivebg_screen_count(void)
 {
-	return 1;
+	return num_screens;
 }
 
 struct xlivebg_screen *xlivebg_screen(int idx)
 {
-	static struct xlivebg_screen scr;
-
-	scr.width = scr_width;
-	scr.height = scr_height;
-	scr.aspect = (float)scr_width / (float)scr_height;
-	return &scr;
+	return screen + idx;
 }
 
 struct xlivebg_image *xlivebg_bg_image(int scr)

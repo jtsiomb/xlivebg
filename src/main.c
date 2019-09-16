@@ -50,8 +50,7 @@ static struct timeval tv, tv0;
 
 int main(int argc, char **argv)
 {
-	int i, xfd, num_vp;
-	int vp[4];
+	int i, xfd;
 
 	for(i=1; i<argc; i++) {
 		if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "-window") == 0) {
@@ -87,12 +86,6 @@ int main(int argc, char **argv)
 	signal(SIGINT, sighandler);
 	signal(SIGILL, sighandler);
 	signal(SIGSEGV, sighandler);
-
-	num_vp = get_num_outputs(dpy);
-	for(i=0; i<num_vp; i++) {
-		get_output_viewport(dpy, i, vp);
-		printf("Output %d: %dx%d+%d+%d\n", i, vp[2], vp[3], vp[0], vp[1]);
-	}
 
 	init_cfg();
 
@@ -173,7 +166,7 @@ void app_quit(void)
 static int init_gl(void)
 {
 	XVisualInfo *vi, vitmpl;
-	int numvi, val, rbits, gbits, bbits, zbits;
+	int i, numvi, val, rbits, gbits, bbits, zbits;
 	XWindowAttributes wattr;
 
 	XGetWindowAttributes(dpy, win, &wattr);
@@ -219,6 +212,20 @@ static int init_gl(void)
 	glXMakeCurrent(dpy, win, ctx);
 	app_reshape(width, height);
 	XFree(vi);
+
+	/* detect number of screens and initialize screen structures */
+	num_screens = get_num_outputs(dpy);
+	for(i=0; i<num_screens; i++) {
+		int vp[4];
+		get_output_viewport(dpy, i, vp);
+		printf("Output %d: %dx%d+%d+%d\n", i, vp[2], vp[3], vp[0], vp[1]);
+
+		screen[i].x = vp[0];
+		screen[i].y = vp[1];
+		screen[i].width = vp[2];
+		screen[i].height = vp[3];
+		screen[i].aspect = (float)vp[2] / (float)vp[3];
+	}
 
 	return 0;
 }

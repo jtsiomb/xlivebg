@@ -18,11 +18,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef APP_H_
 #define APP_H_
 
+#include "xlivebg.h"
+
 unsigned int bgtex;
 unsigned long msec;
 long upd_interval_usec;
 
 int scr_width, scr_height;
+
+#define MAX_SCR	32
+struct xlivebg_screen screen[MAX_SCR];
+int num_screens;
 
 int app_init(int argc, char **argv);
 void app_cleanup(void);
