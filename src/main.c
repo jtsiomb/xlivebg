@@ -23,8 +23,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sys/select.h>
 #include <sys/time.h>
 #include <X11/Xlib.h>
+#include <X11/extensions/Xrandr.h>
 #include <GL/glx.h>
 #include "app.h"
+#include "xlivebg.h"
 #include "cfg.h"
 
 /* defined in toon_root.c */
@@ -32,6 +34,7 @@ Window ToonGetRootWindow(Display *dpy, int scr, Window *par);
 
 static int init_gl(void);
 static void destroy_gl(void);
+static void detect_outputs(void);
 static int proc_xevent(XEvent *ev);
 static void send_expose(Window win);
 static void sighandler(int s);
@@ -40,6 +43,7 @@ static Display *dpy;
 static int scr;
 static Window win, root;
 static GLXContext ctx;
+static int have_xrandr, xrandr_evbase, xrandr_errbase;
 
 static volatile int quit;
 static int mapped;
@@ -95,6 +99,18 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	XSelectInput(dpy, win, ExposureMask | StructureNotifyMask);
+
+	if((have_xrandr = XRRQueryExtension(dpy, &xrandr_evbase, &xrandr_errbase))) {
+		/* detect number of screens and initialize screen structures */
+		detect_outputs();
+		XRRSelectInput(dpy, root, RRScreenChangeNotifyMask);
+	} else {
+		num_screens = 1;
+		screen[0].x = screen[0].y = 0;
+		screen[0].width = screen[0].root_width = scr_width;
+		screen[0].height = screen[0].root_height = scr_height;
+		screen[0].aspect = (float)scr_width / (float)scr_height;
+	}
 
 	if(app_init(argc, argv) == -1) {
 		destroy_gl();
@@ -166,7 +182,7 @@ void app_quit(void)
 static int init_gl(void)
 {
 	XVisualInfo *vi, vitmpl;
-	int i, numvi, val, rbits, gbits, bbits, zbits;
+	int numvi, val, rbits, gbits, bbits, zbits;
 	XWindowAttributes wattr;
 
 	XGetWindowAttributes(dpy, win, &wattr);
@@ -212,25 +228,6 @@ static int init_gl(void)
 	glXMakeCurrent(dpy, win, ctx);
 	app_reshape(width, height);
 	XFree(vi);
-
-	/* detect number of screens and initialize screen structures */
-	num_screens = get_num_outputs(dpy);
-	for(i=0; i<num_screens; i++) {
-		int vp[4], phys[2];
-		get_output_viewport(dpy, i, vp, phys);
-		printf("Output %d: %dx%d+%d+%d\n", i, vp[2], vp[3], vp[0], vp[1]);
-
-		screen[i].x = vp[0];
-		screen[i].y = vp[1];
-		screen[i].width = vp[2];
-		screen[i].height = vp[3];
-		screen[i].root_width = scr_width;
-		screen[i].root_height = scr_height;
-		screen[i].phys_width = phys[0];
-		screen[i].phys_height = phys[1];
-		screen[i].aspect = (float)vp[2] / (float)vp[3];
-	}
-
 	return 0;
 }
 
@@ -238,6 +235,29 @@ static void destroy_gl(void)
 {
 	glXMakeCurrent(dpy, 0, 0);
 	glXDestroyContext(dpy, ctx);
+}
+
+static void detect_outputs(void)
+{
+	int i;
+
+	for(i=0; i<num_screens; i++) {
+		free(screen[i].name);
+	}
+
+	num_screens = get_num_outputs(dpy);
+	printf("detected %d outputs:\n", num_screens);
+	for(i=0; i<num_screens; i++) {
+		struct xlivebg_screen *scr = screen + i;
+		get_output(dpy, i, scr);
+
+		scr->root_width = scr_width;
+		scr->root_height = scr_height;
+		scr->aspect = (float)scr->width / (float)scr->height;
+
+		printf(" [%d] %s: %dx%d+%d+%d\n", i, scr->name ? scr->name : "UNK",
+				scr->width, scr->height, scr->x, scr->y);
+	}
 }
 
 static int proc_xevent(XEvent *ev)
@@ -269,6 +289,13 @@ static int proc_xevent(XEvent *ev)
 		break;
 
 	default:
+		if(have_xrandr) {
+			if(ev->type == xrandr_evbase + RRScreenChangeNotify) {
+				printf("Video outputs changed, reconfiguring\n");
+				XRRUpdateConfiguration(ev);
+				detect_outputs();
+			}
+		}
 		break;
 	}
 

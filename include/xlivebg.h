@@ -47,6 +47,8 @@ struct xlivebg_screen {
 	int phys_width, phys_height;
 	float aspect;
 
+	char *name;
+
 	struct xlivebg_image *bgimg;
 	int num_bgimg;
 };
