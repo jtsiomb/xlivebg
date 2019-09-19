@@ -31,6 +31,8 @@ void init_cfg(void)
 		return;
 	}
 
+	cfg.act_plugin = ts_lookup_str(ts, "xlivebg.active", 0);
+
 	if((str = ts_lookup_str(ts, "xlivebg.image", 0))) {
 		cfg.image = strdup(str);
 	}

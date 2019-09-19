@@ -101,8 +101,21 @@ int get_plugin_count(void)
 	return num_plugins;
 }
 
+struct xlivebg_plugin *find_plugin(const char *name)
+{
+	int i;
+
+	for(i=0; i<num_plugins; i++) {
+		if(strcasecmp(name, plugins[i]->name) == 0) {
+			return plugins[i];
+		}
+	}
+	return 0;
+}
+
 void activate_plugin(struct xlivebg_plugin *plugin)
 {
+	printf("xlivebg: activating plugin: %s\n", plugin->name);
 	if(act && act->stop) {
 		act->stop(act->data);
 	}

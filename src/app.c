@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "app.h"
 #include "imageman.h"
 #include "plugin.h"
-
+#include "cfg.h"
 
 int app_init(int argc, char **argv)
 {
@@ -43,6 +43,15 @@ int app_init(int argc, char **argv)
 
 		if(!get_active_plugin()) {
 			activate_plugin(plugin);
+		}
+	}
+
+	if(cfg.act_plugin) {
+		struct xlivebg_plugin *p = find_plugin(cfg.act_plugin);
+		if(!p) {
+			fprintf(stderr, "xlivebg: failed to activate plugin %s: not found\n", cfg.act_plugin);
+		} else {
+			activate_plugin(p);
 		}
 	}
 

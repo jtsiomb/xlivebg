@@ -25,6 +25,8 @@ void init_plugins(void);
 struct xlivebg_plugin *get_plugin(int idx);
 int get_plugin_count(void);
 
+struct xlivebg_plugin *find_plugin(const char *name);
+
 void activate_plugin(struct xlivebg_plugin *plugin);
 struct xlivebg_plugin *get_active_plugin(void);
 

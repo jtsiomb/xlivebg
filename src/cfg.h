@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "treestore.h"
 
 struct cfg {
+	char *act_plugin;
 	char *image, *anm_mask;
 	struct color color[2];
 	int fps_override;
