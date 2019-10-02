@@ -1,14 +1,14 @@
 .PHONY: all
-all: distort stars
+all: distort stars colcycle
 
 .PHONY: clean
-clean: clean-distort clean-stars
+clean: clean-distort clean-stars clean-colcycle
 
 .PHONY: install
-install: install-distort install-stars
+install: install-distort install-stars install-colcycle
 
 .PHONY: uninstall
-uninstall: uninstall-distort uninstall-stars
+uninstall: uninstall-distort uninstall-stars uninstall-colcycle
 
 # distort plugin
 .PHONY: distort
@@ -43,3 +43,21 @@ install-stars:
 .PHONY: uninstall-stars
 uninstall-stars:
 	$(MAKE) -C stars uninstall
+
+# colcycle plugin
+.PHONY: colcycle
+colcycle:
+	$(MAKE) -C colcycle
+
+.PHONY: clean-colcycle
+clean-colcycle:
+	$(MAKE) -C colcycle clean
+
+.PHONY: install-colcycle
+install-colcycle:
+	$(MAKE) -C colcycle install
+
+.PHONY: uninstall-colcycle
+uninstall-colcycle:
+	$(MAKE) -C colcycle uninstall
+

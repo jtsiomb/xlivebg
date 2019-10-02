@@ -41,11 +41,12 @@ void register_plugin(void)
 static int init(void *cls)
 {
 	int i;
+	float width = STAR_DEPTH / 6.0f;
 
 	for(i=0; i<STAR_COUNT; i++) {
-		star[i].x = 2.0f * (float)rand() / (float)RAND_MAX - 1.0f;
-		star[i].y = 2.0f * (float)rand() / (float)RAND_MAX - 1.0f;
-		star[i].z = 2.0f * (float)rand() / (float)RAND_MAX - 1.0f;
+		star[i].x = width * (2.0f * (float)rand() / (float)RAND_MAX - 1.0f);
+		star[i].y = width * (2.0f * (float)rand() / (float)RAND_MAX - 1.0f);
+		star[i].z = STAR_DEPTH * (float)rand() / (float)RAND_MAX;
 
 		star_lenxy[i] = sqrt(star[i].x * star[i].x + star[i].y * star[i].y);
 	}
@@ -73,7 +74,15 @@ static void draw(long tmsec, void *cls)
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		draw_stars(tmsec);
+		glBegin(GL_QUADS);
+		glColor3f(1, 0, 0);
+		glVertex3f(-1, -1, -6);
+		glVertex3f(1, -1, -6);
+		glVertex3f(1, 1, -6);
+		glVertex3f(-1, 1, -6);
+		glEnd();
+
+		//draw_stars(tmsec);
 	}
 }
 
@@ -94,6 +103,7 @@ static void draw_stars(long tmsec)
 	//glEnable(GL_TEXTURE_2D);
 	//psys.get_attr()->get_texture()->bind();
 
+	/*
 	glBegin(GL_QUADS);
 	for(i=0; i<STAR_COUNT; i++) {
 		pos = star[i];
@@ -130,6 +140,7 @@ static void draw_stars(long tmsec)
 		glVertex3f(x0, y0, pos.z - STAR_SIZE * 16.0);
 	}
 	glEnd();
+	*/
 
 	//star_tex->bind();
 	sz = STAR_SIZE * 4.0;

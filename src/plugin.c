@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <dirent.h>
 #include <dlfcn.h>
+#include <sys/stat.h>
 #include "xlivebg.h"
 #include "app.h"
 #include "imageman.h"
@@ -59,9 +60,10 @@ void init_plugins(void)
 
 static int load_plugins(const char *dirpath)
 {
-	int num;
+	int num = 0;
 	DIR *dir;
 	struct dirent *dent;
+	struct stat st;
 	char fname[1024];
 	void *so;
 	void (*reg)(void);
@@ -76,6 +78,10 @@ static int load_plugins(const char *dirpath)
 		snprintf(fname, sizeof fname, "%s/%s", dirpath, dent->d_name);
 		fname[sizeof fname - 1] = 0;
 
+		if(stat(fname, &st) == -1 || !S_ISREG(st.st_mode)) {
+			continue;
+		}
+
 		if((so = dlopen(fname, RTLD_LAZY))) {
 			if((reg = dlsym(so, "register_plugin"))) {
 				reg();
@@ -84,6 +90,8 @@ static int load_plugins(const char *dirpath)
 			} else {
 				dlclose(so);
 			}
+		} else {
+			fprintf(stderr, "failed to open plugin: %s: %s\n", fname, dlerror());
 		}
 	}
 

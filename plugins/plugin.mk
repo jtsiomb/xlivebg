@@ -4,10 +4,11 @@ so = $(name).so
 
 proj_root = ../..
 
-CFLAGS = -pedantic -Wall -g -I$(proj_root)/include
+CFLAGS = -pedantic -Wall -g -fPIC -I$(proj_root)/include $(plugin_cflags)
+LDFLAGS = $(plugin_ldflags)
 
 $(so): $(obj)
-	$(CC) -o $@ -shared $(obj)
+	$(CC) -o $@ -shared $(obj) $(LDFLAGS)
 
 .PHONY: clean
 clean:
