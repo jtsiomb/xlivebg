@@ -48,14 +48,12 @@ struct ss_node {
 };
 
 static void set_image_palette(struct image *img);
-static void show_image(struct image *img);
+static void show_image(struct image *img, long time_msec);
 static int load_slideshow(const char *path);
 static int load_slide(void);
 
 int fbwidth, fbheight;
 unsigned char *fbpixels;
-unsigned long time_msec;
-unsigned long nframes;
 
 static struct image *img;
 static int blend = 1;
@@ -107,17 +105,12 @@ int colc_init(int argc, char **argv)
 	}
 
 	set_image_palette(img);
-	show_image(img);
+	show_image(img, 0);
 	return 0;
 }
 
 void colc_cleanup(void)
 {
-	if(time_msec) {
-		float fps = (float)nframes / ((float)time_msec / 1000.0f);
-		printf("average framerate: %.1f\n", fps);
-	}
-
 	if(sslist) {
 		struct ss_node *start = sslist;
 		sslist = sslist->next;
@@ -260,7 +253,7 @@ static int32_t cycle_offset(enum cycle_mode mode, int32_t rate, int32_t rsize, i
 
 #define LERP_FIXED_T(a, b, xt) ((((a) << 8) + ((b) - (a)) * (xt)) >> 8)
 
-void colc_draw(void)
+void colc_draw(long time_msec)
 {
 	int i, j;
 
@@ -283,7 +276,7 @@ void colc_draw(void)
 					if(load_slide() == -1) {
 						return;
 					}
-					show_image(img);
+					show_image(img, time_msec);
 					fade_dir = 1;
 					time_msec = fade_start = time_msec;
 					dt = 0;
@@ -351,7 +344,6 @@ void colc_draw(void)
 			}
 		}
 	}
-	++nframes;
 }
 
 
@@ -363,7 +355,7 @@ static void set_image_palette(struct image *img)
 	}
 }
 
-static void show_image(struct image *img)
+static void show_image(struct image *img, long time_msec)
 {
 	int i, j;
 	unsigned char *dptr;

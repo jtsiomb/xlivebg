@@ -197,7 +197,7 @@ static void draw(long time_msec, void *cls)
 static void draw_screen(int scr_idx, long time_msec)
 {
 	*(uint32_t*)fbpixels = 0xbadf00d;
-	colc_draw();
+	colc_draw(time_msec);
 
 	if(*(uint32_t*)fbpixels != 0xbadf00d) {
 		/* update texture data if the framebuffer changed */

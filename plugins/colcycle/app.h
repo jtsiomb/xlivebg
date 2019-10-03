@@ -25,7 +25,7 @@ extern unsigned long time_msec;
 int colc_init(int argc, char **argv);
 void colc_cleanup(void);
 
-void colc_draw(void);
+void colc_draw(long time_msec);
 
 /* defined in main_*.c */
 void set_palette(int idx, int r, int g, int b);
