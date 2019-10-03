@@ -318,9 +318,16 @@ static int enable_vsync(void)
 
 static int init_glext(void)
 {
-	char *extstr;
+	const char *extstr;
+	XWindowAttributes wattr;
+	Display *dpy = glXGetCurrentDisplay();
+	Window win = glXGetCurrentDrawable();
+	int scr;
 
-	if(!(extstr = (char*)glGetString(GLX_EXTENSIONS))) {
+	XGetWindowAttributes(dpy, win, &wattr);
+	scr = XScreenNumberOfScreen(wattr.screen);
+
+	if(!(extstr = glXQueryExtensionsString(dpy, scr))) {
 		return -1;
 	}
 

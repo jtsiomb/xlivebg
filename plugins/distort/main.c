@@ -9,7 +9,7 @@ static void draw(long tmsec, void *cls);
 static struct xlivebg_plugin plugin = {
 	"distort",
 	"Image distortion effect on the background image",
-	XLIVEBG_30FPS,
+	XLIVEBG_25FPS,
 	init, 0,
 	0, 0,
 	draw,
@@ -30,8 +30,8 @@ static int init(void *cls)
 	return 0;
 }
 
-#define USUB	80
-#define VSUB	30
+#define USUB	45
+#define VSUB	20
 
 static float wave(float x, float frq, float amp, float t)
 {
