@@ -23,10 +23,10 @@ static void (*glx_swap_interval_ext)(Display*, Window, int);
 static void (*glx_swap_interval_mesa)(int);
 static void (*glx_swap_interval_sgi)(int);
 
-static struct xlivebg_plugin plugin = {
+struct xlivebg_plugin colc_plugin = {
 	"colcycle",
 	"Color cycling",
-	XLIVEBG_30FPS,
+	XLIVEBG_20FPS,
 	init, cleanup,
 	0, 0,
 	draw,
@@ -70,7 +70,7 @@ static const char *psdr =
 
 void register_plugin(void)
 {
-	xlivebg_register_plugin(&plugin);
+	xlivebg_register_plugin(&colc_plugin);
 }
 
 void resize(int xsz, int ysz)

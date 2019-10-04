@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/stat.h>
 #include "app.h"
 #include "image.h"
+#include "xlivebg.h"
 
 /* define this if the assembly 32->64bit multiplication in cycle_offset doesn't
  * work for you for some reason, and you wish to compile the floating point
@@ -355,10 +356,13 @@ static void set_image_palette(struct image *img)
 	}
 }
 
+struct xlivebg_plugin colc_plugin;
+
 static void show_image(struct image *img, long time_msec)
 {
 	int i, j;
 	unsigned char *dptr;
+	unsigned int max_rate = 0;
 
 	resize(img->width, img->height);
 
@@ -374,6 +378,13 @@ static void show_image(struct image *img, long time_msec)
 	}
 
 	showing_since = time_msec;
+
+	for(i=0; i<img->num_ranges; i++) {
+		if(img->range[i].rate > max_rate) {
+			max_rate = img->range[i].rate;
+		}
+	}
+	colc_plugin.upd_interval = max_rate * 10;
 }
 
 static int load_slideshow(const char *path)
