@@ -88,7 +88,7 @@ int colc_init(int argc, char **argv)
 				perror("failed to allocate image structure");
 				return -1;
 			}
-			if(load_image(img, argv[1]) == -1) {
+			if(colc_load_image(img, argv[1]) == -1) {
 				fprintf(stderr, "failed to load image: %s\n", argv[1]);
 				return -1;
 			}
@@ -98,7 +98,7 @@ int colc_init(int argc, char **argv)
 			perror("failed to allocate image structure");
 			return -1;
 		}
-		if(gen_test_image(img) == -1) {
+		if(colc_gen_test_image(img) == -1) {
 			fprintf(stderr, "failed to generate test image\n");
 			return -1;
 		}
@@ -119,13 +119,13 @@ void colc_cleanup(void)
 		while(sslist) {
 			struct ss_node *node = sslist;
 			sslist = sslist->next;
-			destroy_image(node->img);
+			colc_destroy_image(node->img);
 			free(node->path);
 			free(node);
 		}
 
 	} else {
-		destroy_image(img);
+		colc_destroy_image(img);
 		free(img);
 	}
 }
@@ -444,7 +444,7 @@ static int load_slide(void)
 					perror("failed to allocate image structure");
 					return -1;
 				}
-				if(load_image(sslist->img, sslist->path) == -1) {
+				if(colc_load_image(sslist->img, sslist->path) == -1) {
 					fprintf(stderr, "failed to load image: %s\n", sslist->path);
 					free(sslist->path);
 					sslist->path = 0;

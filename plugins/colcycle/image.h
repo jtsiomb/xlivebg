@@ -47,8 +47,8 @@ struct image {
 	unsigned char *pixels;
 };
 
-int gen_test_image(struct image *img);
-int load_image(struct image *img, const char *fname);
-void destroy_image(struct image *img);
+int colc_gen_test_image(struct image *img);
+int colc_load_image(struct image *img, const char *fname);
+void colc_destroy_image(struct image *img);
 
 #endif	/* IMAGE_H_ */

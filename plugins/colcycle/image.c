@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 static int flatten_crange_list(struct image *img);
 
-int gen_test_image(struct image *img)
+int colc_gen_test_image(struct image *img)
 {
 	int i, j;
 	unsigned char *pptr;
@@ -84,7 +84,7 @@ static int image_block(FILE *fp, struct image *img);
 static int nextc = -1;
 static char token[MAX_TOKEN_SIZE];
 
-int load_image(struct image *img, const char *fname)
+int colc_load_image(struct image *img, const char *fname)
 {
 	FILE *fp;
 	int c;
@@ -123,7 +123,7 @@ int load_image(struct image *img, const char *fname)
 	return 0;
 }
 
-void destroy_image(struct image *img)
+void colc_destroy_image(struct image *img)
 {
 	if(img) {
 		free(img->pixels);

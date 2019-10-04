@@ -100,7 +100,10 @@ void set_palette(int idx, int r, int g, int b)
 static int init(void *cls)
 {
 	int loc;
-	char *argv[] = {"colcycle", 0};
+	char *argv[] = {"colcycle", 0, 0};
+
+	argv[1] = (char*)xlivebg_getcfg_str("xlivebg.colcycle.imagedir", argv[1]);
+	argv[1] = (char*)xlivebg_getcfg_str("xlivebg.colcycle.image", argv[1]);
 
 	init_glext();
 
@@ -108,9 +111,7 @@ static int init(void *cls)
 	fbheight = 480;
 	fbpixels = malloc(fbwidth * fbheight);
 
-	if(colc_init(0, argv) == -1) {
-		return -1;
-	}
+	colc_init(argv[1] ? 2 : 1, argv);
 
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -210,8 +211,6 @@ static void draw_screen(int scr_idx, long time_msec)
 		glTexSubImage1D(GL_TEXTURE_1D, 0, 0, 256, GL_RGB, GL_UNSIGNED_BYTE, pal);
 		pal_valid = 1;
 	}
-
-	glClear(GL_COLOR_BUFFER_BIT);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, img_tex);
