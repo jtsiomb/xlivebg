@@ -51,3 +51,11 @@ To also install the bundled live wallpapers, run `make install-all` as root.
 The default installation prefix is `/usr/local`. If you wish to change that,
 simply modify the `PREFIX = /usr/local` line at the top of the main makefile, or
 override it by running `make PREFIX=some/path install` explicitly.
+
+FAQ
+---
+1. Q: I'm running a standalone compositor (like `xcompmgr`), and xlivebg does
+      nothing, or produces a corrupted picture.
+
+   A: Try passing the `-n` option to xlivebg, to instruct it to create its own
+      "desktop" window, instead of trying to draw on the root or virtual root.
