@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sys/select.h>
 #include <sys/time.h>
 #include <X11/Xlib.h>
+#include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
 #include <GL/glx.h>
 #include "app.h"
@@ -212,6 +213,7 @@ void app_quit(void)
 
 static Window create_xwindow(int width, int height)
 {
+	Atom net_wintype, net_wintype_desktop;
 	XSetWindowAttributes xattr;
 	long xattr_mask, evmask;
 
@@ -222,7 +224,8 @@ static Window create_xwindow(int width, int height)
 
 	xattr.colormap = XCreateColormap(dpy, root, visinf->visual, AllocNone);
 	xattr.background_pixel = BlackPixel(dpy, scr);
-	xattr_mask = CWColormap | CWBackPixel;
+	xattr.override_redirect = 1;
+	xattr_mask = CWColormap | CWBackPixel | CWOverrideRedirect;
 
 	if(!(win = XCreateWindow(dpy, root, 0, 0, width, height, 0,
 			visinf->depth, InputOutput, visinf->visual, xattr_mask, &xattr))) {
@@ -238,7 +241,13 @@ static Window create_xwindow(int width, int height)
 	Xutf8SetWMProperties(dpy, win, "xlivebg", "xlivebg", 0, 0, 0, 0, 0);
 	XSetWMProtocols(dpy, win, &xa_wm_delwin, 1);
 
-	XMapRaised(dpy, win);
+	net_wintype = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
+	net_wintype_desktop = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP", False);
+	XChangeProperty(dpy, win, net_wintype, XA_ATOM, 32, PropModeReplace,
+			(unsigned char*)&net_wintype_desktop, 1);
+
+	XMapWindow(dpy, win);
+	XLowerWindow(dpy, win);
 	return win;
 }
 
