@@ -32,6 +32,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 /* defined in toon_root.c */
 Window ToonGetRootWindow(Display *dpy, int scr, Window *par);
 
+static Window create_xwindow(int width, int height);
+static XVisualInfo *choose_visual(void);
 static int init_gl(void);
 static void destroy_gl(void);
 static void detect_outputs(void);
@@ -43,12 +45,15 @@ static Display *dpy;
 static int scr;
 static Window win, root;
 static GLXContext ctx;
+static XVisualInfo *visinf;
+static Atom xa_wm_proto, xa_wm_delwin;
 static int have_xrandr, xrandr_evbase, xrandr_errbase;
 
 static volatile int quit;
 static int mapped;
 static int width, height;
 static int dblbuf;
+static int opt_new_win;
 
 static struct timeval tv, tv0;
 
@@ -60,12 +65,21 @@ int main(int argc, char **argv)
 		if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "-window") == 0) {
 			char *endp;
 			long val;
-			val = strtol(argv[++i], &endp, 0);
-			if(endp == argv[i] || val <= 0) {
+
+			win = 0;
+			if(argv[++i]) {
+				val = strtol(argv[i], &endp, 0);
+				if(endp != argv[i] && val > 0) {
+					win = (Window)val;
+				}
+			}
+			if(!win) {
 				fprintf(stderr, "%s must be followed by a window id (see xwininfo)\n", argv[i - 1]);
 				return 1;
 			}
-			win = (Window)val;
+
+		} else if(strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "-new-win") == 0) {
+			opt_new_win = 1;
 
 		} else {
 			fprintf(stderr, "invalid argument: %s\n", argv[i]);
@@ -81,10 +95,21 @@ int main(int argc, char **argv)
 	scr = DefaultScreen(dpy);
 	root = RootWindow(dpy, scr);
 
+	xa_wm_proto = XInternAtom(dpy, "WM_PROTOCOLS", False);
+	xa_wm_delwin = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+
 	if(!win) {
-		Window parent;
-		win = ToonGetRootWindow(dpy, scr, &parent);
-		printf("detected root window: %x\n", (unsigned int)win);
+		if(opt_new_win) {
+			XWindowAttributes attr;
+			XGetWindowAttributes(dpy, root, &attr);
+			if(!(win = create_xwindow(attr.width, attr.height))) {
+				return 1;
+			}
+		} else {
+			Window parent;
+			win = ToonGetRootWindow(dpy, scr, &parent);
+			printf("detected root window: %x\n", (unsigned int)win);
+		}
 	}
 
 	signal(SIGINT, sighandler);
@@ -169,7 +194,13 @@ int main(int argc, char **argv)
 
 done:
 	send_expose(win);
+	if(visinf) {
+		XFree(visinf);
+	}
 	destroy_gl();
+	if(opt_new_win) {
+		XDestroyWindow(dpy, win);
+	}
 	XCloseDisplay(dpy);
 	return 0;
 }
@@ -177,6 +208,65 @@ done:
 void app_quit(void)
 {
 	quit = 1;
+}
+
+static Window create_xwindow(int width, int height)
+{
+	XSetWindowAttributes xattr;
+	long xattr_mask, evmask;
+
+	if(!(visinf = choose_visual())) {
+		fprintf(stderr, "failed to find appropriate visual\n");
+		return 0;
+	}
+
+	xattr.colormap = XCreateColormap(dpy, root, visinf->visual, AllocNone);
+	xattr.background_pixel = BlackPixel(dpy, scr);
+	xattr_mask = CWColormap | CWBackPixel;
+
+	if(!(win = XCreateWindow(dpy, root, 0, 0, width, height, 0,
+			visinf->depth, InputOutput, visinf->visual, xattr_mask, &xattr))) {
+		fprintf(stderr, "failed to create X window\n");
+		XFree(visinf);
+		visinf = 0;
+		return 0;
+	}
+
+	evmask = ExposureMask | StructureNotifyMask | KeyPressMask;
+	XSelectInput(dpy, win, evmask);
+
+	Xutf8SetWMProperties(dpy, win, "xlivebg", "xlivebg", 0, 0, 0, 0, 0);
+	XSetWMProtocols(dpy, win, &xa_wm_delwin, 1);
+
+	XMapRaised(dpy, win);
+	return win;
+}
+
+static XVisualInfo *choose_visual(void)
+{
+	int glxattr[] = {
+		GLX_RGBA, GLX_DOUBLEBUFFER,
+		GLX_RED_SIZE, 1,
+		GLX_GREEN_SIZE, 1,
+		GLX_BLUE_SIZE, 1,
+		GLX_DEPTH_SIZE, 1,
+		GLX_SAMPLE_BUFFERS, 1,
+		GLX_SAMPLES, 8,
+		None
+	};
+	int *sample_buffers = glxattr + 10;
+	int *num_samples = glxattr + 13;
+	XVisualInfo *res;
+
+	do {
+		res = glXChooseVisual(dpy, scr, glxattr);
+		*num_samples >>= 1;
+		if(*num_samples <= 1) {
+			*sample_buffers = None;
+		}
+	} while(!res && *num_samples > 0);
+
+	return res;
 }
 
 static int init_gl(void)
