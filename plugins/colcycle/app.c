@@ -36,7 +36,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * work for you for some reason, and you wish to compile the floating point
  * version of the time calculation.
  */
-#undef USE_FLOAT
+#undef NO_ASM
+
+#if defined(NO_ASM) || (!defined(__i386__) && !defined(__x86_64__) && !defined(__X86__))
+#define USE_FLOAT
+#endif
+
 
 #ifndef M_PI
 #define M_PI 3.141593
