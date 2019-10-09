@@ -205,7 +205,13 @@ int xlivebg_fit_mode(int scr)
 	return cfg.fit;
 }
 
-void xlivebg_crop_dir(int scr, int *dirvec)
+float xlivebg_crop_zoom(int scr)
+{
+	/* TODO per-screen */
+	return cfg.zoom;
+}
+
+void xlivebg_crop_dir(int scr, float *dirvec)
 {
 	/* TODO per-screen */
 	dirvec[0] = cfg.crop_dir[0];

@@ -164,7 +164,7 @@ static void cleanup(void *cls)
 static void draw(long time_msec, void *cls)
 {
 	int i, num_scr, sy, loc;
-	float aspect, fbaspect;
+	float aspect, fbaspect, vpscale;
 	float xform[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 	struct xlivebg_screen *scr;
 
@@ -181,24 +181,35 @@ static void draw(long time_msec, void *cls)
 		fbaspect = (float)fbwidth / (float)fbheight;
 
 		if(aspect > fbaspect) {
-			xform[0] = fbaspect / aspect;
+			vpscale = xform[0] = fbaspect / aspect;
 		} else if(fbaspect > aspect) {
-			xform[5] = aspect / fbaspect;
+			vpscale = xform[5] = aspect / fbaspect;
 		}
 
 		if(xlivebg_fit_mode(i) == XLIVEBG_FIT_CROP) {
-			int cdir[2];
-			float s = aspect / fbaspect;
-			float tx = aspect > fbaspect ? 0.0f : s * 0.5f;
-			float ty = aspect > fbaspect ? s * 0.5f : 0.0f;
-			printf("%f %f,%f (%f/%f)\n", s, tx, ty, aspect, fbaspect);
+			float cropscale, maxpan, tx, ty;
+			float cdir[2];
 
-			xform[0] *= s;
-			xform[5] *= s;
+			cropscale = 1.0f / vpscale;
+			cropscale = 1.0f + (cropscale - 1.0f) * xlivebg_crop_zoom(i);
+			maxpan = cropscale - 1.0f;
+
+			xform[0] *= cropscale;
+			xform[5] *= cropscale;
 
 			xlivebg_crop_dir(i, cdir);
-			xform[12] = (float)cdir[0] * tx;
-			xform[13] = (float)cdir[1] * ty;
+			if(aspect > fbaspect) {
+				tx = 0.0f;
+				ty = -cdir[1] * maxpan;
+			} else {
+				tx = -cdir[0] * maxpan;
+				ty = 0.0f;
+			}
+
+			xform[12] = tx;
+			xform[13] = ty;
+		} else {
+			xform[12] = xform[13] = 0.0f;
 		}
 
 		glUseProgram(prog);

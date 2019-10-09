@@ -62,9 +62,10 @@ void init_cfg(void)
 		}
 	}
 
+	cfg.zoom = ts_lookup_num(ts, "xlivebg.crop_zoom", 1.0f);
 	vec = ts_lookup_vec(ts, "xlivebg.crop_dir", zero_vec);
-	cfg.crop_dir[0] = (int)vec[0];
-	cfg.crop_dir[1] = (int)vec[1];
+	cfg.crop_dir[0] = vec[0];
+	cfg.crop_dir[1] = vec[1];
 
 	cfg.ts = ts;
 }

@@ -78,7 +78,8 @@ struct xlivebg_image *xlivebg_bg_image(int scr);
 struct xlivebg_image *xlivebg_anim_mask(int scr);
 
 int xlivebg_fit_mode(int scr);
-void xlivebg_crop_dir(int scr, int *dirvec);
+float xlivebg_crop_zoom(int scr);
+void xlivebg_crop_dir(int scr, float *dirvec);
 
 /* plugin configuration interface */
 int xlivebg_havecfg(const char *cfgpath);
