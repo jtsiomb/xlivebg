@@ -26,6 +26,8 @@ struct cfg {
 	char *image, *anm_mask;
 	struct color color[2];
 	int fps_override;
+	int fit;
+	int crop_dir[2];
 
 	struct ts_node *ts;
 } cfg;

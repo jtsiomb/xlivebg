@@ -27,6 +27,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define XLIVEBG_25FPS	40000
 #define XLIVEBG_30FPS	33333
 
+enum {
+	XLIVEBG_FIT_FULL,
+	XLIVEBG_FIT_CROP
+};
+
 
 typedef int (*xlivebg_init_func)(void*);
 typedef void (*xlivebg_cleanup_func)(void*);
@@ -71,6 +76,9 @@ struct xlivebg_screen *xlivebg_screen(int idx);
 
 struct xlivebg_image *xlivebg_bg_image(int scr);
 struct xlivebg_image *xlivebg_anim_mask(int scr);
+
+int xlivebg_fit_mode(int scr);
+void xlivebg_crop_dir(int scr, int *dirvec);
 
 /* plugin configuration interface */
 int xlivebg_havecfg(const char *cfgpath);

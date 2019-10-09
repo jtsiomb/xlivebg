@@ -186,6 +186,21 @@ static void draw(long time_msec, void *cls)
 			xform[5] = aspect / fbaspect;
 		}
 
+		if(xlivebg_fit_mode(i) == XLIVEBG_FIT_CROP) {
+			int cdir[2];
+			float s = aspect / fbaspect;
+			float tx = aspect > fbaspect ? 0.0f : s * 0.5f;
+			float ty = aspect > fbaspect ? s * 0.5f : 0.0f;
+			printf("%f %f,%f (%f/%f)\n", s, tx, ty, aspect, fbaspect);
+
+			xform[0] *= s;
+			xform[5] *= s;
+
+			xlivebg_crop_dir(i, cdir);
+			xform[12] = (float)cdir[0] * tx;
+			xform[13] = (float)cdir[1] * ty;
+		}
+
 		glUseProgram(prog);
 		if((loc = glGetUniformLocation(prog, "xform")) >= 0) {
 			glUniformMatrix4fv(loc, 1, GL_FALSE, xform);

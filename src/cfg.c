@@ -6,7 +6,8 @@
 
 void init_cfg(void)
 {
-	float def_col[] = {0, 0, 0, 0};
+	static float zero_vec[4];
+	float color[4];
 	struct ts_node *ts;
 	char *cfgpath;
 	const char *str;
@@ -31,7 +32,7 @@ void init_cfg(void)
 		return;
 	}
 
-	cfg.act_plugin = ts_lookup_str(ts, "xlivebg.active", 0);
+	cfg.act_plugin = (char*)ts_lookup_str(ts, "xlivebg.active", 0);
 
 	if((str = ts_lookup_str(ts, "xlivebg.image", 0))) {
 		cfg.image = strdup(str);
@@ -40,14 +41,30 @@ void init_cfg(void)
 		cfg.anm_mask = strdup(str);
 	}
 	if((vec = ts_lookup_vec(ts, "xlivebg.color", 0))) {
-		memcpy(def_col, vec, sizeof def_col);
+		memcpy(color, vec, sizeof color);
+	} else {
+		memcpy(color, zero_vec, sizeof color);
 	}
-	vec = ts_lookup_vec(ts, "xlivebg.color_top", def_col);
+	vec = ts_lookup_vec(ts, "xlivebg.color_top", color);
 	memcpy(cfg.color, vec, sizeof *cfg.color);
-	vec = ts_lookup_vec(ts, "xlivebg.color_bottom", def_col);
+	vec = ts_lookup_vec(ts, "xlivebg.color_bottom", color);
 	memcpy(cfg.color + 1, vec, sizeof *cfg.color);
 
 	cfg.fps_override = ts_lookup_int(ts, "xlivebg.fps", -1);
+
+	if((str = ts_lookup_str(ts, "xlivebg.fit", 0))) {
+		if(strcasecmp(str, "full") == 0) {
+			cfg.fit = XLIVEBG_FIT_FULL;
+		} else if(strcasecmp(str, "crop") == 0) {
+			cfg.fit = XLIVEBG_FIT_CROP;
+		} else {
+			fprintf(stderr, "invalid value to option \"xlivebg.fit\": %s\n", str);
+		}
+	}
+
+	vec = ts_lookup_vec(ts, "xlivebg.crop_dir", zero_vec);
+	cfg.crop_dir[0] = (int)vec[0];
+	cfg.crop_dir[1] = (int)vec[1];
 
 	cfg.ts = ts;
 }

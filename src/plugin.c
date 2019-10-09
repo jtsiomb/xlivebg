@@ -199,6 +199,19 @@ struct xlivebg_image *xlivebg_anim_mask(int scr)
 	return get_anim_mask(scr);
 }
 
+int xlivebg_fit_mode(int scr)
+{
+	/* TODO per-screen */
+	return cfg.fit;
+}
+
+void xlivebg_crop_dir(int scr, int *dirvec)
+{
+	/* TODO per-screen */
+	dirvec[0] = cfg.crop_dir[0];
+	dirvec[1] = cfg.crop_dir[1];
+}
+
 /* plugin configuration interface */
 int xlivebg_havecfg(const char *cfgpath)
 {
