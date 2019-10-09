@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 int app_init(int argc, char **argv)
 {
 	int i, num_plugins;
+	struct xlivebg_plugin *first_plugin = 0;
 
 	init_imgman();
 	init_plugins();
@@ -41,9 +42,7 @@ int app_init(int argc, char **argv)
 			continue;
 		}
 
-		if(!get_active_plugin()) {
-			activate_plugin(plugin);
-		}
+		if(!first_plugin) first_plugin = plugin;
 	}
 
 	if(cfg.act_plugin) {
@@ -53,6 +52,10 @@ int app_init(int argc, char **argv)
 		} else {
 			activate_plugin(p);
 		}
+	}
+
+	if(!get_active_plugin() && first_plugin) {
+		activate_plugin(first_plugin);
 	}
 
 	glViewport(0, 0, scr_width, scr_height);
