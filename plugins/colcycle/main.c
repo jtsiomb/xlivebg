@@ -182,8 +182,10 @@ static void draw(long time_msec, void *cls)
 
 		if(aspect > fbaspect) {
 			vpscale = xform[0] = fbaspect / aspect;
+			xform[5] = 1.0f;
 		} else if(fbaspect > aspect) {
 			vpscale = xform[5] = aspect / fbaspect;
+			xform[0] = 1.0f;
 		}
 
 		if(xlivebg_fit_mode(i) == XLIVEBG_FIT_CROP) {
