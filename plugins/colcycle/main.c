@@ -11,6 +11,8 @@
 
 static int init(void *cls);
 static void cleanup(void *cls);
+static void start(long time_msec, void *cls);
+static void stop(void *cls);
 static void draw(long time_msec, void *cls);
 static void draw_screen(int scr_idx, long time_msec);
 static unsigned int create_program(const char *vsdr, const char *psdr);
@@ -28,7 +30,7 @@ struct xlivebg_plugin colc_plugin = {
 	"Color cycling",
 	XLIVEBG_20FPS,
 	init, cleanup,
-	0, 0,
+	start, stop,
 	draw,
 	0
 };
@@ -99,6 +101,15 @@ void set_palette(int idx, int r, int g, int b)
 
 static int init(void *cls)
 {
+	return 0;
+}
+
+static void cleanup(void *cls)
+{
+}
+
+static void start(long msec, void *cls)
+{
 	int loc;
 	char *argv[] = {"colcycle", 0, 0};
 
@@ -116,6 +127,7 @@ static int init(void *cls)
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof verts, verts, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	tex_xsz = next_pow2(fbwidth);
 	tex_ysz = next_pow2(fbheight);
@@ -134,29 +146,28 @@ static int init(void *cls)
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, pal);
 
-	if(!(prog = create_program(vsdr, psdr))) {
-		return -1;
+	if((prog = create_program(vsdr, psdr))) {
+		glBindAttribLocation(prog, 0, "attr_vertex");
+		glLinkProgram(prog);
+		glUseProgram(prog);
+		if((loc = glGetUniformLocation(prog, "img_tex")) >= 0) {
+			glUniform1i(loc, 0);
+		}
+		if((loc = glGetUniformLocation(prog, "pal_tex")) >= 0) {
+			glUniform1i(loc, 1);
+		}
+		if((loc = glGetUniformLocation(prog, "uvscale")) >= 0) {
+			glUniform2f(loc, (float)fbwidth / (float)tex_xsz, (float)fbheight / (float)tex_ysz);
+		}
 	}
-	glBindAttribLocation(prog, 0, "attr_vertex");
-	glLinkProgram(prog);
-	glUseProgram(prog);
-	if((loc = glGetUniformLocation(prog, "img_tex")) >= 0) {
-		glUniform1i(loc, 0);
-	}
-	if((loc = glGetUniformLocation(prog, "pal_tex")) >= 0) {
-		glUniform1i(loc, 1);
-	}
-	if((loc = glGetUniformLocation(prog, "uvscale")) >= 0) {
-		glUniform2f(loc, (float)fbwidth / (float)tex_xsz, (float)fbheight / (float)tex_ysz);
-	}
+	glUseProgram(0);
 
 	if(enable_vsync() == -1) {
 		fprintf(stderr, "failed to enable vsync\n");
 	}
-	return 0;
 }
 
-static void cleanup(void *cls)
+static void stop(void *cls)
 {
 	colc_cleanup();
 }
@@ -246,8 +257,11 @@ static void draw_screen(int scr_idx, long time_msec)
 	glBindTexture(GL_TEXTURE_1D, pal_tex);
 	glActiveTexture(GL_TEXTURE0);
 
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	assert(glGetError() == GL_NO_ERROR);
@@ -345,11 +359,15 @@ static int enable_vsync(void)
 
 static int init_glext(void)
 {
+	static int init_done;
 	const char *extstr;
 	XWindowAttributes wattr;
 	Display *dpy = glXGetCurrentDisplay();
 	Window win = glXGetCurrentDrawable();
 	int scr;
+
+	if(init_done) return 0;
+	init_done = 1;
 
 	XGetWindowAttributes(dpy, win, &wattr);
 	scr = XScreenNumberOfScreen(wattr.screen);
