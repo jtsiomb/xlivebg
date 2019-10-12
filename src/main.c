@@ -55,18 +55,18 @@ static int mapped;
 static int width, height;
 static int dblbuf;
 static int opt_new_win;
+static Window new_win_parent;
 
 static struct timeval tv, tv0;
 
 int main(int argc, char **argv)
 {
 	int i, xfd;
+	char *endp;
+	long val;
 
 	for(i=1; i<argc; i++) {
 		if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "-window") == 0) {
-			char *endp;
-			long val;
-
 			win = 0;
 			if(argv[++i]) {
 				val = strtol(argv[i], &endp, 0);
@@ -81,6 +81,11 @@ int main(int argc, char **argv)
 
 		} else if(strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "-new-win") == 0) {
 			opt_new_win = 1;
+
+			if(argv[i + 1] && (val = strtol(argv[i + 1], &endp, 0)) > 0 && endp != argv[i + 1]) {
+				i++;
+				new_win_parent = (Window)val;
+			}
 
 		} else {
 			fprintf(stderr, "invalid argument: %s\n", argv[i]);
@@ -216,6 +221,7 @@ static Window create_xwindow(int width, int height)
 	Atom net_wintype, net_wintype_desktop;
 	XSetWindowAttributes xattr;
 	long xattr_mask, evmask;
+	Window parent;
 
 	if(!(visinf = choose_visual())) {
 		fprintf(stderr, "failed to find appropriate visual\n");
@@ -227,7 +233,9 @@ static Window create_xwindow(int width, int height)
 	xattr.override_redirect = 1;
 	xattr_mask = CWColormap | CWBackPixel | CWOverrideRedirect;
 
-	if(!(win = XCreateWindow(dpy, root, 0, 0, width, height, 0,
+	parent = new_win_parent ? new_win_parent : root;
+
+	if(!(win = XCreateWindow(dpy, parent, 0, 0, width, height, 0,
 			visinf->depth, InputOutput, visinf->visual, xattr_mask, &xattr))) {
 		fprintf(stderr, "failed to create X window\n");
 		XFree(visinf);
