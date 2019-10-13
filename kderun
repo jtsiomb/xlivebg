@@ -1,4 +1,0 @@
-#!/bin/sh
-
-win=$(xwininfo -name 'Desktop' | awk '/Window id:/ {print $4}')
-./xlivebg -w $win $*
