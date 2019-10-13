@@ -34,6 +34,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Window ToonGetRootWindow(Display *dpy, int scr, Window *par);
 
 static Window create_xwindow(int width, int height);
+static void netwm_setprop_atom(Window win, const char *prop, const char *val);
 static XVisualInfo *choose_visual(void);
 static int init_gl(void);
 static void destroy_gl(void);
@@ -218,7 +219,6 @@ void app_quit(void)
 
 static Window create_xwindow(int width, int height)
 {
-	Atom net_wintype, net_wintype_desktop;
 	XSetWindowAttributes xattr;
 	long xattr_mask, evmask;
 	Window parent;
@@ -230,8 +230,7 @@ static Window create_xwindow(int width, int height)
 
 	xattr.colormap = XCreateColormap(dpy, root, visinf->visual, AllocNone);
 	xattr.background_pixel = BlackPixel(dpy, scr);
-	xattr.override_redirect = 1;
-	xattr_mask = CWColormap | CWBackPixel | CWOverrideRedirect;
+	xattr_mask = CWColormap | CWBackPixel;
 
 	parent = new_win_parent ? new_win_parent : root;
 
@@ -249,14 +248,21 @@ static Window create_xwindow(int width, int height)
 	Xutf8SetWMProperties(dpy, win, "xlivebg", "xlivebg", 0, 0, 0, 0, 0);
 	XSetWMProtocols(dpy, win, &xa_wm_delwin, 1);
 
-	net_wintype = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
-	net_wintype_desktop = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP", False);
-	XChangeProperty(dpy, win, net_wintype, XA_ATOM, 32, PropModeReplace,
-			(unsigned char*)&net_wintype_desktop, 1);
+	netwm_setprop_atom(win, "_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP");
 
 	XMapWindow(dpy, win);
 	XLowerWindow(dpy, win);
 	return win;
+}
+
+static void netwm_setprop_atom(Window win, const char *prop, const char *val)
+{
+	Atom xa_prop, xa_val;
+
+	xa_prop = XInternAtom(dpy, prop, False);
+	xa_val = XInternAtom(dpy, val, False);
+
+	XChangeProperty(dpy, win, xa_prop, XA_ATOM, 32, PropModeReplace, (unsigned char*)&xa_val, 1);
 }
 
 static XVisualInfo *choose_visual(void)
