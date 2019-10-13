@@ -251,7 +251,6 @@ static Window create_xwindow(int width, int height)
 	netwm_setprop_atom(win, "_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP");
 
 	XMapWindow(dpy, win);
-	XLowerWindow(dpy, win);
 	return win;
 }
 
@@ -398,6 +397,14 @@ static int proc_xevent(XEvent *ev)
 	case KeyRelease:
 		if((sym = XLookupKeysym(&ev->xkey, 0))) {
 			app_keyboard(sym, ev->type == KeyPress);
+		}
+		break;
+
+	case ClientMessage:
+		if(ev->xclient.message_type == xa_wm_proto) {
+			if(ev->xclient.data.l[0] == xa_wm_delwin) {
+				return -1;
+			}
 		}
 		break;
 
