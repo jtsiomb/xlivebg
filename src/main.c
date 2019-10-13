@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/extensions/Xrandr.h>
+#include <X11/extensions/shape.h>
 #include <GL/glx.h>
 #include "app.h"
 #include "xlivebg.h"
@@ -222,6 +223,8 @@ static Window create_xwindow(int width, int height)
 	XSetWindowAttributes xattr;
 	long xattr_mask, evmask;
 	Window parent;
+	Region rgn;
+	XRectangle rect;
 
 	if(!(visinf = choose_visual())) {
 		fprintf(stderr, "failed to find appropriate visual\n");
@@ -249,6 +252,13 @@ static Window create_xwindow(int width, int height)
 	XSetWMProtocols(dpy, win, &xa_wm_delwin, 1);
 
 	netwm_setprop_atom(win, "_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP");
+
+	rgn = XCreateRegion();
+	rect.x = rect.y = 0;
+	rect.width = rect.height = 1;
+	XUnionRectWithRegion(&rect, rgn, rgn);
+	XShapeCombineRegion(dpy, win, ShapeInput, 0, 0, rgn, ShapeSet);
+	XDestroyRegion(rgn);
 
 	XMapWindow(dpy, win);
 	return win;
