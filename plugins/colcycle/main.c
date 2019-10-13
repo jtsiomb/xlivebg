@@ -174,7 +174,7 @@ static void stop(void *cls)
 
 static void draw(long time_msec, void *cls)
 {
-	int i, num_scr, sy, loc;
+	int i, num_scr, sy, loc, fit_mode;
 	float aspect, fbaspect, vpscale;
 	float xform[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 	struct xlivebg_screen *scr;
@@ -191,38 +191,42 @@ static void draw(long time_msec, void *cls)
 		aspect = (float)scr->width / (float)scr->height;
 		fbaspect = (float)fbwidth / (float)fbheight;
 
-		if(aspect > fbaspect) {
-			vpscale = xform[0] = fbaspect / aspect;
-			xform[5] = 1.0f;
-		} else if(fbaspect > aspect) {
-			vpscale = xform[5] = aspect / fbaspect;
-			xform[0] = 1.0f;
-		}
+		fit_mode = xlivebg_fit_mode(i);
 
-		if(xlivebg_fit_mode(i) == XLIVEBG_FIT_CROP) {
-			float cropscale, maxpan, tx, ty;
-			float cdir[2];
-
-			cropscale = 1.0f / vpscale;
-			cropscale = 1.0f + (cropscale - 1.0f) * xlivebg_crop_zoom(i);
-			maxpan = cropscale - 1.0f;
-
-			xform[0] *= cropscale;
-			xform[5] *= cropscale;
-
-			xlivebg_crop_dir(i, cdir);
+		if(fit_mode != XLIVEBG_FIT_STRETCH) {
 			if(aspect > fbaspect) {
-				tx = 0.0f;
-				ty = -cdir[1] * maxpan;
-			} else {
-				tx = -cdir[0] * maxpan;
-				ty = 0.0f;
+				vpscale = xform[0] = fbaspect / aspect;
+				xform[5] = 1.0f;
+			} else if(fbaspect > aspect) {
+				vpscale = xform[5] = aspect / fbaspect;
+				xform[0] = 1.0f;
 			}
 
-			xform[12] = tx;
-			xform[13] = ty;
-		} else {
-			xform[12] = xform[13] = 0.0f;
+			if(fit_mode == XLIVEBG_FIT_CROP) {
+				float cropscale, maxpan, tx, ty;
+				float cdir[2];
+
+				cropscale = 1.0f / vpscale;
+				cropscale = 1.0f + (cropscale - 1.0f) * xlivebg_crop_zoom(i);
+				maxpan = cropscale - 1.0f;
+
+				xform[0] *= cropscale;
+				xform[5] *= cropscale;
+
+				xlivebg_crop_dir(i, cdir);
+				if(aspect > fbaspect) {
+					tx = 0.0f;
+					ty = -cdir[1] * maxpan;
+				} else {
+					tx = -cdir[0] * maxpan;
+					ty = 0.0f;
+				}
+
+				xform[12] = tx;
+				xform[13] = ty;
+			} else {
+				xform[12] = xform[13] = 0.0f;
+			}
 		}
 
 		glUseProgram(prog);

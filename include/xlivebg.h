@@ -29,7 +29,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 enum {
 	XLIVEBG_FIT_FULL,
-	XLIVEBG_FIT_CROP
+	XLIVEBG_FIT_CROP,
+	XLIVEBG_FIT_STRETCH
 };
 
 

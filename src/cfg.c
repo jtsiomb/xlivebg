@@ -57,6 +57,8 @@ void init_cfg(void)
 			cfg.fit = XLIVEBG_FIT_FULL;
 		} else if(strcasecmp(str, "crop") == 0) {
 			cfg.fit = XLIVEBG_FIT_CROP;
+		} else if(strcasecmp(str, "stretch") == 0) {
+			cfg.fit = XLIVEBG_FIT_STRETCH;
 		} else {
 			fprintf(stderr, "invalid value to option \"xlivebg.fit\": %s\n", str);
 		}
