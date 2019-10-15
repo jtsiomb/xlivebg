@@ -109,6 +109,11 @@ static int xrr_get_output(Display *dpy, XRRScreenResources *res, int idx, struct
 		scr->phys_width = out->mm_width;
 		scr->phys_height = out->mm_height;
 
+		scr->vport[0] = scr->x;
+		scr->vport[1] = scr->root_height - scr->height - scr->y;
+		scr->vport[2] = scr->width;
+		scr->vport[3] = scr->height;
+
 		if(out->name && out->nameLen > 0) {
 			if((scr->name = malloc(out->nameLen + 1))) {
 				memcpy(scr->name, out->name, out->nameLen);
@@ -150,6 +155,13 @@ void get_output(Display *dpy, int idx, struct xlivebg_screen *scr)
 	if(!res) goto fallback;
 
 	for(i=0; i<res->noutput; i++) {
+		XWindowAttributes wattr;
+		XGetWindowAttributes(dpy, root, &wattr);
+
+		scr->root_width = wattr.width;
+		scr->root_height = wattr.height;
+		scr->aspect = (float)scr->width / (float)scr->height;
+
 		if(xrr_get_output(dpy, res, i, scr) != -1) {
 			if(count++ >= idx) break;
 		}
@@ -160,10 +172,11 @@ fallback:
 		if(idx == 0) {
 			XWindowAttributes wattr;
 			XGetWindowAttributes(dpy, root, &wattr);
-			scr->x = scr->y = 0;
-			scr->width = wattr.width;
-			scr->height = wattr.height;
+			scr->vport[0] = scr->vport[1] = scr->x = scr->y = 0;
+			scr->vport[2] = scr->width = wattr.width;
+			scr->vport[3] = scr->height = wattr.height;
 			scr->phys_width = scr->phys_height = 0;
+
 		} else {
 			memset(scr, 0, sizeof *scr);
 		}

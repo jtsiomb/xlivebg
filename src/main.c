@@ -373,10 +373,6 @@ static void detect_outputs(void)
 		struct xlivebg_screen *scr = screen + i;
 		get_output(dpy, i, scr);
 
-		scr->root_width = scr_width;
-		scr->root_height = scr_height;
-		scr->aspect = (float)scr->width / (float)scr->height;
-
 		printf(" [%d] %s: %dx%d+%d+%d\n", i, scr->name ? scr->name : "UNK",
 				scr->width, scr->height, scr->x, scr->y);
 	}

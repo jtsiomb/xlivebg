@@ -174,60 +174,17 @@ static void stop(void *cls)
 
 static void draw(long time_msec, void *cls)
 {
-	int i, num_scr, sy, loc, fit_mode;
-	float aspect, fbaspect, vpscale;
-	float xform[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
-	struct xlivebg_screen *scr;
+	int i, num_scr, loc;
+	float xform[16];
 
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	num_scr = xlivebg_screen_count();
 	for(i=0; i<num_scr; i++) {
-		scr = xlivebg_screen(i);
-		sy = scr->root_height - scr->height - scr->y;
-		glViewport(scr->x, sy, scr->width, scr->height);
+		xlivebg_gl_viewport(i);
 
-		aspect = (float)scr->width / (float)scr->height;
-		fbaspect = (float)fbwidth / (float)fbheight;
-
-		fit_mode = xlivebg_fit_mode(i);
-
-		if(fit_mode != XLIVEBG_FIT_STRETCH) {
-			if(aspect > fbaspect) {
-				vpscale = xform[0] = fbaspect / aspect;
-				xform[5] = 1.0f;
-			} else if(fbaspect > aspect) {
-				vpscale = xform[5] = aspect / fbaspect;
-				xform[0] = 1.0f;
-			}
-
-			if(fit_mode == XLIVEBG_FIT_CROP) {
-				float cropscale, maxpan, tx, ty;
-				float cdir[2];
-
-				cropscale = 1.0f / vpscale;
-				cropscale = 1.0f + (cropscale - 1.0f) * xlivebg_crop_zoom(i);
-				maxpan = cropscale - 1.0f;
-
-				xform[0] *= cropscale;
-				xform[5] *= cropscale;
-
-				xlivebg_crop_dir(i, cdir);
-				if(aspect > fbaspect) {
-					tx = 0.0f;
-					ty = -cdir[1] * maxpan;
-				} else {
-					tx = -cdir[0] * maxpan;
-					ty = 0.0f;
-				}
-
-				xform[12] = tx;
-				xform[13] = ty;
-			} else {
-				xform[12] = xform[13] = 0.0f;
-			}
-		}
+		xlivebg_calc_image_proj(i, (float)fbwidth / (float)fbheight, xform);
 
 		glUseProgram(prog);
 		if((loc = glGetUniformLocation(prog, "xform")) >= 0) {

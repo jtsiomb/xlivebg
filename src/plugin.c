@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <dirent.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
+#include <GL/gl.h>
 #include "xlivebg.h"
 #include "app.h"
 #include "imageman.h"
@@ -247,4 +248,70 @@ float *xlivebg_getcfg_vec(const char *cfgpath, float *def_val)
 {
 	if(!cfg.ts) return def_val;
 	return ts_lookup_vec(cfg.ts, cfgpath, def_val);
+}
+
+/* helpers */
+void xlivebg_gl_viewport(int sidx)
+{
+	struct xlivebg_screen *scr = xlivebg_screen(sidx);
+
+	glViewport(scr->vport[0], scr->vport[1], scr->vport[2], scr->vport[3]);
+}
+
+void xlivebg_calc_image_proj(int sidx, float img_aspect, float *xform)
+{
+	static const float ident[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+	float vpscale;
+	struct xlivebg_screen *scr = xlivebg_screen(sidx);
+	float aspect = (float)scr->width / (float)scr->height;
+	int fit_mode = xlivebg_fit_mode(sidx);
+
+	memcpy(xform, ident, sizeof ident);
+
+	if(fit_mode != XLIVEBG_FIT_STRETCH) {
+		if(aspect > img_aspect) {
+			vpscale = xform[0] = img_aspect / aspect;
+			xform[5] = 1.0f;
+		} else {
+			vpscale = xform[5] = aspect / img_aspect;
+			xform[0] = 1.0f;
+		}
+
+		if(fit_mode == XLIVEBG_FIT_CROP) {
+			float cropscale, maxpan, tx, ty;
+			float cdir[2];
+
+			cropscale = 1.0f / vpscale;
+			cropscale = 1.0f + (cropscale - 1.0f) * xlivebg_crop_zoom(sidx);
+			maxpan = cropscale - 1.0f;
+
+			xform[0] *= cropscale;
+			xform[5] *= cropscale;
+
+			xlivebg_crop_dir(sidx, cdir);
+			if(aspect > img_aspect) {
+				tx = 0.0f;
+				ty = -cdir[1] * maxpan;
+			} else {
+				tx = -cdir[0] * maxpan;
+				ty = 0.0f;
+			}
+
+			xform[12] = tx;
+			xform[13] = ty;
+		} else {
+			xform[12] = xform[13] = 0.0f;
+		}
+	}
+}
+
+void xlivebg_gl_image_proj(int scr, float img_aspect)
+{
+	float mat[16];
+	xlivebg_calc_image_proj(scr, img_aspect, mat);
+
+	glPushAttrib(GL_TRANSFORM_BIT);
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(mat);
+	glPopAttrib();
 }

@@ -57,6 +57,8 @@ struct xlivebg_screen {
 
 	struct xlivebg_image *bgimg;
 	int num_bgimg;
+
+	int vport[4];
 };
 
 struct xlivebg_plugin {
@@ -88,5 +90,19 @@ const char *xlivebg_getcfg_str(const char *cfgpath, const char *def_val);
 float xlivebg_getcfg_num(const char *cfgpath, float def_val);
 int xlivebg_getcfg_int(const char *cfgpath, int def_val);
 float *xlivebg_getcfg_vec(const char *cfgpath, float *def_val);
+
+void xlivebg_gl_viewport(int scr);
+
+/* xlivebg_calc_image_proj returns a projection matrix suitable for
+ * transforming a fullscreen quad (-1,1), in such a way as to abide by the fit
+ * options in the configuration, when used to show an image with the specified
+ * aspect ratio.
+ *
+ * xform is the output matrix, should point to an array of 16 floats (GL order)
+ */
+
+void xlivebg_calc_image_proj(int scr, float img_aspect, float *xform);
+/* calls xlivebg_calc_image_proj, then sets the projection matrix */
+void xlivebg_gl_image_proj(int scr, float img_aspect);
 
 #endif	/* XLIVEBG_H_ */
