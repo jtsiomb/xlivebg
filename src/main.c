@@ -43,6 +43,8 @@ static void detect_outputs(void);
 static int proc_xevent(XEvent *ev);
 static void send_expose(Window win);
 static void sighandler(int s);
+static int parse_args(int argc, char **argv);
+static void print_usage(const char *argv0);
 
 static Display *dpy;
 static int scr;
@@ -63,36 +65,10 @@ static struct timeval tv, tv0;
 
 int main(int argc, char **argv)
 {
-	int i, xfd;
-	char *endp;
-	long val;
+	int xfd;
 
-	for(i=1; i<argc; i++) {
-		if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "-window") == 0) {
-			win = 0;
-			if(argv[++i]) {
-				val = strtol(argv[i], &endp, 0);
-				if(endp != argv[i] && val > 0) {
-					win = (Window)val;
-				}
-			}
-			if(!win) {
-				fprintf(stderr, "%s must be followed by a window id (see xwininfo)\n", argv[i - 1]);
-				return 1;
-			}
-
-		} else if(strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "-new-win") == 0) {
-			opt_new_win = 1;
-
-			if(argv[i + 1] && (val = strtol(argv[i + 1], &endp, 0)) > 0 && endp != argv[i + 1]) {
-				i++;
-				new_win_parent = (Window)val;
-			}
-
-		} else {
-			fprintf(stderr, "invalid argument: %s\n", argv[i]);
-			return 1;
-		}
+	if(parse_args(argc, argv) == -1) {
+		return 1;
 	}
 
 	if(!(dpy = XOpenDisplay(0))) {
@@ -446,4 +422,60 @@ static void send_expose(Window win)
 static void sighandler(int s)
 {
 	quit = 1;
+}
+
+static int parse_args(int argc, char **argv)
+{
+	int i;
+	char *endp;
+	long val;
+
+	for(i=1; i<argc; i++) {
+		if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "-window") == 0) {
+			win = 0;
+			if(argv[++i]) {
+				val = strtol(argv[i], &endp, 0);
+				if(endp != argv[i] && val > 0) {
+					win = (Window)val;
+				}
+			}
+			if(!win) {
+				fprintf(stderr, "%s must be followed by a window id (see xwininfo)\n", argv[i - 1]);
+				return -1;
+			}
+
+		} else if(strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "-root") == 0) {
+			opt_new_win = 0;
+			win = 0;
+
+		} else if(strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "-new-win") == 0) {
+			opt_new_win = 1;
+
+			if(argv[i + 1] && (val = strtol(argv[i + 1], &endp, 0)) > 0 && endp != argv[i + 1]) {
+				i++;
+				new_win_parent = (Window)val;
+			}
+
+		} else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-help") == 0) {
+			print_usage(argv[0]);
+			exit(0);
+
+		} else {
+			fprintf(stderr, "invalid argument: %s\n", argv[i]);
+			print_usage(argv[0]);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static void print_usage(const char *argv0)
+{
+	printf("Usage: %s [options]\n", argv0);
+	printf("Options:\n");
+	printf("  -n, -new-win: create own desktop window\n");
+	printf("  -r, -root: draw on the root window (default)\n");
+	printf("  -w <id>, -window <id>: draw on specified window\n");
+	printf("  -h, -help: print usage information and exit\n");
 }
