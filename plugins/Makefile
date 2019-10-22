@@ -1,14 +1,14 @@
 .PHONY: all
-all: distort stars colcycle
+all: distort stars colcycle ripple
 
 .PHONY: clean
-clean: clean-distort clean-stars clean-colcycle
+clean: clean-distort clean-stars clean-colcycle clean-ripple
 
 .PHONY: install
-install: install-distort install-stars install-colcycle
+install: install-distort install-stars install-colcycle install-ripple
 
 .PHONY: uninstall
-uninstall: uninstall-distort uninstall-stars uninstall-colcycle
+uninstall: uninstall-distort uninstall-stars uninstall-colcycle uninstall-ripple
 
 # distort plugin
 .PHONY: distort
@@ -60,4 +60,21 @@ install-colcycle:
 .PHONY: uninstall-colcycle
 uninstall-colcycle:
 	$(MAKE) -C colcycle uninstall
+
+# ripple plugin
+.PHONY: ripple
+ripple:
+	$(MAKE) -C ripple
+
+.PHONY: clean-ripple
+clean-ripple:
+	$(MAKE) -C ripple clean
+
+.PHONY: install-ripple
+install-ripple:
+	$(MAKE) -C ripple install
+
+.PHONY: uninstall-ripple
+uninstall-ripple:
+	$(MAKE) -C ripple uninstall
 

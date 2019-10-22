@@ -116,7 +116,7 @@ static void distquad(float aspect, float t, struct xlivebg_image *amask)
 
 static void draw(long tmsec, void *cls)
 {
-	int i, num_scr, sy;
+	int i, num_scr;
 	struct xlivebg_screen *scr;
 	struct xlivebg_image *img;
 	float t = (float)tmsec / 1000.0f;
@@ -127,8 +127,7 @@ static void draw(long tmsec, void *cls)
 	num_scr = xlivebg_screen_count();
 	for(i=0; i<num_scr; i++) {
 		scr = xlivebg_screen(i);
-		sy = scr->root_height - scr->height - scr->y;
-		glViewport(scr->x, sy, scr->width, scr->height);
+		xlivebg_gl_viewport(i);
 
 		if((img = xlivebg_bg_image(i)) && img->tex) {
 			struct xlivebg_image *amask = xlivebg_anim_mask(i);
