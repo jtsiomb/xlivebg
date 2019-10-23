@@ -105,4 +105,6 @@ void xlivebg_calc_image_proj(int scr, float img_aspect, float *xform);
 /* calls xlivebg_calc_image_proj, then sets the projection matrix */
 void xlivebg_gl_image_proj(int scr, float img_aspect);
 
+void xlivebg_mouse_pos(int *mx, int *my);
+
 #endif	/* XLIVEBG_H_ */

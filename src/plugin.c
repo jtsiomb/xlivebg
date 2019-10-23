@@ -315,3 +315,8 @@ void xlivebg_gl_image_proj(int scr, float img_aspect)
 	glLoadMatrixf(mat);
 	glPopAttrib();
 }
+
+void xlivebg_mouse_pos(int *mx, int *my)
+{
+	app_getmouse(mx, my);
+}

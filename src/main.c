@@ -194,6 +194,25 @@ void app_quit(void)
 	quit = 1;
 }
 
+unsigned int app_getmouse(int *x, int *y)
+{
+	static int prev_mx, prev_my;
+	static unsigned int prev_mask;
+	int wx, wy;
+	Window rootret, childret;
+	unsigned int bmask;
+
+	if(XQueryPointer(dpy, root, &rootret, &childret, x, y, &wx, &wy, &bmask)) {
+		prev_mx = *x;
+		prev_my = *y;
+		prev_mask = bmask;
+	} else {
+		*x = prev_mx;
+		*y = prev_my;
+	}
+	return prev_mask;
+}
+
 static Window create_xwindow(int width, int height)
 {
 	XSetWindowAttributes xattr;

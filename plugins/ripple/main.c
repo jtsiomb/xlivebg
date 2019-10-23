@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <GL/gl.h>
 #include <xlivebg.h>
 
@@ -57,14 +58,19 @@ static void stop(void *cls)
 
 static void draw(long time_msec, void *cls)
 {
-	int i, num_scr;
+	int i, num_scr, mx, my;
+	float mpos[2];
 	struct xlivebg_image *img;
+	struct xlivebg_screen *scr;
+
+	xlivebg_mouse_pos(&mx, &my);
 
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	num_scr = xlivebg_screen_count();
 	for(i=0; i<num_scr; i++) {
+		scr = xlivebg_screen(i);
 		xlivebg_gl_viewport(i);
 
 		if((img = xlivebg_bg_image(i)) && img->tex) {
@@ -72,6 +78,7 @@ static void draw(long time_msec, void *cls)
 			glEnable(GL_TEXTURE_2D);
 
 			glBegin(GL_QUADS);
+			glColor3f(1, 1, 1);
 			glTexCoord2f(0, 1);
 			glVertex2f(-1, -1);
 			glTexCoord2f(1, 1);
@@ -82,5 +89,17 @@ static void draw(long time_msec, void *cls)
 			glVertex2f(-1, 1);
 			glEnd();
 		}
+
+		mpos[0] = (float)mx / (float)scr->root_width * 2.0f - 1.0f;
+		mpos[1] = 1.0f - (float)my / (float)scr->root_height * 2.0f;
+
+		glDisable(GL_TEXTURE_2D);
+		glBegin(GL_QUADS);
+		glColor3f(1, 0, 0);
+		glVertex2f(mpos[0] - 0.05, mpos[1] - 0.05);
+		glVertex2f(mpos[0] + 0.05, mpos[1] - 0.05);
+		glVertex2f(mpos[0] + 0.05, mpos[1] + 0.05);
+		glVertex2f(mpos[0] - 0.05, mpos[1] + 0.05);
+		glEnd();
 	}
 }

@@ -39,5 +39,6 @@ void app_reshape(int x, int y);
 void app_keyboard(int key, int pressed);
 
 void app_quit(void);
+unsigned int app_getmouse(int *x, int *y);
 
 #endif	/* APP_H_ */
