@@ -1,5 +1,6 @@
 src = $(wildcard *.c)
-obj = $(src:.c=.o)
+ssrc = $(wildcard *.s)
+obj = $(src:.c=.o) $(ssrc:.s=.o)
 so = $(name).so
 
 proj_root = ../..
