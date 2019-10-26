@@ -7,3 +7,8 @@ ripple_vsdr:
 ripple_blur_psdr:
 	.incbin "psdr_blur.glsl"
 	.byte 0
+
+	.global ripple_psdr
+ripple_psdr:
+	.incbin "psdr.glsl"
+	.byte 0
