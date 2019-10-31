@@ -126,33 +126,26 @@ static void update_ripple(long time_msec)
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glViewport(0, 0, scr_width, scr_height);
 
-	glBegin(GL_QUADS);
-	glColor3f(strength, strength, strength);
-	glVertex2f(mpos[0] - xsz, mpos[1] - ysz);
-	glVertex2f(mpos[0] + xsz, mpos[1] - ysz);
-	glVertex2f(mpos[0] + xsz, mpos[1] + ysz);
-	glVertex2f(mpos[0] - xsz, mpos[1] + ysz);
-	glEnd();
-
+	printf("upd: bind texture: %d\n", cur_ripple_tex);
 	glBindTexture(GL_TEXTURE_2D, ripple_tex[cur_ripple_tex]);
 	cur_ripple_tex ^= 1;
+	printf("upd: fb texture: %d\n", cur_ripple_tex);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
 			ripple_tex[cur_ripple_tex], 0);
 
-	glClear(GL_COLOR_BUFFER_BIT);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_ONE, GL_ONE);
 
 	glUseProgram(sdr_blur);
 	if(blur_delta_loc >= 0) {
 		glUniform2f(blur_delta_loc, 1.0f / scr_width, 1.0f / scr_height);
 	}
 	if(blur_intens_loc >= 0) {
-		glUniform1f(blur_intens_loc, 0.5);
+		glUniform1f(blur_intens_loc, 1.0);
 	}
 
-	for(i=0; i<2; i++) {
+	for(i=0; i<1; i++) {
 		if(blur_dir_loc >= 0) {
 			if(i) {
 				glUniform2f(blur_dir_loc, 0, 1);
@@ -172,6 +165,16 @@ static void update_ripple(long time_msec)
 		glVertex2f(-1, 1);
 		glEnd();
 	}
+
+
+	glUseProgram(0);
+	glBegin(GL_QUADS);
+	glColor3f(1, 1, 1);//strength, strength, strength);
+	glVertex2f(mpos[0] - xsz, mpos[1] - ysz);
+	glVertex2f(mpos[0] + xsz, mpos[1] - ysz);
+	glVertex2f(mpos[0] + xsz, mpos[1] + ysz);
+	glVertex2f(mpos[0] - xsz, mpos[1] + ysz);
+	glEnd();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -217,6 +220,7 @@ static void draw(long time_msec, void *cls)
 			glBindTexture(GL_TEXTURE_2D, img->tex);
 
 			glActiveTexture(GL_TEXTURE1);
+			printf("draw: ripple tex: %d\n", cur_ripple_tex);
 			glBindTexture(GL_TEXTURE_2D, ripple_tex[cur_ripple_tex]);
 
 			glMatrixMode(GL_TEXTURE);
