@@ -124,6 +124,7 @@ static void update_ripple(long time_msec)
 	glLoadIdentity();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glViewport(0, 0, scr_width, scr_height);
 
 	glBegin(GL_QUADS);
 	glColor3f(strength, strength, strength);
@@ -187,6 +188,7 @@ static void draw(long time_msec, void *cls)
 	struct xlivebg_image *img;
 	struct xlivebg_screen *scr;
 	float dx, dy;
+	float uv_xoffs, uv_yoffs, uv_xscale, uv_yscale;
 
 	scr = xlivebg_screen(0);
 	/* this will only resize if the size has changed */
@@ -213,8 +215,19 @@ static void draw(long time_msec, void *cls)
 
 		if((img = xlivebg_bg_image(i)) && img->tex) {
 			glBindTexture(GL_TEXTURE_2D, img->tex);
+
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, ripple_tex[cur_ripple_tex]);
+
+			glMatrixMode(GL_TEXTURE);
+			glLoadIdentity();
+			uv_xscale = (float)scr->width / (float)scr->root_width;
+			uv_yscale = (float)scr->height / (float)scr->root_height;
+			uv_xoffs = (float)scr->x / (float)scr->root_width;
+			uv_yoffs = (float)scr->y / (float)scr->root_height;
+			glTranslatef(uv_xoffs, uv_yoffs, 0);
+			glScalef(uv_xscale, uv_yscale, 1);
+
 			glActiveTexture(GL_TEXTURE0);
 
 			glUseProgram(sdr_vis);
@@ -230,6 +243,11 @@ static void draw(long time_msec, void *cls)
 			glTexCoord2f(0, 0);
 			glVertex2f(-1, 1);
 			glEnd();
+
+			glActiveTexture(GL_TEXTURE1);
+			glMatrixMode(GL_TEXTURE);
+			glLoadIdentity();
+			glActiveTexture(GL_TEXTURE0);
 		}
 	}
 }
