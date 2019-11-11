@@ -66,6 +66,7 @@ static int init(void *cls)
 	if((loc = glGetUniformLocation(sdr_vis, "tex_ripple")) != -1) {
 		glUniform1i(loc, 1);
 	}
+	glUseProgram(0);
 
 	return 0;
 }
@@ -134,8 +135,8 @@ static void update_ripple(long time_msec)
 			ripple_tex[cur_ripple_tex], 0);
 
 
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_ONE, GL_ONE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ONE);
 
 	glUseProgram(sdr_blur);
 	if(blur_delta_loc >= 0) {
@@ -145,7 +146,7 @@ static void update_ripple(long time_msec)
 		glUniform1f(blur_intens_loc, 1.0);
 	}
 
-	for(i=0; i<1; i++) {
+	for(i=0; i<2; i++) {
 		if(blur_dir_loc >= 0) {
 			if(i) {
 				glUniform2f(blur_dir_loc, 0, 1);
