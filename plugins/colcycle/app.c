@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <signal.h>
 #ifdef __WATCOMC__
 #include "inttypes.h"
 #include <direct.h>
@@ -40,6 +41,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #if defined(NO_ASM) || (!defined(__i386__) && !defined(__x86_64__) && !defined(__X86__))
 #define USE_FLOAT
+#else
+static void (*prev_fpe)(int);
 #endif
 
 
@@ -110,6 +113,10 @@ int colc_init(int argc, char **argv)
 		}
 	}
 
+#ifndef USE_FLOAT
+	prev_fpe = signal(SIGFPE, SIG_IGN);
+#endif
+
 	set_image_palette(img);
 	show_image(img, 0);
 	return 0;
@@ -134,6 +141,9 @@ void colc_cleanup(void)
 		colc_destroy_image(img);
 		free(img);
 	}
+#ifndef USE_FLOAT
+	signal(SIGFPE, prev_fpe);
+#endif
 }
 
 /* tx is fixed point with 10 bits decimal */
