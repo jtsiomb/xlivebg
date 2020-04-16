@@ -10,7 +10,7 @@ bin = $(name)
 incdir = -Isrc -Iinclude -Ilibs/treestore/src
 libdir = -Llibs/treestore
 
-CFLAGS = -std=gnu89 -pedantic -Wall -g -DPREFIX=\"$(PREFIX)\" $(incdir)
+CFLAGS = -std=gnu89 -pedantic -Wall -g -O3 -DPREFIX=\"$(PREFIX)\" $(incdir)
 LDFLAGS = -rdynamic $(libdir) -lX11 -lXext -lXrandr -lGL -ldl -limago -ltreestore
 
 .PHONY: all

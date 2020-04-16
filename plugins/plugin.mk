@@ -5,7 +5,7 @@ so = $(name).so
 
 proj_root = ../..
 
-CFLAGS = -pedantic -Wall -g -fPIC -I$(proj_root)/include $(plugin_cflags)
+CFLAGS = -pedantic -Wall -g -O3 -ffast-math -fPIC -I$(proj_root)/include $(plugin_cflags)
 LDFLAGS = $(plugin_ldflags)
 
 $(so): $(obj)
