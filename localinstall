@@ -1,4 +1,14 @@
 #!/bin/sh
 
+MAKE=make
+
+if [ "`uname -s | sed 's/IRIX.*/IRIX/'`" = IRIX ]; then
+	MAKE=gmake
+fi
+if [ "`uname -s | sed 's/*BSD/BSD/'`" = BSD ]; then
+	MAKE=gmake
+fi
+
+
 mkdir -p ~/.local/lib/xlivebg
-make PREFIX=~/.local install-plugins
+$MAKE PREFIX=~/.local install-plugins

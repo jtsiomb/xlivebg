@@ -337,7 +337,7 @@ static int read_body_ilbm(FILE *fp, struct bitmap_header *bmhd, struct image *im
 		memset(dest, 0, img->width);	/* clear the whole scanline to OR bits into place */
 
 		for(j=0; j<bmhd->nplanes; j++) {
-			// read a row corresponding to bitplane j
+			/* read a row corresponding to bitplane j */
 			if(bmhd->compression) {
 				if(read_compressed_scanline(fp, rowbuf, rowsz) == -1) {
 					return -1;
@@ -348,7 +348,7 @@ static int read_body_ilbm(FILE *fp, struct bitmap_header *bmhd, struct image *im
 				}
 			}
 
-			// distribute all bits across the linear output scanline
+			/* distribute all bits across the linear output scanline */
 			src = rowbuf;
 			bitidx = 0;
 
