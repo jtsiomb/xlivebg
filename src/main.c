@@ -23,8 +23,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sys/select.h>
 #include <sys/time.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/Xatom.h>
+#ifdef HAVE_XRANDR
 #include <X11/extensions/Xrandr.h>
+#endif
 #include <X11/extensions/shape.h>
 #include <GL/glx.h>
 #include "app.h"
@@ -109,11 +112,14 @@ int main(int argc, char **argv)
 	}
 	XSelectInput(dpy, win, ExposureMask | StructureNotifyMask);
 
+#ifdef HAVE_XRANDR
 	if((have_xrandr = XRRQueryExtension(dpy, &xrandr_evbase, &xrandr_errbase))) {
 		/* detect number of screens and initialize screen structures */
 		detect_outputs();
 		XRRSelectInput(dpy, root, RRScreenChangeNotifyMask);
-	} else {
+	} else
+#endif
+	{
 		num_screens = 1;
 		screen[0].x = screen[0].y = 0;
 		screen[0].width = screen[0].root_width = scr_width;
@@ -243,17 +249,19 @@ static Window create_xwindow(int width, int height)
 	evmask = ExposureMask | StructureNotifyMask | KeyPressMask;
 	XSelectInput(dpy, win, evmask);
 
-	Xutf8SetWMProperties(dpy, win, "xlivebg", "xlivebg", 0, 0, 0, 0, 0);
+	XmbSetWMProperties(dpy, win, "xlivebg", "xlivebg", 0, 0, 0, 0, 0);
 	XSetWMProtocols(dpy, win, &xa_wm_delwin, 1);
 
 	netwm_setprop_atom(win, "_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP");
 
+#ifdef ShapeInput
 	rgn = XCreateRegion();
 	rect.x = rect.y = 0;
 	rect.width = rect.height = 1;
 	XUnionRectWithRegion(&rect, rgn, rgn);
 	XShapeCombineRegion(dpy, win, ShapeInput, 0, 0, rgn, ShapeSet);
 	XDestroyRegion(rgn);
+#endif
 
 	XMapWindow(dpy, win);
 	return win;
@@ -277,8 +285,10 @@ static XVisualInfo *choose_visual(void)
 		GLX_GREEN_SIZE, 1,
 		GLX_BLUE_SIZE, 1,
 		GLX_DEPTH_SIZE, 1,
+		/*
 		GLX_SAMPLE_BUFFERS, 1,
 		GLX_SAMPLES, 8,
+		*/
 		None
 	};
 	int *sample_buffers = glxattr + 10;
@@ -410,6 +420,7 @@ static int proc_xevent(XEvent *ev)
 		break;
 
 	default:
+#ifdef HAVE_XRANDR
 		if(have_xrandr) {
 			if(ev->type == xrandr_evbase + RRScreenChangeNotify) {
 				printf("Video outputs changed, reconfiguring\n");
@@ -417,6 +428,7 @@ static int proc_xevent(XEvent *ev)
 				detect_outputs();
 			}
 		}
+#endif
 		break;
 	}
 

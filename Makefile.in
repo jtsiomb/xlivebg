@@ -1,5 +1,3 @@
-# change this to install elsewhere
-PREFIX = /usr/local
 export PREFIX
 name = xlivebg
 
@@ -8,10 +6,12 @@ obj = $(src:.c=.o)
 bin = $(name)
 
 incdir = -Isrc -Iinclude -Ilibs/treestore/src
-libdir = -Llibs/treestore
+libdir = -Llibs/treestore -L/usr/local/lib
 
-CFLAGS = -std=gnu89 -pedantic -Wall -g -O3 -DPREFIX=\"$(PREFIX)\" $(incdir)
-LDFLAGS = -rdynamic $(libdir) -lX11 -lXext -lXrandr -lGL -ldl -limago -ltreestore
+CFLAGS = -std=gnu89 -pedantic -Wall $(dbg) $(opt) -DPREFIX=\"$(PREFIX)\" \
+	$(CFLAGS_xrandr) $(incdir)
+LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_xrandr) -lX11 -lXext -lGL -ldl \
+	-limago -ltreestore
 
 .PHONY: all
 all: $(bin) plugins bgimage.jpg

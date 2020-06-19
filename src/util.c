@@ -21,7 +21,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <pwd.h>
 #include <X11/Xlib.h>
+#ifdef HAVE_XRANDR
 #include <X11/extensions/Xrandr.h>
+#endif
 #include "util.h"
 
 static char *homedir, *cfgfile;
@@ -84,6 +86,8 @@ done:	cfgfile = fname;
 	return cfgfile;
 }
 
+
+#ifdef HAVE_XRANDR
 static int xrr_get_output(Display *dpy, XRRScreenResources *res, int idx, struct xlivebg_screen *scr)
 {
 	XRROutputInfo *out;
@@ -145,11 +149,18 @@ int get_num_outputs(Display *dpy)
 	XRRFreeScreenResources(res);
 	return count;
 }
+#else
+int get_num_outputs(Display *dpy)
+{
+	return 1;
+}
+#endif	/* HAVE_XRANDR */
 
 void get_output(Display *dpy, int idx, struct xlivebg_screen *scr)
 {
-	int i, count = 0;
 	Window root = DefaultRootWindow(dpy);
+#ifdef HAVE_XRANDR
+	int i, count = 0;
 	XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
 
 	if(!res) goto fallback;
@@ -169,6 +180,9 @@ void get_output(Display *dpy, int idx, struct xlivebg_screen *scr)
 
 	if(i >= res->noutput) {
 fallback:
+#else	/* HAVE_XRANDR */
+	{
+#endif
 		if(idx == 0) {
 			XWindowAttributes wattr;
 			XGetWindowAttributes(dpy, root, &wattr);

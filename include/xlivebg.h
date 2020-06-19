@@ -18,7 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef XLIVEBG_H_
 #define XLIVEBG_H_
 
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199900L
 #include <stdint.h>
+#else
+#include <sys/types.h>
+#endif
 
 /* microsecond intervals for common framerates for upd_interval */
 #define XLIVEBG_NOUPD	0
