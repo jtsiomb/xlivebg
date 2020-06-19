@@ -1,6 +1,6 @@
 /*
 xlivebg - live wallpapers for the X window system
-Copyright (C) 2019  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199900L
 #include <stdint.h>
 #else
-#include <sys/types.h>
+#include <inttypes.h>
 #endif
 
 /* microsecond intervals for common framerates for upd_interval */
