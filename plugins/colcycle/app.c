@@ -224,7 +224,7 @@ static int32_t cycle_offset(enum cycle_mode mode, int32_t rate, int32_t rsize, i
 {
 	int32_t offs, tm;
 
-	CALC_TIME(tm, rate, msec);
+	CALC_TIME(tm, rate, msec & 0x3fffffff);
 
 	switch(mode) {
 	case CYCLE_PINGPONG:
