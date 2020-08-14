@@ -1,6 +1,6 @@
 /*
 xlivebg - live wallpapers for the X window system
-Copyright (C) 2019  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,14 +34,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "xlivebg.h"
 #include "cfg.h"
 
+/* create_xwindow flags */
+enum {
+	WIN_REGULAR	= 1
+};
+
 /* defined in toon_root.c */
 Window ToonGetRootWindow(Display *dpy, int scr, Window *par);
 
-static Window create_xwindow(int width, int height);
+static Window create_xwindow(int width, int height, unsigned int flags);
 static void netwm_setprop_atom(Window win, const char *prop, const char *val);
 static XVisualInfo *choose_visual(void);
-static int init_gl(void);
-static void destroy_gl(void);
 static void detect_outputs(void);
 static int proc_xevent(XEvent *ev);
 static void send_expose(Window win);
@@ -61,7 +64,7 @@ static volatile int quit;
 static int mapped;
 static int width, height;
 static int dblbuf;
-static int opt_new_win;
+static int opt_new_win, opt_win_preview;
 static Window new_win_parent;
 
 static struct timeval tv, tv0;
@@ -87,9 +90,16 @@ int main(int argc, char **argv)
 
 	if(!win) {
 		if(opt_new_win) {
-			XWindowAttributes attr;
-			XGetWindowAttributes(dpy, root, &attr);
-			if(!(win = create_xwindow(attr.width, attr.height))) {
+			if(!opt_win_preview) {
+				XWindowAttributes attr;
+				XGetWindowAttributes(dpy, root, &attr);
+				width = attr.width;
+				height = attr.height;
+			} else {
+				width = 800;
+				height = 600;
+			}
+			if(!(win = create_xwindow(width, height, opt_win_preview ? WIN_REGULAR : 0))) {
 				return 1;
 			}
 		} else {
@@ -105,11 +115,6 @@ int main(int argc, char **argv)
 
 	init_cfg();
 
-	if(init_gl() == -1) {
-		fprintf(stderr, "failed to create OpenGL context\n");
-		XCloseDisplay(dpy);
-		return 1;
-	}
 	XSelectInput(dpy, win, ExposureMask | StructureNotifyMask);
 
 #ifdef HAVE_XRANDR
@@ -128,7 +133,6 @@ int main(int argc, char **argv)
 	}
 
 	if(app_init(argc, argv) == -1) {
-		destroy_gl();
 		XCloseDisplay(dpy);
 		return 1;
 	}
@@ -187,7 +191,7 @@ done:
 	if(visinf) {
 		XFree(visinf);
 	}
-	destroy_gl();
+	xlivebg_destroy_gl();
 	if(opt_new_win) {
 		XDestroyWindow(dpy, win);
 	}
@@ -219,7 +223,7 @@ unsigned int app_getmouse(int *x, int *y)
 	return prev_mask;
 }
 
-static Window create_xwindow(int width, int height)
+static Window create_xwindow(int width, int height, unsigned int flags)
 {
 	XSetWindowAttributes xattr;
 	long xattr_mask, evmask;
@@ -252,7 +256,9 @@ static Window create_xwindow(int width, int height)
 	XmbSetWMProperties(dpy, win, "xlivebg", "xlivebg", 0, 0, 0, 0, 0);
 	XSetWMProtocols(dpy, win, &xa_wm_delwin, 1);
 
-	netwm_setprop_atom(win, "_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP");
+	if(!(flags & WIN_REGULAR)) {
+		netwm_setprop_atom(win, "_NET_WM_WINDOW_TYPE", "_NET_WM_WINDOW_TYPE_DESKTOP");
+	}
 
 #ifdef ShapeInput
 	rgn = XCreateRegion();
@@ -279,7 +285,7 @@ static void netwm_setprop_atom(Window win, const char *prop, const char *val)
 
 static XVisualInfo *choose_visual(void)
 {
-	int glxattr[] = {
+	int glxattr[32] = {
 		GLX_RGBA, GLX_DOUBLEBUFFER,
 		GLX_RED_SIZE, 1,
 		GLX_GREEN_SIZE, 1,
@@ -306,7 +312,7 @@ static XVisualInfo *choose_visual(void)
 	return res;
 }
 
-static int init_gl(void)
+int xlivebg_init_gl(void)
 {
 	XVisualInfo *vi, vitmpl;
 	int numvi, val, rbits, gbits, bbits, zbits;
@@ -358,7 +364,7 @@ static int init_gl(void)
 	return 0;
 }
 
-static void destroy_gl(void)
+void xlivebg_destroy_gl(void)
 {
 	glXMakeCurrent(dpy, 0, 0);
 	glXDestroyContext(dpy, ctx);
@@ -475,6 +481,13 @@ static int parse_args(int argc, char **argv)
 				return -1;
 			}
 
+		} else if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "-preview") == 0) {
+			opt_new_win = 1;
+			opt_win_preview = 1;
+			win = 0;
+			width = 800;
+			height = 600;
+
 		} else if(strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "-root") == 0) {
 			opt_new_win = 0;
 			win = 0;
@@ -508,5 +521,6 @@ static void print_usage(const char *argv0)
 	printf("  -n, -new-win: create own desktop window\n");
 	printf("  -r, -root: draw on the root window (default)\n");
 	printf("  -w <id>, -window <id>: draw on specified window\n");
+	printf("  -p, -preview: show preview on a new window\n");
 	printf("  -h, -help: print usage information and exit\n");
 }

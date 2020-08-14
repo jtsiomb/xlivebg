@@ -41,4 +41,9 @@ void app_keyboard(int key, int pressed);
 void app_quit(void);
 unsigned int app_getmouse(int *x, int *y);
 
+
+int xlivebg_init_gl(void);
+void xlivebg_destroy_gl(void);
+
+
 #endif	/* APP_H_ */
