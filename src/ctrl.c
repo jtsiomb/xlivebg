@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include "plugin.h"
 
 #define SOCK_PATH	"/tmp/xlivebg.sock"
 
@@ -138,7 +139,7 @@ void ctrl_process(int s)
 	}
 
 	if(len == 0) {
-		/* client disconnected */
+		printf("ctrl_process: client disconnected (%d)\n", s);
 		close(s);
 		c->s = -1;
 		num_sock--;
@@ -147,4 +148,12 @@ void ctrl_process(int s)
 
 static void proc_cmd(char *cmdstr)
 {
+	/* XXX temp hack just to see if this works */
+	struct xlivebg_plugin *p;
+
+	if(!(p = find_plugin(cmdstr))) {
+		fprintf(stderr, "no such plugin: \"%s\"\n", cmdstr);
+		return;
+	}
+	activate_plugin(p);
 }
