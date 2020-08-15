@@ -62,9 +62,9 @@ static int have_xrandr, xrandr_evbase, xrandr_errbase;
 
 static volatile int quit;
 static int mapped;
-static int width, height;
+static int win_width, win_height;
 static int dblbuf;
-static int opt_new_win, opt_win_preview;
+static int opt_new_win, opt_preview;
 static Window new_win_parent;
 
 static struct timeval tv, tv0;
@@ -72,6 +72,7 @@ static struct timeval tv, tv0;
 int main(int argc, char **argv)
 {
 	int xfd;
+	XWindowAttributes attr;
 
 	if(parse_args(argc, argv) == -1) {
 		return 1;
@@ -85,21 +86,28 @@ int main(int argc, char **argv)
 	scr = DefaultScreen(dpy);
 	root = RootWindow(dpy, scr);
 
+	/* By default set scr_width/scr_height to the root dimensions. Will be
+	 * overriden below, if XR&R is available.
+	 */
+	XGetWindowAttributes(dpy, root, &attr);
+	scr_width = attr.width;
+	scr_height = attr.height;
+
 	xa_wm_proto = XInternAtom(dpy, "WM_PROTOCOLS", False);
 	xa_wm_delwin = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 
+	/* if win is already set, means the user passed -w <id> */
 	if(!win) {
 		if(opt_new_win) {
-			if(!opt_win_preview) {
-				XWindowAttributes attr;
-				XGetWindowAttributes(dpy, root, &attr);
-				width = attr.width;
-				height = attr.height;
-			} else {
-				width = 800;
-				height = 600;
+			unsigned int flags = 0;
+
+			if(opt_preview) {
+				/* fake screen dimensions */
+				scr_width = 800;
+				scr_height = 600;
+				flags = WIN_REGULAR;
 			}
-			if(!(win = create_xwindow(width, height, opt_win_preview ? WIN_REGULAR : 0))) {
+			if(!(win = create_xwindow(scr_width, scr_height, flags))) {
 				return 1;
 			}
 		} else {
@@ -118,7 +126,7 @@ int main(int argc, char **argv)
 	XSelectInput(dpy, win, ExposureMask | StructureNotifyMask);
 
 #ifdef HAVE_XRANDR
-	if((have_xrandr = XRRQueryExtension(dpy, &xrandr_evbase, &xrandr_errbase))) {
+	if(!opt_preview && (have_xrandr = XRRQueryExtension(dpy, &xrandr_evbase, &xrandr_errbase))) {
 		/* detect number of screens and initialize screen structures */
 		detect_outputs();
 		XRRSelectInput(dpy, root, RRScreenChangeNotifyMask);
@@ -130,6 +138,10 @@ int main(int argc, char **argv)
 		screen[0].width = screen[0].root_width = scr_width;
 		screen[0].height = screen[0].root_height = scr_height;
 		screen[0].aspect = (float)scr_width / (float)scr_height;
+		screen[0].vport[0] = screen[0].vport[1] = 0;
+		screen[0].vport[2] = scr_width;
+		screen[0].vport[3] = scr_height;
+		printf("output: %dx%d\n", scr_width, scr_height);
 	}
 
 	if(app_init(argc, argv) == -1) {
@@ -326,9 +338,7 @@ int xlivebg_init_gl(void)
 	}
 	assert(numvi == 1);
 
-	width = wattr.width;
-	height = wattr.height;
-	printf("window size: %dx%d\n", width, height);
+	printf("window size: %dx%d\n", wattr.width, wattr.height);
 
 	glXGetConfig(dpy, vi, GLX_USE_GL, &val);
 	if(!val) {
@@ -359,7 +369,7 @@ int xlivebg_init_gl(void)
 		return -1;
 	}
 	glXMakeCurrent(dpy, win, ctx);
-	app_reshape(width, height);
+	app_reshape(wattr.width, wattr.height);
 	XFree(vi);
 	return 0;
 }
@@ -403,10 +413,10 @@ static int proc_xevent(XEvent *ev)
 		break;
 
 	case ConfigureNotify:
-		if(ev->xconfigure.width != width || ev->xconfigure.height != height) {
-			width = ev->xconfigure.width;
-			height = ev->xconfigure.height;
-			app_reshape(width, height);
+		if(ev->xconfigure.width != win_width || ev->xconfigure.height != win_height) {
+			win_width = ev->xconfigure.width;
+			win_height = ev->xconfigure.height;
+			app_reshape(win_width, win_height);
 		}
 		break;
 
@@ -448,11 +458,11 @@ static void send_expose(Window win)
 	XClearWindow(dpy, win);
 
 	ev.type = Expose;
-	ev.xexpose.width = width;
-	ev.xexpose.height = height;
+	ev.xexpose.width = win_width;
+	ev.xexpose.height = win_height;
 	ev.xexpose.send_event = True;
 
-	printf("sending expose: %dx%d (xid: %x)\n", width, height, (unsigned int)win);
+	printf("sending expose: %dx%d (xid: %x)\n", win_width, win_height, (unsigned int)win);
 	XSendEvent(dpy, win, False, Expose, &ev);
 }
 
@@ -483,10 +493,8 @@ static int parse_args(int argc, char **argv)
 
 		} else if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "-preview") == 0) {
 			opt_new_win = 1;
-			opt_win_preview = 1;
+			opt_preview = 1;
 			win = 0;
-			width = 800;
-			height = 600;
 
 		} else if(strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "-root") == 0) {
 			opt_new_win = 0;

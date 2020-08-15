@@ -58,7 +58,6 @@ int app_init(int argc, char **argv)
 		activate_plugin(first_plugin);
 	}
 
-	glViewport(0, 0, scr_width, scr_height);
 	return 0;
 }
 
