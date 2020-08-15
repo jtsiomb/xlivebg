@@ -33,6 +33,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "app.h"
 #include "xlivebg.h"
 #include "cfg.h"
+#include "ctrl.h"
 
 /* create_xwindow flags */
 enum {
@@ -116,6 +117,7 @@ int main(int argc, char **argv)
 			printf("detected root window: %x\n", (unsigned int)win);
 		}
 	}
+	XSelectInput(dpy, win, ExposureMask | StructureNotifyMask);
 
 	signal(SIGINT, sighandler);
 	signal(SIGILL, sighandler);
@@ -123,7 +125,9 @@ int main(int argc, char **argv)
 
 	init_cfg();
 
-	XSelectInput(dpy, win, ExposureMask | StructureNotifyMask);
+	if(ctrl_init() == -1) {
+		fprintf(stderr, "Warning: failed to create control socket\n");
+	}
 
 #ifdef HAVE_XRANDR
 	if(!opt_preview && (have_xrandr = XRRQueryExtension(dpy, &xrandr_evbase, &xrandr_errbase))) {
@@ -154,6 +158,8 @@ int main(int argc, char **argv)
 	while(!quit) {
 		fd_set rdset;
 		struct timeval *timeout;
+		int i, max_fd, num_ctrl_sock;
+		int *ctrl_sock;
 
 		while(XPending(dpy)) {
 			XEvent ev;
@@ -178,6 +184,14 @@ int main(int argc, char **argv)
 		 */
 		FD_ZERO(&rdset);
 		FD_SET(xfd, &rdset);
+		max_fd = xfd;
+
+		ctrl_sock = ctrl_sockets(&num_ctrl_sock);
+		for(i=0; i<num_ctrl_sock; i++) {
+			int s = ctrl_sock[i];
+			FD_SET(s, &rdset);
+			if(s > max_fd) max_fd = s;
+		}
 
 		if(upd_interval_usec > 0) {
 			struct timeval now;
@@ -195,10 +209,20 @@ int main(int argc, char **argv)
 			timeout = 0;
 		}
 
-		select(xfd + 1, &rdset, 0, 0, timeout);
+		if(select(max_fd + 1, &rdset, 0, 0, timeout) > 0) {
+			/* ignore X events, we'll just handle those at the top of the loop
+			 * shortly. just handle control socket input
+			 */
+			for(i=0; i<num_ctrl_sock; i++) {
+				if(FD_ISSET(ctrl_sock[i], &rdset)) {
+					ctrl_process(ctrl_sock[i]);
+				}
+			}
+		}
 	}
 
 done:
+	ctrl_shutdown();
 	send_expose(win);
 	if(visinf) {
 		XFree(visinf);
