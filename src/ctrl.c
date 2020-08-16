@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -40,7 +41,7 @@ static int lis = -1;
 static int num_sock;
 static struct client clients[MAX_SOCK];
 
-static void proc_cmd(char *cmdstr);
+static void proc_cmd(int s, char *cmdstr);
 
 int ctrl_init(void)
 {
@@ -144,7 +145,7 @@ void ctrl_process(int s)
 		for(i=0; i<len; i++) {
 			if(buf[i] == '\n') {
 				*ptr = 0;
-				proc_cmd(c->inbuf);
+				proc_cmd(s, c->inbuf);
 				ptr = c->inbuf;
 			} else {
 				if(ptr < c->inbuf + sizeof c->inbuf - 1) {
@@ -163,14 +164,88 @@ void ctrl_process(int s)
 	}
 }
 
-static void proc_cmd(char *cmdstr)
+static void send_status(int s, int status)
 {
-	/* XXX temp hack just to see if this works */
+	write(s, status ? "OK!\n" : "ERR\n", 4);
+}
+
+static int proc_cmd_list(int s, int argc, char **argv);
+static int proc_cmd_switch(int s, int argc, char **argv);
+
+struct {
+	const char *cmd;
+	int (*proc)(int, int, char**);
+} cmdfunc[] = {
+	{"list", proc_cmd_list},
+	{"switch", proc_cmd_switch},
+	{0, 0}
+};
+
+static void proc_cmd(int s, char *cmdstr)
+{
+	int i, argc;
+	char **argv;
+	char *ptr;
+
+	argc = 1;
+	ptr = cmdstr;
+	while(*ptr) {
+		if(isspace(*ptr++)) argc++;
+	}
+	argv = alloca(argc * sizeof *argv);
+	argc = 0;
+
+	while((ptr = strtok(argc ? 0 : cmdstr, " \t\r\n\v"))) {
+		argv[argc++] = ptr;
+	}
+	argv[argc] = 0;
+
+	for(i=0; cmdfunc[i].proc; i++) {
+		if(strcmp(argv[0], cmdfunc[i].cmd) == 0) {
+			if(cmdfunc[i].proc(s, argc, argv) == -1) {
+				send_status(s, 0);
+				fprintf(stderr, "execution of command %s failed\n", argv[0]);
+			}
+			return;
+		}
+	}
+
+	fprintf(stderr, "unrecognized command: %s\n", argv[0]);
+}
+
+static int proc_cmd_list(int s, int argc, char **argv)
+{
+	struct xlivebg_plugin *p;
+	int i, len, num = get_plugin_count();
+	char msg[1024];
+
+	send_status(s, 1);
+	len = sprintf(msg, "%d\n", num);
+	write(s, msg, len);
+
+	for(i=0; i<num; i++) {
+		p = get_plugin(i);
+		len = snprintf(msg, sizeof msg, "%s:%s\n", p->name, p->desc);
+		write(s, msg, len);
+	}
+	return 0;
+}
+
+static int proc_cmd_switch(int s, int argc, char **argv)
+{
 	struct xlivebg_plugin *p;
 
-	if(!(p = find_plugin(cmdstr))) {
-		fprintf(stderr, "no such plugin: \"%s\"\n", cmdstr);
-		return;
+	if(!argv[1]) {
+		fprintf(stderr, "proc_cmd_switch: missing argument\n");
+		return -1;
 	}
+
+	if(!(p = find_plugin(argv[1]))) {
+		send_status(s, 0);
+		fprintf(stderr, "no such plugin: \"%s\"\n", argv[1]);
+		return -1;
+	}
+	send_status(s, 1);
 	activate_plugin(p);
+	return 0;
 }
