@@ -25,14 +25,25 @@ static void (*glx_swap_interval_ext)(Display*, Window, int);
 static void (*glx_swap_interval_mesa)(int);
 static void (*glx_swap_interval_sgi)(int);
 
+#define PROPLIST	\
+	"proplist {\n" \
+	"    prop {\n" \
+	"        id = \"image\"\n" \
+	"        desc = \"color-cycling image (LBM or canvascycle JSON)\"\n" \
+	"        type = \"pathname\"\n" \
+	"    }\n" \
+	"}\n"
+
 struct xlivebg_plugin colc_plugin = {
 	"colcycle",
 	"Color cycling",
+	PROPLIST,
 	XLIVEBG_20FPS,
 	init, cleanup,
 	start, stop,
 	draw,
-	0
+	0,
+	0, 0
 };
 
 static int tex_xsz, tex_ysz;

@@ -5,15 +5,34 @@
 
 static int init(void *cls);
 static void draw(long tmsec, void *cls);
+static void prop(const char *prop, void *cls);
+
+#define PROPLIST	\
+	"proplist {\n" \
+	"    prop {\n" \
+	"        id = \"amplitude\"\n" \
+	"        desc = \"amplitude of the distortion\"\n" \
+	"        type = \"float\"\n" \
+	"        range = [0, 5]\n" \
+	"    }\n" \
+	"    prop {\n" \
+	"        id = \"frequency\"\n" \
+	"        desc = \"frequency of the distortion\"\n" \
+	"        type = \"float\"\n" \
+	"        range = [0, 20]\n" \
+	"    }\n" \
+	"}\n"
 
 static struct xlivebg_plugin plugin = {
 	"distort",
 	"Image distortion effect on the background image",
+	PROPLIST,
 	XLIVEBG_25FPS,
 	init, 0,
 	0, 0,
 	draw,
-	0
+	prop,
+	0, 0
 };
 
 static float ampl, freq;
@@ -25,9 +44,21 @@ void register_plugin(void)
 
 static int init(void *cls)
 {
-	ampl = xlivebg_getcfg_num("xlivebg.distort.amplitude", 0.025);
-	freq = xlivebg_getcfg_num("xlivebg.distort.frequency", 8.0);
+	prop("amplitude", 0);
+	prop("frequency", 0);
 	return 0;
+}
+
+static void prop(const char *prop, void *cls)
+{
+	switch(prop[0]) {
+	case 'a':	/* amplitude */
+		ampl = xlivebg_getcfg_num("xlivebg.distort.amplitude", 0.025);
+		break;
+	case 'f':	/* frequency */
+		freq = xlivebg_getcfg_num("xlivebg.distort.frequency", 8.0);
+		break;
+	}
 }
 
 #define USUB	45

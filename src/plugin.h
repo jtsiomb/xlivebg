@@ -20,6 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "xlivebg.h"
 
+#define BEGIN_PROPLIST	"proplist {\n"
+#define END_PROPLIST	"}\n"
+
 void init_plugins(void);
 
 struct xlivebg_plugin *get_plugin(int idx);

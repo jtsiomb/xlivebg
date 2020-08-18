@@ -170,6 +170,7 @@ static void send_status(int s, int status)
 
 static int proc_cmd_list(int s, int argc, char **argv);
 static int proc_cmd_switch(int s, int argc, char **argv);
+static int proc_cmd_proplist(int s, int argc, char **argv);
 
 struct {
 	const char *cmd;
@@ -177,6 +178,7 @@ struct {
 } cmdfunc[] = {
 	{"list", proc_cmd_list},
 	{"switch", proc_cmd_switch},
+	{"lsprop", proc_cmd_proplist},
 	{0, 0}
 };
 
@@ -241,10 +243,41 @@ static int proc_cmd_switch(int s, int argc, char **argv)
 
 	if(!(p = find_plugin(argv[1]))) {
 		send_status(s, 0);
-		fprintf(stderr, "no such plugin: \"%s\"\n", argv[1]);
+		fprintf(stderr, "proc_cmd_switch: no such plugin: \"%s\"\n", argv[1]);
 		return -1;
 	}
 	send_status(s, 1);
 	activate_plugin(p);
+	return 0;
+}
+
+static int proc_cmd_proplist(int s, int argc, char **argv)
+{
+	int len;
+	struct xlivebg_plugin *p;
+
+	if(argv[1]) {
+		if(!(p = find_plugin(argv[1]))) {
+			send_status(s, 0);
+			fprintf(stderr, "proc_cmd_proplist: no such plugin: \"%s\"\n", argv[1]);
+			return -1;
+		}
+	} else {
+		if(!(p = get_active_plugin())) {
+			send_status(s, 0);
+			fprintf(stderr, "proc_cmd_proplist: no active plugin, and none specified\n");
+			return -1;
+		}
+	}
+
+	send_status(s, 1);
+
+	len = strlen(p->props);
+	write(s, p->props, len);
+
+	/* make sure to terminate the property list if it's malformed */
+	if(memcmp(p->props + len - 2, "}\n", 2) != 0) {
+		write(s, "}\n", 2);
+	}
 	return 0;
 }

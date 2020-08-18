@@ -43,6 +43,7 @@ typedef void (*xlivebg_cleanup_func)(void*);
 typedef void (*xlivebg_start_func)(long, void*);
 typedef void (*xlivebg_stop_func)(void*);
 typedef void (*xlivebg_draw_func)(long, void*);
+typedef void (*xlivebg_prop_func)(const char*, void*);
 
 struct xlivebg_image {
 	int width, height;
@@ -66,13 +67,16 @@ struct xlivebg_screen {
 };
 
 struct xlivebg_plugin {
-	char *name, *desc;
+	const char *name, *desc;
+	const char *props;	/* list of properties this plugin uses (to restart or call prop when any change) */
 	long upd_interval;	/* requested update interval in microseconds */
 	xlivebg_init_func init;		/* called during init, with a valid OpenGL context */
 	xlivebg_cleanup_func cleanup;	/* called during shutdown (optional) */
 	xlivebg_start_func start;	/* called when the plugin is activated (optional) */
 	xlivebg_stop_func stop;		/* called when the plugin is deactivated (optional) */
 	xlivebg_draw_func draw;		/* called to draw every frame */
+	xlivebg_prop_func prop;		/* called when a property in props has changed (optional) */
+
 	void *data, *so;
 };
 

@@ -22,40 +22,50 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "ctrl.h"
 
-static int cmd_generic(int s, int argc, char **argv);
-static int cmd_list(int s, int argc, char **argv);
+static int cmd_generic(int argc, char **argv);
+static int cmd_list(int argc, char **argv);
+static int cmd_lsprop(int argc, char **argv);
 
 static int read_line(int fd, char *line, int maxsz);
 
 static int parse_args(int argc, char **argv);
 static void print_usage(void);
 
-static int cmd = -1;
-
 static struct {
 	const char *name;
-	int (*func)(int, int, char**);
+	int (*func)(int, char**);
 } commands[] = {
 	{"list", cmd_list},
 	{"switch", cmd_generic},
+	{"lsprop", cmd_lsprop},
 	{0, 0}
 };
 
+static int sock;
+static int cmd;
+
+
+static void timeout(int s)
+{
+	shutdown(sock, SHUT_RD);
+}
+
 int client_main(int argc, char **argv)
 {
-	int s;
+	int res;
 	struct sockaddr_un addr;
 
 	if(parse_args(argc, argv) == -1) {
 		return 1;
 	}
 
-	if((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
+	if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 		perror("failed to create UNIX domain socket");
 		return 1;
 	}
@@ -63,21 +73,22 @@ int client_main(int argc, char **argv)
 	addr.sun_family = AF_UNIX;
 	strcpy(addr.sun_path, SOCK_PATH);
 
-	if(connect(s, (struct sockaddr*)&addr, SUN_LEN(&addr)) == -1) {
+	if(connect(sock, (struct sockaddr*)&addr, SUN_LEN(&addr)) == -1) {
 		fprintf(stderr, "failed to connect to UNIX domain socket: " SOCK_PATH ": %s\n",
 				strerror(errno));
 		return 1;
 	}
 
-	if(commands[cmd].func(s, argc, argv) == -1) {
-		return 1;
-	}
+	signal(SIGALRM, timeout);
+	alarm(8);
 
-	return 0;
+	res = commands[cmd].func(argc, argv);
+	alarm(0);
+	return res == -1 ? 1 : 0;
 }
 
 
-static int cmd_generic(int s, int argc, char **argv)
+static int cmd_generic(int argc, char **argv)
 {
 	int i, len = 0;
 	char *cmd, *ptr;
@@ -94,8 +105,8 @@ static int cmd_generic(int s, int argc, char **argv)
 	ptr[-1] = '\n';
 	*ptr = 0;
 
-	write(s, cmd, len);
-	if(read_line(s, buf, sizeof buf) >= 0 && strcmp(buf, "OK!\n") == 0) {
+	write(sock, cmd, len);
+	if(read_line(sock, buf, sizeof buf) >= 0 && strcmp(buf, "OK!\n") == 0) {
 		return 0;
 	}
 
@@ -103,16 +114,16 @@ static int cmd_generic(int s, int argc, char **argv)
 	return -1;
 }
 
-static int cmd_list(int s, int argc, char **argv)
+static int cmd_list(int argc, char **argv)
 {
 	int state = 0;
 	int num_lines = 0;
-	char buf[1024];
+	char buf[256];
 	char *endp;
 
-	write(s, "list\n", 5);
+	write(sock, "list\n", 5);
 
-	while(read_line(s, buf, sizeof buf) >= 0) {
+	while(read_line(sock, buf, sizeof buf) >= 0) {
 		switch(state) {
 		case 0:
 			if(strcmp(buf, "OK!\n") != 0) {
@@ -138,6 +149,34 @@ static int cmd_list(int s, int argc, char **argv)
 		}
 	}
 	return -1;
+}
+
+static int cmd_lsprop(int argc, char **argv)
+{
+	char buf[256];
+	int level = 0;
+
+	write(sock, "lsprop\n", 7);
+
+	if(read_line(sock, buf, sizeof buf) == -1 || strcmp(buf, "OK!\n") != 0) {
+		fprintf(stderr, "Property list command failed\n");
+		return -1;
+	}
+
+	while(read_line(sock, buf, sizeof buf) >= 0) {
+		char *ptr = buf;
+		while(*ptr) {
+			char c = *ptr++;
+			switch(c) {
+			case '{': level++; break;
+			case '}': level--; break;
+			}
+			putchar(c);
+		}
+		if(level <= 0) break;
+	}
+
+	return 0;
 }
 
 static char inbuf[1024];
@@ -200,5 +239,6 @@ static void print_usage(void)
 	printf("Commands:\n");
 	printf("  list: get list of available live wallpapers\n");
 	printf("  switch <name>: switch live wallpaper\n");
+	printf("  lsprop [name]: list properties of named or current live wallpaper\n");
 	printf("  help: print usage and exit\n");
 }
