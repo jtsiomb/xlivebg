@@ -18,6 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef CTRL_H_
 #define CTRL_H_
 
+#define SOCK_PATH	"/tmp/xlivebg.sock"
+
 int ctrl_init(void);
 void ctrl_shutdown(void);
 

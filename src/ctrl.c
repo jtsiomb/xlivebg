@@ -24,9 +24,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include "ctrl.h"
 #include "plugin.h"
-
-#define SOCK_PATH	"/tmp/xlivebg.sock"
 
 struct client {
 	int s;

@@ -43,6 +43,9 @@ enum {
 /* defined in toon_root.c */
 Window ToonGetRootWindow(Display *dpy, int scr, Window *par);
 
+/* defined in client.c */
+int client_main(int argc, char **argv);
+
 static Window create_xwindow(int width, int height, unsigned int flags);
 static void netwm_setprop_atom(Window win, const char *prop, const char *val);
 static XVisualInfo *choose_visual(void);
@@ -72,8 +75,17 @@ static struct timeval tv, tv0;
 
 int main(int argc, char **argv)
 {
-	int xfd;
+	int xfd, len;
 	XWindowAttributes attr;
+
+	len = strlen(argv[0]);
+	if(len >= 11 && memcmp(argv[0] + len - 11, "xlivebg-cmd", 11) == 0) {
+		return client_main(argc, argv);
+	}
+	if(argv[1] && strcmp(argv[1], "cmd") == 0) {
+		argv[1] = argv[0];
+		return client_main(--argc, argv + 1);
+	}
 
 	if(parse_args(argc, argv) == -1) {
 		return 1;
@@ -122,11 +134,14 @@ int main(int argc, char **argv)
 	signal(SIGINT, sighandler);
 	signal(SIGILL, sighandler);
 	signal(SIGSEGV, sighandler);
+	signal(SIGPIPE, SIG_IGN);
 
 	init_cfg();
 
 	if(ctrl_init() == -1) {
-		fprintf(stderr, "Warning: failed to create control socket\n");
+		fprintf(stderr, "Failed to create control socket, is xlivebg already running?\n");
+		XCloseDisplay(dpy);
+		return 1;
 	}
 
 #ifdef HAVE_XRANDR
@@ -149,6 +164,7 @@ int main(int argc, char **argv)
 	}
 
 	if(app_init(argc, argv) == -1) {
+		ctrl_shutdown();
 		XCloseDisplay(dpy);
 		return 1;
 	}

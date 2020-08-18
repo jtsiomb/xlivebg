@@ -35,6 +35,7 @@ install: $(bin)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/share/$(name)
 	cp $(bin) $(DESTDIR)$(PREFIX)/bin/$(bin)
 	cp include/xlivebg.h $(DESTDIR)$(PREFIX)/include/xlivebg.h
+	cd $(DESTDIR)$(PREFIX)/bin && ln -s $(bin) $(bin)-cmd
 #	cp data/* $(DESTDIR)$(PREFIX)/share/$(name)/
 
 .PHONY: install-all
