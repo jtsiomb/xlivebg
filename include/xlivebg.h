@@ -37,6 +37,13 @@ enum {
 	XLIVEBG_FIT_STRETCH
 };
 
+enum {
+	XLIVEBG_PROP_UNKNOWN,
+	XLIVEBG_PROP_STRING,
+	XLIVEBG_PROP_NUMBER,
+	XLIVEBG_PROP_INTEGER,
+	XLIVEBG_PROP_VECTOR
+};
 
 typedef int (*xlivebg_init_func)(void*);
 typedef void (*xlivebg_cleanup_func)(void*);
@@ -67,8 +74,8 @@ struct xlivebg_screen {
 };
 
 struct xlivebg_plugin {
-	const char *name, *desc;
-	const char *props;	/* list of properties this plugin uses (to restart or call prop when any change) */
+	char *name, *desc;
+	char *props;	/* list of properties this plugin uses (to restart or call prop when any change) */
 	long upd_interval;	/* requested update interval in microseconds */
 	xlivebg_init_func init;		/* called during init, with a valid OpenGL context */
 	xlivebg_cleanup_func cleanup;	/* called during shutdown (optional) */
@@ -94,10 +101,16 @@ void xlivebg_crop_dir(int scr, float *dirvec);
 
 /* plugin configuration interface */
 int xlivebg_havecfg(const char *cfgpath);
+
 const char *xlivebg_getcfg_str(const char *cfgpath, const char *def_val);
 float xlivebg_getcfg_num(const char *cfgpath, float def_val);
 int xlivebg_getcfg_int(const char *cfgpath, int def_val);
 float *xlivebg_getcfg_vec(const char *cfgpath, float *def_val);
+
+int xlivebg_setcfg_str(const char *cfgpath, const char *str);
+int xlivebg_setcfg_num(const char *cfgpath, float val);
+int xlivebg_setcfg_int(const char *cfgpath, int val);
+int xlivebg_setcfg_vec(const char *cfgpath, float *vec);
 
 void xlivebg_gl_viewport(int scr);
 

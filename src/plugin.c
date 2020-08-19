@@ -258,6 +258,96 @@ float *xlivebg_getcfg_vec(const char *cfgpath, float *def_val)
 	return ts_lookup_vec(cfg.ts, cfgpath, def_val);
 }
 
+/* returns pointer to the value of a specific attribute. If it doesn't exist,
+ * creates it and any intermedate path components first.
+ */
+static struct ts_value *touch_node(const char *cfgpath)
+{
+	char *pathbuf, *ptr, *aname;
+	struct ts_node *node, *child;
+	struct ts_attr *attr;
+
+	if(!cfg.ts) {
+		if(!(cfg.ts = ts_alloc_node()) || !(cfg.ts->name = strdup("xlivebg"))) {
+			ts_free_node(cfg.ts);
+		}
+	}
+
+	pathbuf = alloca(strlen(cfgpath) + 1);
+	strcpy(pathbuf, cfgpath);
+
+	/* separate the attribute name from the rest of the node chain*/
+	if(!(aname = strrchr(pathbuf, '.')) || !*++aname) {
+		return 0;
+	}
+	aname[-1] = 0;
+
+	/* grab the first element of the path, and make sure it's xlivebg */
+	if(!(ptr = strtok(pathbuf, ".")) || strcmp(ptr, "xlivebg") != 0) {
+		return 0;
+	}
+
+	node = cfg.ts;
+	while((ptr = strtok(0, "."))) {
+		if(!(child = ts_get_child(node, ptr))) {
+			/* no such path component, create it and move on */
+			if(!(child = ts_alloc_node()) || !(child->name = strdup(ptr))) {
+				ts_free_node(child);
+				return 0;
+			}
+			ts_add_child(node, child);
+		}
+		node = child;
+	}
+
+	/* reached the end of the chain, see if we have the attribute */
+	if(!(attr = ts_get_attr(node, aname))) {
+		if(!(attr = ts_alloc_attr()) || ts_set_attr_name(attr, aname) == -1) {
+			return 0;
+		}
+		ts_add_attr(node, attr);
+	}
+
+	return &attr->val;
+}
+
+int xlivebg_setcfg_str(const char *cfgpath, const char *str)
+{
+	struct ts_value *aval;
+	if(!(aval = touch_node(cfgpath))) {
+		return -1;
+	}
+	return ts_set_value_str(aval, str);
+}
+
+int xlivebg_setcfg_num(const char *cfgpath, float val)
+{
+	struct ts_value *aval;
+	if(!(aval = touch_node(cfgpath))) {
+		return -1;
+	}
+	return ts_set_valuef(aval, val);
+}
+
+int xlivebg_setcfg_int(const char *cfgpath, int val)
+{
+	struct ts_value *aval;
+	if(!(aval = touch_node(cfgpath))) {
+		return -1;
+	}
+	return ts_set_valuei(aval, val);
+}
+
+int xlivebg_setcfg_vec(const char *cfgpath, float *vec)
+{
+	struct ts_value *aval;
+	if(!(aval = touch_node(cfgpath))) {
+		return -1;
+	}
+	return ts_set_valuef_arr(aval, 4, vec);
+}
+
+
 /* helpers */
 void xlivebg_gl_viewport(int sidx)
 {

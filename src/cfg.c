@@ -19,6 +19,10 @@ void init_cfg(void)
 
 	/* load a config file if there is one */
 	if(!(cfgpath = get_config_path())) {
+		if(!(ts = ts_alloc_node()) || !(ts->name = strdup("xlivebg"))) {
+			fprintf(stderr, "failed to create root config node\n");
+			return;
+		}
 		return;
 	}
 	printf("Using config file: %s\n", cfgpath);

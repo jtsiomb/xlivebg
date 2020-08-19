@@ -171,6 +171,7 @@ static void send_status(int s, int status)
 static int proc_cmd_list(int s, int argc, char **argv);
 static int proc_cmd_switch(int s, int argc, char **argv);
 static int proc_cmd_proplist(int s, int argc, char **argv);
+static int proc_cmd_setprop(int s, int argc, char **argv);
 
 struct {
 	const char *cmd;
@@ -179,6 +180,10 @@ struct {
 	{"list", proc_cmd_list},
 	{"switch", proc_cmd_switch},
 	{"lsprop", proc_cmd_proplist},
+	{"propstr", proc_cmd_setprop},
+	{"propnum", proc_cmd_setprop},
+	{"propint", proc_cmd_setprop},
+	{"propvec", proc_cmd_setprop},
 	{0, 0}
 };
 
@@ -270,6 +275,11 @@ static int proc_cmd_proplist(int s, int argc, char **argv)
 		}
 	}
 
+	if(!p->props) {
+		send_status(s, 0);
+		return 0;
+	}
+
 	send_status(s, 1);
 
 	len = strlen(p->props);
@@ -280,4 +290,77 @@ static int proc_cmd_proplist(int s, int argc, char **argv)
 		write(s, "}\n", 2);
 	}
 	return 0;
+}
+
+static int propcmd_type(const char *argv0)
+{
+	if(strcmp(argv0 + 4, "str") == 0) {
+		return XLIVEBG_PROP_STRING;
+	}
+	if(strcmp(argv0 + 4, "num") == 0) {
+		return XLIVEBG_PROP_NUMBER;
+	}
+	if(strcmp(argv0 + 4, "int") == 0) {
+		return XLIVEBG_PROP_INTEGER;
+	}
+	if(strcmp(argv0 + 4, "vec") == 0) {
+		return XLIVEBG_PROP_VECTOR;
+	}
+	return XLIVEBG_PROP_UNKNOWN;
+}
+
+static int proc_cmd_setprop(int s, int argc, char **argv)
+{
+	int type, count;
+	int ival;
+	float fval;
+	char *endp;
+	float vval[4] = {0, 0, 0, 1};
+
+	if(argc < 3) {
+		send_status(s, 0);
+		fprintf(stderr, "proc_cmd_setprop: not enough arguments\n");
+		return -1;
+	}
+
+	type = propcmd_type(argv[0]);
+	switch(type) {
+	case XLIVEBG_PROP_STRING:
+		if(xlivebg_setcfg_str(argv[1], argv[2]) == -1) {
+			goto setfailed;
+		}
+		break;
+	case XLIVEBG_PROP_NUMBER:
+		fval = strtod(argv[2], &endp);
+		if(endp == argv[2] || xlivebg_setcfg_num(argv[1], fval) == -1) {
+			goto setfailed;
+		}
+		break;
+	case XLIVEBG_PROP_INTEGER:
+		ival = strtol(argv[2], &endp, 10);
+		if(endp == argv[2] || xlivebg_setcfg_int(argv[1], ival) == -1) {
+			goto setfailed;
+		}
+		break;
+	case XLIVEBG_PROP_VECTOR:
+		if(!(count = sscanf(argv[2], "[%f, %f, %f, %f]", vval, vval + 1, vval + 2, vval + 3))) {
+			goto setfailed;
+		}
+		if(xlivebg_setcfg_vec(argv[2], vval) == -1) {
+			goto setfailed;
+		}
+		break;
+	default:
+		send_status(s, 0);
+		fprintf(stderr, "proc_cmd_setprop: invalid type\n");
+		return -1;
+	}
+
+	send_status(s, 1);
+	return 0;
+
+setfailed:
+	send_status(s, 0);
+	fprintf(stderr, "proc_cmd_setprop: failed to set property %s <- %s\n", argv[1], argv[2]);
+	return -1;
 }
