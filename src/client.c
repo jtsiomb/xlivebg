@@ -31,6 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 static int cmd_generic(int argc, char **argv);
 static int cmd_list(int argc, char **argv);
 static int cmd_lsprop(int argc, char **argv);
+static int cmd_setprop(int argc, char **argv);
 
 static int read_line(int fd, char *line, int maxsz);
 
@@ -44,6 +45,7 @@ static struct {
 	{"list", cmd_list},
 	{"switch", cmd_generic},
 	{"lsprop", cmd_lsprop},
+	{"setprop", cmd_setprop},
 	{0, 0}
 };
 
@@ -176,6 +178,47 @@ static int cmd_lsprop(int argc, char **argv)
 		if(level <= 0) break;
 	}
 
+	return 0;
+}
+
+static int cmd_setprop(int argc, char **argv)
+{
+	char buf[512];
+	int len, ival;
+	float fval;
+	char *endp;
+
+	if(argc < 4) {
+		fprintf(stderr, "not enough arguments\n");
+		return -1;
+	}
+
+	if(strcmp(argv[1], "text") == 0) {
+		len = sprintf(buf, "propstr %s %s\n", argv[2], argv[3]);
+	} else if(strcmp(argv[1], "number") == 0) {
+		fval = strtod(argv[3], &endp);
+		if(*endp != 0) {
+			fprintf(stderr, "trying to pass \"%s\" as a number\n", argv[3]);
+			return -1;
+		}
+		len = sprintf(buf, "propnum %s %g\n", argv[2], fval);
+	} else if(strcmp(argv[1], "integer") == 0) {
+		ival = strtol(argv[3], &endp, 10);
+		if(*endp != 0) {
+			fprintf(stderr, "trying to pass \"%s\" as an integer\n", argv[3]);
+			return -1;
+		}
+		len = sprintf(buf, "propint %s %d\n", argv[2], ival);
+	} else /*if(strcmp(argv[1], "vector") == 0) */{
+		/* TODO */
+		return -1;
+	}
+
+	write(sock, buf, len);
+	if(read_line(sock, buf, sizeof buf) == -1 || memcpy(buf, "OK!\n", 4) != 0) {
+		fprintf(stderr, "cmd_setprop: failed to send property\n");
+		return -1;
+	}
 	return 0;
 }
 

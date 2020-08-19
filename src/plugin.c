@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <alloca.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -311,13 +312,74 @@ static struct ts_value *touch_node(const char *cfgpath)
 	return &attr->val;
 }
 
+static char *skip_space(char *s)
+{
+	while(*s && isspace(*s)) s++;
+	return s;
+}
+
+static void notify_plugin(const char *cfgpath)
+{
+	struct xlivebg_plugin *p;
+	char *aname, *ptr, *end;
+	char *buf;
+	int len, aname_len;
+
+	if(!(p = get_active_plugin())) return;
+
+	buf = alloca(strlen(p->name) + 16);
+	sprintf(buf, "xlivebg.%s.", p->name);
+	if(!strstr(cfgpath, buf)) {
+		/* this property has nothing to do with the current plugin */
+		return;
+	}
+
+	/* if the plugin didn't specify a property list or a prop callback, we'll have to restart it */
+	if(!p->props || !p->prop) {
+		printf("notify_plugin: restarting live wallpaper\n");
+		if(p->stop) p->stop(p->data);
+		activate_plugin(p);
+		return;
+	}
+
+	if((aname = strrchr(cfgpath, '.'))) {
+		aname++;
+	} else {
+		aname = (char*)cfgpath;
+	}
+	aname_len = strlen(aname);
+
+	/* check to see if the attribute name matches any attributes declared by the plugin */
+	ptr = p->props;
+	while((ptr = strstr(ptr, "id"))) {
+		ptr = skip_space(ptr + 3);
+		if(*ptr != '=') continue;
+		ptr = skip_space(ptr + 1);
+		if(*ptr != '"') continue;
+		end = ++ptr;
+		while(*end && *end != '\n' && *end != '"') end++;
+		if(*end != '"') continue;
+
+		len = end - ptr;
+		if(len == aname_len && memcmp(aname, ptr, len) == 0) {
+			/* found at least one match, notify the plugin and return */
+			p->prop(aname, p->data);
+			break;
+		}
+	}
+}
+
 int xlivebg_setcfg_str(const char *cfgpath, const char *str)
 {
 	struct ts_value *aval;
 	if(!(aval = touch_node(cfgpath))) {
 		return -1;
 	}
-	return ts_set_value_str(aval, str);
+	if(ts_set_value_str(aval, str) == -1) {
+		return -1;
+	}
+	notify_plugin(cfgpath);
+	return 0;
 }
 
 int xlivebg_setcfg_num(const char *cfgpath, float val)
@@ -326,7 +388,11 @@ int xlivebg_setcfg_num(const char *cfgpath, float val)
 	if(!(aval = touch_node(cfgpath))) {
 		return -1;
 	}
-	return ts_set_valuef(aval, val);
+	if(ts_set_valuef(aval, val) == -1) {
+		return -1;
+	}
+	notify_plugin(cfgpath);
+	return 0;
 }
 
 int xlivebg_setcfg_int(const char *cfgpath, int val)
@@ -335,7 +401,11 @@ int xlivebg_setcfg_int(const char *cfgpath, int val)
 	if(!(aval = touch_node(cfgpath))) {
 		return -1;
 	}
-	return ts_set_valuei(aval, val);
+	if(ts_set_valuei(aval, val) == -1) {
+		return -1;
+	}
+	notify_plugin(cfgpath);
+	return 0;
 }
 
 int xlivebg_setcfg_vec(const char *cfgpath, float *vec)
@@ -344,7 +414,11 @@ int xlivebg_setcfg_vec(const char *cfgpath, float *vec)
 	if(!(aval = touch_node(cfgpath))) {
 		return -1;
 	}
-	return ts_set_valuef_arr(aval, 4, vec);
+	if(ts_set_valuef_arr(aval, 4, vec) == -1) {
+		return -1;
+	}
+	notify_plugin(cfgpath);
+	return 0;
 }
 
 
