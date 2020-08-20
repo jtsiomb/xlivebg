@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "xlivebg.h"
 
+/* XXX: all the scr arguments are ignored at the moment */
+
 void init_imgman(void);
 
 int create_image(struct xlivebg_image *img, int width, int height, uint32_t *pix);
@@ -31,7 +33,12 @@ int add_image(struct xlivebg_image *img);
 struct xlivebg_image *get_image(int idx);
 int get_image_count(void);
 
+int find_image(const char *name);
+
 struct xlivebg_image *get_bg_image(int scr);
 struct xlivebg_image *get_anim_mask(int scr);
+
+void set_bg_image(int scr, struct xlivebg_image *img);
+void set_anim_mask(int scr, struct xlivebg_image *img);
 
 #endif	/* IMAGEMAN_H_ */

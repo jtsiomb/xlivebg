@@ -33,6 +33,19 @@ struct cfg {
 	struct ts_node *ts;
 } cfg;
 
+#define CFGNAME_ACTIVE		"xlivebg.active"
+#define CFGNAME_IMAGE		"xlivebg.image"
+#define CFGNAME_ANIM_MASK	"xlivebg.anim_mask"
+#define CFGNAME_COLOR		"xlivebg.color"
+#define CFGNAME_COLOR_TOP	"xlivebg.color_top"
+#define CFGNAME_COLOR_BOT	"xlivebg.color_bot"
+#define CFGNAME_FPS			"xlivebg.fps"
+#define CFGNAME_FIT			"xlivebg.fit"
+#define CFGNAME_CROP_ZOOM	"xlivebg.crop_zoom"
+#define CFGNAME_CROP_DIR	"xlivebg.crop_dir"
+
 void init_cfg(void);
+
+int cfg_parse_fit(const char *str);
 
 #endif	/* CFG_H_ */

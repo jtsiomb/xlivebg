@@ -36,42 +36,52 @@ void init_cfg(void)
 		return;
 	}
 
-	cfg.act_plugin = (char*)ts_lookup_str(ts, "xlivebg.active", 0);
+	if((str = ts_lookup_str(ts, CFGNAME_ACTIVE, 0))) {
+		cfg.act_plugin = strdup(str);
+	}
 
-	if((str = ts_lookup_str(ts, "xlivebg.image", 0))) {
+	if((str = ts_lookup_str(ts, CFGNAME_IMAGE, 0))) {
 		cfg.image = strdup(str);
 	}
-	if((str = ts_lookup_str(ts, "xlivebg.anim_mask", 0))) {
+	if((str = ts_lookup_str(ts, CFGNAME_ANIM_MASK, 0))) {
 		cfg.anm_mask = strdup(str);
 	}
-	if((vec = ts_lookup_vec(ts, "xlivebg.color", 0))) {
+	if((vec = ts_lookup_vec(ts, CFGNAME_COLOR, 0))) {
 		memcpy(color, vec, sizeof color);
 	} else {
 		memcpy(color, zero_vec, sizeof color);
 	}
-	vec = ts_lookup_vec(ts, "xlivebg.color_top", color);
+	vec = ts_lookup_vec(ts, CFGNAME_COLOR_TOP, color);
 	memcpy(cfg.color, vec, sizeof *cfg.color);
-	vec = ts_lookup_vec(ts, "xlivebg.color_bottom", color);
+	vec = ts_lookup_vec(ts, CFGNAME_COLOR_BOT, color);
 	memcpy(cfg.color + 1, vec, sizeof *cfg.color);
 
-	cfg.fps_override = ts_lookup_int(ts, "xlivebg.fps", -1);
+	cfg.fps_override = ts_lookup_int(ts, CFGNAME_FPS, -1);
 
-	if((str = ts_lookup_str(ts, "xlivebg.fit", 0))) {
-		if(strcasecmp(str, "full") == 0) {
-			cfg.fit = XLIVEBG_FIT_FULL;
-		} else if(strcasecmp(str, "crop") == 0) {
-			cfg.fit = XLIVEBG_FIT_CROP;
-		} else if(strcasecmp(str, "stretch") == 0) {
-			cfg.fit = XLIVEBG_FIT_STRETCH;
-		} else {
-			fprintf(stderr, "invalid value to option \"xlivebg.fit\": %s\n", str);
-		}
+	if((str = ts_lookup_str(ts, CFGNAME_FIT, 0))) {
+		cfg.fit = cfg_parse_fit(str);
 	}
 
-	cfg.zoom = ts_lookup_num(ts, "xlivebg.crop_zoom", 1.0f);
-	vec = ts_lookup_vec(ts, "xlivebg.crop_dir", zero_vec);
+	cfg.zoom = ts_lookup_num(ts, CFGNAME_CROP_ZOOM, 1.0f);
+	vec = ts_lookup_vec(ts, CFGNAME_CROP_DIR, zero_vec);
 	cfg.crop_dir[0] = vec[0];
 	cfg.crop_dir[1] = vec[1];
 
 	cfg.ts = ts;
+}
+
+int cfg_parse_fit(const char *str)
+{
+	if(strcasecmp(str, "full") == 0) {
+		return XLIVEBG_FIT_FULL;
+	}
+	if(strcasecmp(str, "crop") == 0) {
+		return XLIVEBG_FIT_CROP;
+	}
+	if(strcasecmp(str, "stretch") == 0) {
+		return XLIVEBG_FIT_STRETCH;
+	}
+
+	fprintf(stderr, "invalid value to option \"" CFGNAME_FIT "\": %s\n", str);
+	return XLIVEBG_FIT_FULL;
 }

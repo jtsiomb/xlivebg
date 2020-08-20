@@ -139,6 +139,17 @@ int get_image_count(void)
 	return num_images;
 }
 
+int find_image(const char *name)
+{
+	int i;
+	for(i=0; i<num_images; i++) {
+		if(images[i]->path && strcmp(name, images[i]->path) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 struct xlivebg_image *get_bg_image(int scr)
 {
 	struct xlivebg_image *img = bg ? bg : images[0];
@@ -150,6 +161,17 @@ struct xlivebg_image *get_anim_mask(int scr)
 {
 	update_texture(bgmask);
 	return bgmask;
+}
+
+
+void set_bg_image(int scr, struct xlivebg_image *img)
+{
+	bg = img;
+}
+
+void set_anim_mask(int scr, struct xlivebg_image *img)
+{
+	bgmask = img;
 }
 
 static int gen_test_image(struct xlivebg_image *img, int width, int height)

@@ -33,6 +33,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "treestore.h"
 
 static int load_plugins(const char *dirpath);
+static void update_cfg(const char *cfgpath, struct ts_value *tsval);
 
 static struct xlivebg_plugin *act;
 static struct xlivebg_plugin **plugins;
@@ -159,6 +160,9 @@ void activate_plugin(struct xlivebg_plugin *plugin)
 	}
 
 	upd_interval_usec = act->upd_interval;
+
+	free(cfg.act_plugin);
+	cfg.act_plugin = strdup(plugin->name);
 }
 
 struct xlivebg_plugin *get_active_plugin(void)
@@ -333,63 +337,6 @@ static struct ts_value *touch_node(const char *cfgpath)
 	return &attr->val;
 }
 
-static char *skip_space(char *s)
-{
-	while(*s && isspace(*s)) s++;
-	return s;
-}
-
-static void notify_plugin(const char *cfgpath)
-{
-	struct xlivebg_plugin *p;
-	char *aname, *ptr, *end;
-	char *buf;
-	int len, aname_len;
-
-	if(!(p = get_active_plugin())) return;
-
-	buf = alloca(strlen(p->name) + 16);
-	sprintf(buf, "xlivebg.%s.", p->name);
-	if(!strstr(cfgpath, buf)) {
-		/* this property has nothing to do with the current plugin */
-		return;
-	}
-
-	/* if the plugin didn't specify a property list or a prop callback, we'll have to restart it */
-	if(!p->props || !p->prop) {
-		printf("notify_plugin: restarting live wallpaper\n");
-		if(p->stop) p->stop(p->data);
-		activate_plugin(p);
-		return;
-	}
-
-	if((aname = strrchr(cfgpath, '.'))) {
-		aname++;
-	} else {
-		aname = (char*)cfgpath;
-	}
-	aname_len = strlen(aname);
-
-	/* check to see if the attribute name matches any attributes declared by the plugin */
-	ptr = p->props;
-	while((ptr = strstr(ptr, "id"))) {
-		ptr = skip_space(ptr + 3);
-		if(*ptr != '=') continue;
-		ptr = skip_space(ptr + 1);
-		if(*ptr != '"') continue;
-		end = ++ptr;
-		while(*end && *end != '\n' && *end != '"') end++;
-		if(*end != '"') continue;
-
-		len = end - ptr;
-		if(len == aname_len && memcmp(aname, ptr, len) == 0) {
-			/* found at least one match, notify the plugin and return */
-			p->prop(aname, p->data);
-			break;
-		}
-	}
-}
-
 int xlivebg_setcfg_str(const char *cfgpath, const char *str)
 {
 	struct ts_value *aval;
@@ -399,7 +346,7 @@ int xlivebg_setcfg_str(const char *cfgpath, const char *str)
 	if(ts_set_value_str(aval, str) == -1) {
 		return -1;
 	}
-	notify_plugin(cfgpath);
+	update_cfg(cfgpath, aval);
 	return 0;
 }
 
@@ -412,7 +359,7 @@ int xlivebg_setcfg_num(const char *cfgpath, float val)
 	if(ts_set_valuef(aval, val) == -1) {
 		return -1;
 	}
-	notify_plugin(cfgpath);
+	update_cfg(cfgpath, aval);
 	return 0;
 }
 
@@ -425,7 +372,7 @@ int xlivebg_setcfg_int(const char *cfgpath, int val)
 	if(ts_set_valuei(aval, val) == -1) {
 		return -1;
 	}
-	notify_plugin(cfgpath);
+	update_cfg(cfgpath, aval);
 	return 0;
 }
 
@@ -438,7 +385,7 @@ int xlivebg_setcfg_vec(const char *cfgpath, float *vec)
 	if(ts_set_valuef_arr(aval, 4, vec) == -1) {
 		return -1;
 	}
-	notify_plugin(cfgpath);
+	update_cfg(cfgpath, aval);
 	return 0;
 }
 
@@ -512,4 +459,125 @@ void xlivebg_gl_image_proj(int scr, float img_aspect)
 void xlivebg_mouse_pos(int *mx, int *my)
 {
 	app_getmouse(mx, my);
+}
+
+static char *skip_space(char *s)
+{
+	while(*s && isspace(*s)) s++;
+	return s;
+}
+
+/* returns 1 if it handled the update, 0 otherwise */
+static int update_builtin_cfg(const char *cfgpath, struct ts_value *tsval)
+{
+	if(strcmp(cfgpath, CFGNAME_ACTIVE) == 0) {
+		struct xlivebg_plugin *p = find_plugin(tsval->str);
+		if(p) activate_plugin(p);
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_IMAGE) == 0 || strcmp(cfgpath, CFGNAME_ANIM_MASK) == 0) {
+		struct xlivebg_image *img;
+		int idx = find_image(tsval->str);
+		if(idx >= 0) {
+			img = get_image(idx);
+		} else {
+			if(!(img = malloc(sizeof *img)) || load_image(img, tsval->str) == -1) {
+				fprintf(stderr, "update_builtin_cfg(%s<-%s): failed to load image\n", cfgpath, tsval->str);
+				free(img);
+				return 1;
+			}
+			add_image(img);
+		}
+		if(strcmp(cfgpath, CFGNAME_IMAGE) == 0) {
+			set_bg_image(0, img);
+		} else {
+			set_anim_mask(0, img);
+		}
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_COLOR) == 0 || strcmp(cfgpath, CFGNAME_COLOR_TOP) == 0) {
+		memcpy(cfg.color, tsval->vec, sizeof *cfg.color);
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_COLOR_BOT) == 0) {
+		memcpy(cfg.color + 1, tsval->vec, sizeof *cfg.color);
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_FPS) == 0) {
+		cfg.fps_override = tsval->inum;
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_FIT) == 0) {
+		cfg.fit = cfg_parse_fit(tsval->str);
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_CROP_ZOOM) == 0) {
+		cfg.zoom = tsval->fnum;
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_CROP_DIR) == 0) {
+		cfg.crop_dir[0] = tsval->vec[0];
+		cfg.crop_dir[1] = tsval->vec[1];
+		return 1;
+	}
+
+	return 0;
+}
+
+static void update_cfg(const char *cfgpath, struct ts_value *tsval)
+{
+	struct xlivebg_plugin *p;
+	char *aname, *ptr, *end;
+	char *buf;
+	int len, aname_len;
+
+	/* first give update_builtin_cfg a chance to handle it */
+	if(update_builtin_cfg(cfgpath, tsval)) {
+		return;
+	}
+
+	if(!(p = get_active_plugin())) {
+		return;
+	}
+
+	buf = alloca(strlen(p->name) + 16);
+	sprintf(buf, "xlivebg.%s.", p->name);
+	if(!strstr(cfgpath, buf)) {
+		/* this property has nothing to do with the current plugin */
+		return;
+	}
+
+	/* if the plugin didn't specify a property list or a prop callback, we'll have to restart it */
+	if(!p->props || !p->prop) {
+		printf("update_cfg: restarting live wallpaper\n");
+		if(p->stop) p->stop(p->data);
+		activate_plugin(p);
+		return;
+	}
+
+	if((aname = strrchr(cfgpath, '.'))) {
+		aname++;
+	} else {
+		aname = (char*)cfgpath;
+	}
+	aname_len = strlen(aname);
+
+	/* check to see if the attribute name matches any attributes declared by the plugin */
+	ptr = p->props;
+	while((ptr = strstr(ptr, "id"))) {
+		ptr = skip_space(ptr + 3);
+		if(*ptr != '=') continue;
+		ptr = skip_space(ptr + 1);
+		if(*ptr != '"') continue;
+		end = ++ptr;
+		while(*end && *end != '\n' && *end != '"') end++;
+		if(*end != '"') continue;
+
+		len = end - ptr;
+		if(len == aname_len && memcmp(aname, ptr, len) == 0) {
+			/* found at least one match, notify the plugin and return */
+			p->prop(aname, p->data);
+			break;
+		}
+	}
 }

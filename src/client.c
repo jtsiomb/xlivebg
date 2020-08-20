@@ -220,7 +220,7 @@ static int cmd_setprop(int argc, char **argv)
 	}
 
 	write(sock, buf, len);
-	if(read_line(sock, buf, sizeof buf) == -1 || memcpy(buf, "OK!\n", 4) != 0) {
+	if(read_line(sock, buf, sizeof buf) == -1 || memcmp(buf, "OK!\n", 4) != 0) {
 		fprintf(stderr, "cmd_setprop: failed to send property\n");
 		return -1;
 	}
