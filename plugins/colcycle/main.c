@@ -6,7 +6,7 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <X11/Xlib.h>
-#include <xlivebg.h>
+#include "xlivebg.h"
 #include "app.h"
 
 static int init(void *cls);

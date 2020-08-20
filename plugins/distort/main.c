@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <GL/gl.h>
-#include <xlivebg.h>
+#include "xlivebg.h"
 
 static int init(void *cls);
 static void draw(long tmsec, void *cls);

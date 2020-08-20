@@ -46,8 +46,23 @@ static int num_plugins, max_plugins;
  */
 void init_plugins(void)
 {
+	DIR *dir;
 	char *home = get_home_dir();
 	char *dirpath;
+
+#ifndef NDEBUG
+	/* special-case: during development, it helps if I can just load plugins from
+	 * the current directory without installing them anywhere. So check to see if
+	 * there's a plugins directory in cwd, and if so, collect all shared libs in
+	 * subdirectories of that. And do it the quick&dirty way...
+	 */
+	if((dir = opendir("plugins"))) {
+		closedir(dir);
+		if(system("mkdir -p bin; find plugins -name '*.so' -exec cp '{}' bin ';'") == 0) {
+			load_plugins("bin");
+		}
+	}
+#endif
 
 	load_plugins(PREFIX "/lib/xlivebg");
 
@@ -174,6 +189,12 @@ int remove_plugin(int idx)
 
 int xlivebg_register_plugin(struct xlivebg_plugin *plugin)
 {
+	if(find_plugin(plugin->name)) {
+		fprintf(stderr, "xlivebg: failed to register \"%s\": a plugin by that name already exists\n",
+				plugin->name);
+		return -1;
+	}
+
 	if(num_plugins >= max_plugins) {
 		int nmax = max_plugins ? max_plugins * 2 : 16;
 		struct xlivebg_plugin **tmp = realloc(plugins, nmax * sizeof *plugins);

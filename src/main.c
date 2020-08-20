@@ -134,6 +134,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, sighandler);
 	signal(SIGILL, sighandler);
 	signal(SIGSEGV, sighandler);
+	signal(SIGTERM, sighandler);
 	signal(SIGPIPE, SIG_IGN);
 
 	init_cfg();

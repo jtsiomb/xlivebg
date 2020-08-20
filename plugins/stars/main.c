@@ -3,7 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <GL/gl.h>
-#include <xlivebg.h>
+#include "xlivebg.h"
 
 #define STAR_COUNT	2048
 #define STAR_DEPTH	100
@@ -26,6 +26,7 @@ static float star_lenxy[STAR_COUNT];
 static struct xlivebg_plugin plugin = {
 	"stars",
 	"Starfield effect",
+	0,
 	XLIVEBG_30FPS,
 	init, 0,
 	0, 0,

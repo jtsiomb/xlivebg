@@ -5,7 +5,7 @@
 #include <math.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
-#include <xlivebg.h>
+#include "xlivebg.h"
 
 static int init(void *cls);
 static void cleanup(void *cls);
@@ -19,6 +19,7 @@ static unsigned int create_sdrprog(const char *vsrc, const char *psrc);
 static struct xlivebg_plugin plugin = {
 	"ripple",
 	"Ripple",
+	0,
 	XLIVEBG_20FPS,
 	init, cleanup,
 	start, stop,
