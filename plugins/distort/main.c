@@ -3,7 +3,7 @@
 #include <GL/gl.h>
 #include "xlivebg.h"
 
-static int init(void *cls);
+static void start(void *cls);
 static void draw(long tmsec, void *cls);
 static void prop(const char *prop, void *cls);
 
@@ -28,8 +28,8 @@ static struct xlivebg_plugin plugin = {
 	"Image distortion effect on the background image",
 	PROPLIST,
 	XLIVEBG_25FPS,
-	init, 0,
 	0, 0,
+	start, 0,
 	draw,
 	prop,
 	0, 0
@@ -42,11 +42,10 @@ void register_plugin(void)
 	xlivebg_register_plugin(&plugin);
 }
 
-static int init(void *cls)
+static void start(void *cls)
 {
 	prop("amplitude", 0);
 	prop("frequency", 0);
-	return 0;
 }
 
 static void prop(const char *prop, void *cls)

@@ -187,28 +187,33 @@ static int cmd_setprop(int argc, char **argv)
 	int len, ival;
 	float fval;
 	char *endp;
+	char *arg_type, *arg_name, *arg_value;
 
-	if(argc < 4) {
+	if(argc < 5) {
 		fprintf(stderr, "not enough arguments\n");
 		return -1;
 	}
 
-	if(strcmp(argv[1], "text") == 0) {
-		len = sprintf(buf, "propstr %s %s\n", argv[2], argv[3]);
-	} else if(strcmp(argv[1], "number") == 0) {
-		fval = strtod(argv[3], &endp);
+	arg_type = argv[2];
+	arg_name = argv[3];
+	arg_value = argv[4];
+
+	if(strcmp(arg_type, "text") == 0) {
+		len = sprintf(buf, "propstr %s %s\n", arg_name, arg_value);
+	} else if(strcmp(arg_type, "number") == 0) {
+		fval = strtod(arg_value, &endp);
 		if(*endp != 0) {
-			fprintf(stderr, "trying to pass \"%s\" as a number\n", argv[3]);
+			fprintf(stderr, "trying to pass \"%s\" as a number\n", arg_value);
 			return -1;
 		}
-		len = sprintf(buf, "propnum %s %g\n", argv[2], fval);
-	} else if(strcmp(argv[1], "integer") == 0) {
-		ival = strtol(argv[3], &endp, 10);
+		len = sprintf(buf, "propnum %s %g\n", arg_name, fval);
+	} else if(strcmp(arg_type, "integer") == 0) {
+		ival = strtol(arg_value, &endp, 10);
 		if(*endp != 0) {
-			fprintf(stderr, "trying to pass \"%s\" as an integer\n", argv[3]);
+			fprintf(stderr, "trying to pass \"%s\" as an integer\n", arg_value);
 			return -1;
 		}
-		len = sprintf(buf, "propint %s %d\n", argv[2], ival);
+		len = sprintf(buf, "propint %s %d\n", arg_name, ival);
 	} else /*if(strcmp(argv[1], "vector") == 0) */{
 		/* TODO */
 		return -1;
