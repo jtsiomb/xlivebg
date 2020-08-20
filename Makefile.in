@@ -14,7 +14,7 @@ LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_xrandr) -lX11 -lXext -lGL -ldl \
 	-limago -ltreestore
 
 .PHONY: all
-all: $(bin) plugins bgimage.jpg
+all: $(bin) plugins gui bgimage.jpg
 
 # download test image
 bgimage.jpg:
@@ -28,7 +28,7 @@ clean:
 	rm -f $(obj) $(bin)
 
 .PHONY: clean-all
-clean-all: clean clean-plugins
+clean-all: clean clean-plugins clean-gui
 
 .PHONY: install
 install: $(bin)
@@ -39,7 +39,7 @@ install: $(bin)
 #	cp data/* $(DESTDIR)$(PREFIX)/share/$(name)/
 
 .PHONY: install-all
-install-all: install install-plugins
+install-all: install install-plugins install-gui
 
 .PHONY: uninstall
 uninstall:
@@ -49,7 +49,7 @@ uninstall:
 #	rmdir $(DESTDIR)$(PREFIX)/share/$(name) || true
 
 .PHONY: uninstall-all
-uninstall-all: uninstall uninstall-plugins
+uninstall-all: uninstall uninstall-plugins uninstall-gui
 
 # ---- plugins rules ----
 .PHONY: plugins
@@ -77,3 +77,21 @@ libs:
 .PHONY: clean-libs
 clean-libs:
 	$(MAKE) -C libs
+
+
+# ---- GUI rules ----
+.PHONY: gui
+gui:
+	$(MAKE) -C gui
+
+.PHONY: clean-gui
+clean-gui:
+	$(MAKE) -C gui clean
+
+.PHONY: install-gui
+install-gui:
+	$(MAKE) -C gui install
+
+.PHONY: uninstall-gui
+uninstall-gui:
+	$(MAKE) -C gui uninstall
