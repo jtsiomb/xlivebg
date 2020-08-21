@@ -3,7 +3,9 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Box.H>
+#include <FL/fl_ask.H>
 #include "layout.h"
+#include "client.h"
 
 bool init_gui();
 
@@ -11,6 +13,11 @@ Fl_Window *win;
 
 int main(int argc, char **argv)
 {
+	if(ping_xlivebg() == -1) {
+		fl_message_title("Ping failed");
+		fl_alert("No response from xlivebg. Make sure it's running!");
+		return 1;
+	}
 	if(!init_gui()) {
 		return 1;
 	}
@@ -23,7 +30,6 @@ bool init_gui()
 	int win_width = 512, win_height = 512;
 
 	win = new Fl_Window(win_width, win_height, "Configure xlivebg");
-	win->border(1);
 
 	UILayout vbox = UILayout(win, UILAYOUT_VERTICAL);
 

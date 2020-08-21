@@ -172,6 +172,7 @@ static int proc_cmd_list(int s, int argc, char **argv);
 static int proc_cmd_switch(int s, int argc, char **argv);
 static int proc_cmd_proplist(int s, int argc, char **argv);
 static int proc_cmd_setprop(int s, int argc, char **argv);
+static int proc_cmd_ping(int s, int argc, char **argv);
 
 struct {
 	const char *cmd;
@@ -184,6 +185,7 @@ struct {
 	{"propnum", proc_cmd_setprop},
 	{"propint", proc_cmd_setprop},
 	{"propvec", proc_cmd_setprop},
+	{"ping", proc_cmd_ping},
 	{0, 0}
 };
 
@@ -363,4 +365,10 @@ setfailed:
 	send_status(s, 0);
 	fprintf(stderr, "proc_cmd_setprop: failed to set property %s <- %s\n", argv[1], argv[2]);
 	return -1;
+}
+
+static int proc_cmd_ping(int s, int argc, char **argv)
+{
+	send_status(s, 1);
+	return 0;
 }

@@ -1,10 +1,12 @@
 PREFIX ?= /usr/local
 
+csrc = $(wildcard src/*.c)
 ccsrc = $(wildcard src/*.cc)
-obj = $(ccsrc:.cc=.o)
-dep = $(ccsrc:.cc=.d)
+obj = $(csrc:.c=.o) $(ccsrc:.cc=.o)
+dep = $(csrc:.c=.d) $(ccsrc:.cc=.d)
 bin = xlivebg-gui
 
+CFLAGS = -pedantic -Wall -g -MMD
 CXXFLAGS = -pedantic -Wall -g -MMD
 LDFLAGS = -lfltk
 

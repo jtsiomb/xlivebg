@@ -1,6 +1,6 @@
 /*
 xlivebg - live wallpapers for the X window system
-Copyright (C) 2019  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
