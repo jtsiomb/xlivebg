@@ -32,6 +32,7 @@ static int cmd_generic(int argc, char **argv);
 static int cmd_list(int argc, char **argv);
 static int cmd_lsprop(int argc, char **argv);
 static int cmd_setprop(int argc, char **argv);
+static int cmd_getprop(int argc, char **argv);
 
 static int read_line(int fd, char *line, int maxsz);
 
@@ -46,6 +47,7 @@ static struct {
 	{"switch", cmd_generic},
 	{"lsprop", cmd_lsprop},
 	{"setprop", cmd_setprop},
+	{"getprop", cmd_getprop},
 	{0, 0}
 };
 
@@ -214,8 +216,9 @@ static int cmd_setprop(int argc, char **argv)
 			return -1;
 		}
 		len = sprintf(buf, "propint %s %d\n", arg_name, ival);
-	} else /*if(strcmp(argv[1], "vector") == 0) */{
+	} else /*if(strcmp(arg_type, "vector") == 0) */{
 		/* TODO */
+		fprintf(stderr, "unrecognized property type: %s\n", arg_type);
 		return -1;
 	}
 
@@ -225,6 +228,51 @@ static int cmd_setprop(int argc, char **argv)
 		return -1;
 	}
 	return 0;
+}
+
+static int cmd_getprop(int argc, char **argv)
+{
+	int len;
+	char buf[512];
+	char *arg_type, *arg_name, *cmd;
+
+	if(argc < 4) {
+		fprintf(stderr, "not enough arguments\n");
+		return -1;
+	}
+
+	arg_type = argv[2];
+	arg_name = argv[3];
+
+	if(strcmp(arg_type, "text") == 0) {
+		cmd = "getpropstr";
+	} else if(strcmp(arg_type, "number") == 0) {
+		cmd = "getpropnum";
+	} else if(strcmp(arg_type, "integer") == 0) {
+		cmd = "getpropint";
+	} else if(strcmp(arg_type, "vector") == 0) {
+		cmd = "getpropvec";
+	} else {
+		fprintf(stderr, "unrecognized property type: %s\n", arg_type);
+		return -1;
+	}
+
+	len = sprintf(buf, "%s %s\n", cmd, arg_name);
+	write(sock, buf, len);
+
+	if(read_line(sock, buf, sizeof buf) == -1 || memcmp(buf, "OK!\n", 4) != 0) {
+		goto err;
+	}
+	if(read_line(sock, buf, sizeof buf) == -1) {
+		goto err;
+	}
+
+	fputs(buf, stdout);
+	return 0;
+
+err:
+	fprintf(stderr, "cmd_getprop: failed to retrieve property: %s (%s)\n", arg_name, arg_type);
+	return -1;
 }
 
 static char inbuf[1024];

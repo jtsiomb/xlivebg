@@ -156,7 +156,6 @@ void ctrl_process(int s)
 	}
 
 	if(len == 0) {
-		printf("ctrl_process: client disconnected (%d)\n", s);
 		close(s);
 		c->s = -1;
 		num_sock--;
@@ -172,6 +171,7 @@ static int proc_cmd_list(int s, int argc, char **argv);
 static int proc_cmd_switch(int s, int argc, char **argv);
 static int proc_cmd_proplist(int s, int argc, char **argv);
 static int proc_cmd_setprop(int s, int argc, char **argv);
+static int proc_cmd_getprop(int s, int argc, char **argv);
 static int proc_cmd_ping(int s, int argc, char **argv);
 
 struct {
@@ -185,6 +185,10 @@ struct {
 	{"propnum", proc_cmd_setprop},
 	{"propint", proc_cmd_setprop},
 	{"propvec", proc_cmd_setprop},
+	{"getpropstr", proc_cmd_getprop},
+	{"getpropnum", proc_cmd_getprop},
+	{"getpropint", proc_cmd_getprop},
+	{"getpropvec", proc_cmd_getprop},
 	{"ping", proc_cmd_ping},
 	{0, 0}
 };
@@ -365,6 +369,66 @@ setfailed:
 	send_status(s, 0);
 	fprintf(stderr, "proc_cmd_setprop: failed to set property %s <- %s\n", argv[1], argv[2]);
 	return -1;
+}
+
+static int proc_cmd_getprop(int s, int argc, char **argv)
+{
+	int type, ival, len;
+	float fval, *vval;
+	char buf[256];
+	const char *str;
+
+	if(argc < 2) {
+		send_status(s, 0);
+		fprintf(stderr, "proc_cmd_getprop: not enough arguments\n");
+		return -1;
+	}
+
+	type = propcmd_type(argv[0] + 3);
+	switch(type) {
+	case XLIVEBG_PROP_STRING:
+		if(!(str = xlivebg_getcfg_str(argv[1], 0))) {
+			send_status(s, 0);
+			fprintf(stderr, "proc_cmd_getprop: failed to get property %s (string)\n", argv[1]);
+			return -1;
+		}
+		send_status(s, 1);
+		write(s, str, strlen(str));
+		write(s, "\n", 1);
+		break;
+
+	case XLIVEBG_PROP_NUMBER:
+		fval = xlivebg_getcfg_num(argv[1], 0.0f);
+		send_status(s, 1);
+		len = sprintf(buf, "%g\n", fval);
+		write(s, buf, len);
+		break;
+
+	case XLIVEBG_PROP_INTEGER:
+		ival = xlivebg_getcfg_int(argv[1], 0);
+		send_status(s, 1);
+		len = sprintf(buf, "%d\n", ival);
+		write(s, buf, len);
+		break;
+
+	case XLIVEBG_PROP_VECTOR:
+		if(!(vval = xlivebg_getcfg_vec(argv[1], 0))) {
+			send_status(s, 0);
+			fprintf(stderr, "proc_cmd_getprop: failed to get property %s (vector)\n", argv[1]);
+			return -1;
+		}
+		send_status(s, 1);
+		len = sprintf(buf, "[%g %g %g %g]\n", vval[0], vval[1], vval[2], vval[3]);
+		write(s, buf, len);
+		break;
+
+	default:
+		send_status(s, 0);
+		fprintf(stderr, "proc_cmd_setprop: invalid type\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 static int proc_cmd_ping(int s, int argc, char **argv)
