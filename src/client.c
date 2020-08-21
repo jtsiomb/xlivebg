@@ -232,7 +232,7 @@ static int cmd_setprop(int argc, char **argv)
 
 static int cmd_getprop(int argc, char **argv)
 {
-	int len;
+	int i, len, count;
 	char buf[512];
 	char *arg_type, *arg_name, *cmd;
 
@@ -266,8 +266,16 @@ static int cmd_getprop(int argc, char **argv)
 	if(read_line(sock, buf, sizeof buf) == -1) {
 		goto err;
 	}
+	if((count = atoi(buf)) <= 0) {
+		return 0;
+	}
 
-	fputs(buf, stdout);
+	for(i=0; i<count; i++) {
+		if(read_line(sock, buf, sizeof buf) == -1) {
+			goto err;
+		}
+		fputs(buf, stdout);
+	}
 	return 0;
 
 err:

@@ -5,7 +5,7 @@
 #include <FL/Fl_Box.H>
 #include <FL/fl_ask.H>
 #include "layout.h"
-#include "client.h"
+#include "cmd.h"
 
 bool init_gui();
 
@@ -13,7 +13,7 @@ Fl_Window *win;
 
 int main(int argc, char **argv)
 {
-	if(ping_xlivebg() == -1) {
+	if(cmd_ping() == -1) {
 		fl_message_title("Ping failed");
 		fl_alert("No response from xlivebg. Make sure it's running!");
 		return 1;

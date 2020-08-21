@@ -373,10 +373,10 @@ setfailed:
 
 static int proc_cmd_getprop(int s, int argc, char **argv)
 {
-	int type, ival, len;
+	int type, ival, len, count;
 	float fval, *vval;
 	char buf[256];
-	const char *str;
+	const char *str, *ptr;
 
 	if(argc < 2) {
 		send_status(s, 0);
@@ -393,6 +393,14 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 			return -1;
 		}
 		send_status(s, 1);
+		count = 0;
+		if(*str) {
+			ptr = str;
+			while(*ptr) if(*ptr++ == '\n') count++;
+			if(ptr[-1] != '\n') count++;
+		}
+		len = sprintf(buf, "%d\n", count);
+		write(s, buf, len);
 		write(s, str, strlen(str));
 		write(s, "\n", 1);
 		break;
@@ -400,14 +408,14 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 	case XLIVEBG_PROP_NUMBER:
 		fval = xlivebg_getcfg_num(argv[1], 0.0f);
 		send_status(s, 1);
-		len = sprintf(buf, "%g\n", fval);
+		len = sprintf(buf, "1\n%g\n", fval);
 		write(s, buf, len);
 		break;
 
 	case XLIVEBG_PROP_INTEGER:
 		ival = xlivebg_getcfg_int(argv[1], 0);
 		send_status(s, 1);
-		len = sprintf(buf, "%d\n", ival);
+		len = sprintf(buf, "1\n%d\n", ival);
 		write(s, buf, len);
 		break;
 
@@ -418,7 +426,7 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 			return -1;
 		}
 		send_status(s, 1);
-		len = sprintf(buf, "[%g %g %g %g]\n", vval[0], vval[1], vval[2], vval[3]);
+		len = sprintf(buf, "1\n[%g %g %g %g]\n", vval[0], vval[1], vval[2], vval[3]);
 		write(s, buf, len);
 		break;
 
