@@ -6,6 +6,7 @@
 #include <FL/fl_ask.H>
 #include "layout.h"
 #include "cmd.h"
+#include "bg.h"
 
 bool init_gui();
 
@@ -32,6 +33,11 @@ bool init_gui()
 	win = new Fl_Window(win_width, win_height, "Configure xlivebg");
 
 	UILayout vbox = UILayout(win, UILAYOUT_VERTICAL);
+
+	if(bg_create_list() == -1) {
+		return false;
+	}
+	bg_destroy_list();
 
 	for(int i=0; i<5; i++) {
 		char name[16];

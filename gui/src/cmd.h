@@ -7,6 +7,8 @@ extern "C" {
 
 int cmd_ping(void);
 
+int cmd_list(char *buf, int maxsz);
+
 int cmd_getprop_str(const char *name, char *buf, int maxsz);
 int cmd_getprop_int(const char *name, int *ret);
 int cmd_getprop_num(const char *name, float *ret);

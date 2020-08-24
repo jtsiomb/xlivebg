@@ -11,6 +11,11 @@
 
 static int read_line(int fd, char *line, int maxsz);
 static int read_status(int fd);
+static int num_resp_lines(int s);
+static int read_multi_lines(int s, char *buf, int maxsz);
+
+static char cmdbuf[512];
+
 
 static int open_conn(void)
 {
@@ -52,22 +57,27 @@ int cmd_ping(void)
 	return 0;
 }
 
-static char cmdbuf[512];
-
-static int num_resp_lines(int s)
+int cmd_list(char *buf, int maxsz)
 {
-	int count;
-	if(read_line(s, cmdbuf, sizeof cmdbuf) == -1) {
-		return 0;
+	int s, res;
+
+	if((s = open_conn()) == -1) {
+		return -1;
 	}
-	count = atoi(cmdbuf);
-	return count < 0 ? 0 : count;
+	write(s, "list\n", 5);
+
+	if(read_status(s) <= 0) {
+		close(s);
+		return -1;
+	}
+	res = read_multi_lines(s, buf, maxsz);
+	close(s);
+	return res;
 }
 
 int cmd_getprop_str(const char *name, char *buf, int maxsz)
 {
-	int s, i, len, count;
-	char *dptr, *sptr;
+	int s, len, res;
 
 	if((s = open_conn()) == -1) {
 		return -1;
@@ -79,23 +89,10 @@ int cmd_getprop_str(const char *name, char *buf, int maxsz)
 		close(s);
 		return -1;
 	}
-	count = num_resp_lines(s);
 
-	dptr = buf;
-	for(i=0; i<count; i++) {
-		if(read_line(s, cmdbuf, sizeof cmdbuf) == -1) {
-			close(s);
-			return -1;
-		}
-		sptr = cmdbuf;
-		while(*sptr && maxsz-- > 0) {
-			*dptr++ = *sptr++;
-		}
-	}
-	*dptr = 0;
-
+	res = read_multi_lines(s, buf, maxsz);
 	close(s);
-	return 0;
+	return res;
 }
 
 int cmd_getprop_int(const char *name, int *ret)
@@ -210,3 +207,42 @@ static int read_status(int fd)
 	}
 	return 1;
 }
+
+static int num_resp_lines(int s)
+{
+	int count;
+	if(read_line(s, cmdbuf, sizeof cmdbuf) == -1) {
+		return 0;
+	}
+	count = atoi(cmdbuf);
+	return count < 0 ? 0 : count;
+}
+
+/* returns the full size of the response, even if maxsz was less than that, and
+ * the result was truncated to fit in buf.
+ */
+static int read_multi_lines(int s, char *buf, int maxsz)
+{
+	int i, count, str_size = 0;
+	char *dptr, *sptr;
+
+	count = num_resp_lines(s);
+
+	dptr = buf;
+	for(i=0; i<count; i++) {
+		if(read_line(s, cmdbuf, sizeof cmdbuf) == -1) {
+			return -1;
+		}
+		sptr = cmdbuf;
+		while(*sptr) {
+			if(maxsz-- > 0) {
+				*dptr++ = *sptr++;
+			}
+			str_size++;
+		}
+	}
+	*dptr = 0;
+
+	return str_size;
+}
+
