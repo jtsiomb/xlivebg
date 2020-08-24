@@ -43,6 +43,7 @@ static struct {
 	const char *name;
 	int (*func)(int, char**);
 } commands[] = {
+	{"ping", cmd_generic},
 	{"list", cmd_list},
 	{"switch", cmd_generic},
 	{"lsprop", cmd_lsprop},

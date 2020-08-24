@@ -33,12 +33,9 @@ struct client {
 	char *inp;
 };
 
-#define MAX_SOCK	16
-static int sockbuf[MAX_SOCK + 1];
-static int *sock;
+#define MAX_CLIENTS	16
+static struct client clients[MAX_CLIENTS];
 static int lis = -1;
-static int num_sock;
-static struct client clients[MAX_SOCK];
 
 static void proc_cmd(int s, char *cmdstr);
 
@@ -47,7 +44,7 @@ int ctrl_init(void)
 	int i;
 	struct sockaddr_un addr;
 
-	for(i=0; i<MAX_SOCK; i++) {
+	for(i=0; i<MAX_CLIENTS; i++) {
 		clients[i].s = -1;
 	}
 
@@ -71,9 +68,6 @@ int ctrl_init(void)
 	}
 	listen(lis, 8);
 
-	sockbuf[0] = lis;
-	sock = sockbuf + 1;
-	num_sock = 0;
 	return 0;
 }
 
@@ -88,12 +82,22 @@ void ctrl_shutdown(void)
 
 int *ctrl_sockets(int *count)
 {
+	static int sock[MAX_CLIENTS];
+	int i, n = 0;
+
 	if(lis == -1) {
 		*count = 0;
 		return 0;
 	}
-	*count = num_sock + 1;
-	return sockbuf;
+
+	sock[n++] = lis;
+	for(i=0; i<MAX_CLIENTS; i++) {
+		if(clients[i].s >= 0) {
+			sock[n++] = clients[i].s;
+		}
+	}
+	*count = n;
+	return sock;
 }
 
 void ctrl_process(int s)
@@ -104,31 +108,31 @@ void ctrl_process(int s)
 	char *ptr;
 
 	if(s == lis) {
-		if(num_sock >= MAX_SOCK) {
+		c = 0;
+		for(i=0; i<MAX_CLIENTS; i++) {
+			if(clients[i].s == -1) {
+				c = clients + i;
+				break;
+			}
+		}
+		if(!c) {
 			fprintf(stderr, "ctrl_process: too many incoming connections\n");
 			return;
 		}
+
 		if((s = accept(lis, 0, 0)) == -1) {
 			perror("ctrl_process: failed to accept incoming connection");
 			return;
 		}
 		fcntl(s, F_SETFL, fcntl(s, F_GETFL) | O_NONBLOCK);
 
-		c = 0;
-		for(i=0; i<MAX_SOCK; i++) {
-			if(clients[i].s == -1) {
-				c = clients + i;
-				break;
-			}
-		}
 		c->s = s;
 		c->inp = c->inbuf;
-		sock[num_sock++] = s;
 		return;
 	}
 
 	c = 0;
-	for(i=0; i<MAX_SOCK; i++) {
+	for(i=0; i<MAX_CLIENTS; i++) {
 		if(s == clients[i].s) {
 			c = clients + i;
 			break;
@@ -158,7 +162,6 @@ void ctrl_process(int s)
 	if(len == 0) {
 		close(s);
 		c->s = -1;
-		num_sock--;
 	}
 }
 
