@@ -3,12 +3,15 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Box.H>
+#include <FL/Fl_Hold_Browser.H>
+#include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include "layout.h"
 #include "cmd.h"
 #include "bg.h"
 
-bool init_gui();
+static bool init_gui();
+static Fl_Hold_Browser *create_bglist();
 
 Fl_Window *win;
 
@@ -26,7 +29,7 @@ int main(int argc, char **argv)
 	return Fl::run();
 }
 
-bool init_gui()
+static bool init_gui()
 {
 	int win_width = 512, win_height = 512;
 
@@ -34,17 +37,8 @@ bool init_gui()
 
 	UILayout vbox = UILayout(win, UILAYOUT_VERTICAL);
 
-	if(bg_create_list() == -1) {
-		return false;
-	}
-	bg_destroy_list();
-
-	for(int i=0; i<5; i++) {
-		char name[16];
-		sprintf(name, "button %d", i);
-		Fl_Button *bn = new Fl_Button(0, 0, 0, 0, strdup(name));
-		vbox.add_autosize(bn);
-	}
+	Fl_Hold_Browser *bglist = create_bglist();
+	vbox.add(bglist);
 	vbox.resize_group();
 
 	Fl_Box *rbox = new Fl_Box(win->w() - 1, win->h() - 1, 1, 1);
@@ -56,4 +50,32 @@ bool init_gui()
 	win->size_range(1, 1);
 
 	return true;
+}
+
+
+static Fl_Hold_Browser *create_bglist()
+{
+	int max_width = 200;
+
+	if(bg_create_list() == -1) {
+		return 0;
+	}
+	int num = bg_list_size();
+
+	for(int i=0; i<num; i++) {
+		struct bginfo *bg = bg_list_item(i);
+		int w = (int)fl_width(bg->name);
+		if(w > max_width) max_width = w;
+	}
+
+	printf("height: %d\n", fl_height() * 5);
+	Fl_Hold_Browser *list = new Fl_Hold_Browser(0, 0, max_width, 128);
+	for(int i=0; i<num; i++) {
+		struct bginfo *bg = bg_list_item(i);
+		list->add(bg->name, bg);
+		printf("adding: %s\n", bg->name);
+	}
+
+	bg_destroy_list();
+	return list;
 }

@@ -82,6 +82,9 @@ extern "C" {
 int bg_create_list(void);
 void bg_destroy_list(void);
 
+struct bginfo *bg_list_item(int idx);
+int bg_list_size(void);
+
 #ifdef __cplusplus
 }
 #endif

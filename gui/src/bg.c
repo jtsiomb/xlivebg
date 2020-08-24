@@ -65,32 +65,62 @@ int bg_create_list(void)
 		if(*ptr++ == ':') bglist_size++;
 	}
 
-	if(!(bglist = malloc(bglist_size * sizeof *bglist))) {
+	if(!(bglist = calloc(bglist_size, sizeof *bglist))) {
 		fprintf(stderr, "Failed to allocate wallpaper list\n");
 		bglist_size = 0;
 		return -1;
 	}
 
+	bg = bglist;
 	bglist_size = 0;
 	ptr = liststr;
-	while(*ptr) {
-		end = ptr;
-		while(*end && *end != ':') end++;
+	for(;;) {
+		if(!(end = strchr(ptr, ':'))) break;
 		*end = 0;
-		if(end > ptr) {
-			bg = bglist + bglist_size++;
-			bg->name = strdup(ptr);
+		if(!(bg->name = strdup(ptr))) {
+			fprintf(stderr, "Failed to allocate wallpaper name\n");
+			goto fail;
 		}
-		while(*end && *end != '\n') end++;
-
-		ptr = *end ? end + 1 : end;
+		bglist_size++;
+		ptr = end + 1;
+		if(!(end = strchr(ptr, '\n'))) break;
+		*end = 0;
+		if(!(bg->desc = strdup(ptr))) {
+			fprintf(stderr, "Failed to allocate wallpaper description\n");
+			goto fail;
+		}
+		bg++;
+		ptr = end + 1;
 	}
 
 	return 0;
+
+fail:
+	while(--bg >= bglist) {
+		free(bg->name);
+		free(bg->desc);
+	}
+	free(bglist);
+	bglist = 0;
+	bglist_size = 0;
+	return -1;
 }
 
 void bg_destroy_list(void)
 {
 	free(bglist);
 	bglist_size = 0;
+}
+
+struct bginfo *bg_list_item(int idx)
+{
+	if(idx < 0 || idx >= bglist_size) {
+		return 0;
+	}
+	return bglist + idx;
+}
+
+int bg_list_size(void)
+{
+	return bglist_size;
 }
