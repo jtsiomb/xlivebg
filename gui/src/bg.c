@@ -108,7 +108,13 @@ fail:
 
 void bg_destroy_list(void)
 {
+	int i;
+	for(i=0; i<bglist_size; i++) {
+		free(bglist[i].name);
+		free(bglist[i].desc);
+	}
 	free(bglist);
+	bglist = 0;
 	bglist_size = 0;
 }
 
@@ -123,4 +129,28 @@ struct bginfo *bg_list_item(int idx)
 int bg_list_size(void)
 {
 	return bglist_size;
+}
+
+struct bginfo *bg_active(void)
+{
+	char buf[256];
+	char *end;
+	int i;
+
+	if(cmd_getprop_str("xlivebg.active", buf, sizeof buf) == -1) {
+		return 0;
+	}
+	if((end = strrchr(buf, '\n'))) *end = 0;
+
+	for(i=0; i<bglist_size; i++) {
+		if(strcmp(bglist[i].name, buf) == 0) {
+			return bglist + i;
+		}
+	}
+	return 0;
+}
+
+int bg_switch(const char *name)
+{
+	return cmd_setprop_str("xlivebg.active", name);
 }

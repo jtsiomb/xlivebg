@@ -52,10 +52,18 @@ static bool init_gui()
 	return true;
 }
 
+static void bgselect_handler(Fl_Widget *w, void *data)
+{
+	Fl_Hold_Browser *list = (Fl_Hold_Browser*)w;
+	int sel = list->value();
+	if(!sel) return;
+	bg_switch(list->text(sel));
+}
 
 static Fl_Hold_Browser *create_bglist()
 {
 	int max_width = 200;
+	struct bginfo *bg;
 
 	if(bg_create_list() == -1) {
 		return 0;
@@ -68,14 +76,20 @@ static Fl_Hold_Browser *create_bglist()
 		if(w > max_width) max_width = w;
 	}
 
-	printf("height: %d\n", fl_height() * 5);
-	Fl_Hold_Browser *list = new Fl_Hold_Browser(0, 0, max_width, 128);
+	Fl_Hold_Browser *list = new Fl_Hold_Browser(0, 0, max_width, (FL_NORMAL_SIZE + 4) * 5 + 4);
 	for(int i=0; i<num; i++) {
-		struct bginfo *bg = bg_list_item(i);
+		bg = bg_list_item(i);
 		list->add(bg->name, bg);
 		printf("adding: %s\n", bg->name);
 	}
 
-	bg_destroy_list();
+	if((bg = bg_active())) {
+		int line = bg - bg_list_item(0) + 1;
+
+		list->value(line);
+		list->show(line);
+	}
+
+	list->callback(bgselect_handler);
 	return list;
 }

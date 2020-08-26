@@ -85,6 +85,11 @@ void bg_destroy_list(void);
 struct bginfo *bg_list_item(int idx);
 int bg_list_size(void);
 
+struct bginfo *bg_active(void);
+int bg_active_name(char *buf, int bufsz);
+
+int bg_switch(const char *name);
+
 #ifdef __cplusplus
 }
 #endif

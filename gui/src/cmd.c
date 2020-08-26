@@ -83,7 +83,7 @@ int cmd_getprop_str(const char *name, char *buf, int maxsz)
 		return -1;
 	}
 
-	len = sprintf(cmdbuf, "getprop text %s\n", name);
+	len = sprintf(cmdbuf, "getpropstr %s\n", name);
 	write(s, cmdbuf, len);
 	if(read_status(s) <= 0) {
 		close(s);
@@ -103,7 +103,7 @@ int cmd_getprop_int(const char *name, int *ret)
 		return -1;
 	}
 
-	len = sprintf(cmdbuf, "getprop integer %s\n", name);
+	len = sprintf(cmdbuf, "getpropint %s\n", name);
 	write(s, cmdbuf, len);
 	if(read_status(s) <= 0) {
 		close(s);
@@ -127,7 +127,7 @@ int cmd_getprop_num(const char *name, float *ret)
 		return -1;
 	}
 
-	len = sprintf(cmdbuf, "getprop number %s\n", name);
+	len = sprintf(cmdbuf, "getpropnum %s\n", name);
 	write(s, cmdbuf, len);
 	if(read_status(s) <= 0) {
 		close(s);
@@ -151,7 +151,7 @@ int cmd_getprop_vec(const char *name, float *ret)
 		return -1;
 	}
 
-	len = sprintf(cmdbuf, "getprop number %s\n", name);
+	len = sprintf(cmdbuf, "getpropvec %s\n", name);
 	write(s, cmdbuf, len);
 	if(read_status(s) <= 0) {
 		close(s);
@@ -168,6 +168,62 @@ int cmd_getprop_vec(const char *name, float *ret)
 		ret[i] = 0;
 	}
 	return 0;
+}
+
+int cmd_setprop_str(const char *name, const char *val)
+{
+	int s, len, res;
+
+	if((s = open_conn()) == -1) {
+		return -1;
+	}
+	len = sprintf(cmdbuf, "propstr %s %s\n", name, val);
+	write(s, cmdbuf, len);
+	res = read_status(s);
+	close(s);
+	return res;
+}
+
+int cmd_setprop_int(const char *name, int val)
+{
+	int s, len, res;
+
+	if((s = open_conn()) == -1) {
+		return -1;
+	}
+	len = sprintf(cmdbuf, "propint %s %d\n", name, val);
+	write(s, cmdbuf, len);
+	res = read_status(s);
+	close(s);
+	return res;
+}
+
+int cmd_setprop_num(const char *name, float val)
+{
+	int s, len, res;
+
+	if((s = open_conn()) == -1) {
+		return -1;
+	}
+	len = sprintf(cmdbuf, "propnum %s %g\n", name, val);
+	write(s, cmdbuf, len);
+	res = read_status(s);
+	close(s);
+	return res;
+}
+
+int cmd_setprop_vec(const char *name, float *val)
+{
+	int s, len, res;
+
+	if((s = open_conn()) == -1) {
+		return -1;
+	}
+	len = sprintf(cmdbuf, "propvec %s [%g, %g, %g, %g]\n", name, val[0], val[1], val[2], val[3]);
+	write(s, cmdbuf, len);
+	res = read_status(s);
+	close(s);
+	return res;
 }
 
 
