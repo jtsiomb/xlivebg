@@ -181,6 +181,15 @@ void glutWireTorus(float inner_rad, float outer_rad, int sides, int rings);
 void glutSolidTeapot(float size);
 void glutWireTeapot(float size);
 
+/* expose platform-specifics */
+void *glutXDisplay(void);		/* returns Display*	*/
+unsigned int glutXWindow(void);	/* returns Window */
+void *glutXContext(void);		/* returns GLXContext */
+
+void *glutWinWindow(void);		/* returns HWND */
+void *glutWinDC(void);			/* returns HDC */
+void *glutWinContext(void);		/* returns HGLRC */
+
 #ifdef __cplusplus
 }	/* extern "C" */
 #endif

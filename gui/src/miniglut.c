@@ -1077,6 +1077,24 @@ static int catch_badwin(Display *dpy, XErrorEvent *err)
 	return 0;
 }
 
+void *glutXDisplay(void)
+{
+	return dpy;
+}
+
+unsigned int glutXWindow(void)
+{
+	return win;
+}
+
+void *glutXContext(void)
+{
+	return ctx;
+}
+
+void *glutWinWindow(void) { return 0; }
+void *glutWinDC(void) { return 0; }
+void *glutWinContext(void) { return 0; }
 
 
 #endif	/* BUILD_X11 */
@@ -1672,6 +1690,26 @@ static void get_screen_size(int *scrw, int *scrh)
 	*scrw = GetSystemMetrics(SM_CXSCREEN);
 	*scrh = GetSystemMetrics(SM_CYSCREEN);
 }
+
+void *glutXDisplay(void) { return 0; }
+unsigned int glutXWindow(void) { return 0; }
+void *glutXContext(void) { return 0; }
+
+void *glutWinWindow(void)
+{
+	return win;
+}
+
+void *glutWinDC(void)
+{
+	return dc;
+}
+
+void *glutWinContext(void)
+{
+	return ctx;
+}
+
 #endif	/* BUILD_WIN32 */
 
 #if defined(__unix__) || defined(__APPLE__)

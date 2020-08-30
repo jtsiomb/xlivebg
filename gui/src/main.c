@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <X11/Xlib.h>
+#include <GL/glx.h>
 #include <utk/cubertk.h>
 #include "miniglut.h"
 
@@ -25,11 +27,20 @@ static void text(int x, int y, const char *txt, int sz);
 static int text_spacing(void);
 static int text_width(const char *txt, int sz);
 
+static Display *dpy;
+
 static int win_width = 512;
 static int win_height = 512;
 
 static utk_widget *root;
 static utk_widget *win;
+
+#define XFONT_PATTERN	"-*-helvetica-medium-r-*-*-18-*-*-*-*-*-*-*"
+#define FIRST_GLYPH		((int)' ')
+#define NUM_GLYPHS		((int)'~' - FIRST_GLYPH)
+static XFontStruct *font;
+static int font_dlist_base;
+
 
 int main(int argc, char **argv)
 {
@@ -67,18 +78,29 @@ int main(int argc, char **argv)
 
 static int init(void)
 {
-	glClearColor(1, 0, 0, 1);
+	dpy = glutXDisplay();
+
+	if(!(font = XLoadQueryFont(dpy, XFONT_PATTERN))) {
+		fprintf(stderr, "failed to find font: " XFONT_PATTERN "\n");
+		return -1;
+	}
+	font_dlist_base = glGenLists(NUM_GLYPHS);
+	glXUseXFont(font->fid, FIRST_GLYPH, NUM_GLYPHS, font_dlist_base);
 
 	root = utk_init(win_width, win_height);
 	win = utk_create_window(root, 50, 50, win_width-100, win_height-100, "foo");
 	utk_show(win);
 
 	utk_print_widget_tree(UBERTK_PRINT_ROOT);
+
+	glClearColor(1, 0, 0, 1);
 	return 0;
 }
 
 static void cleanup(void)
 {
+	glDeleteLists(font_dlist_base, NUM_GLYPHS);
+	XFreeFont(dpy, font);
 }
 
 static void display(void)
@@ -164,15 +186,18 @@ static void line(int x1, int y1, int x2, int y2, int width)
 
 static void text(int x, int y, const char *txt, int sz)
 {
+	glRasterPos2f(CONVX(x), CONVY(y - font->descent));
+	glListBase(font_dlist_base - FIRST_GLYPH);
+	glCallLists(strlen(txt), GL_UNSIGNED_BYTE, txt);
 }
 
 static int text_spacing(void)
 {
-	return 10;
+	return font->ascent + font->descent;
 }
 
 static int text_width(const char *txt, int sz)
 {
-	return 10 * strlen(txt);
+	return XTextWidth(font, txt, strlen(txt));
 }
 
