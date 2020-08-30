@@ -57,6 +57,7 @@ int main(int argc, char **argv)
 	glutSpecialUpFunc(skeyup);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
+	glutPassiveMotionFunc(motion);
 
 	utk_set_color_func(color);
 	utk_set_clip_func(clip);
@@ -78,6 +79,8 @@ int main(int argc, char **argv)
 
 static int init(void)
 {
+	utk_widget *vbox, *hbox;
+
 	dpy = glutXDisplay();
 
 	if(!(font = XLoadQueryFont(dpy, XFONT_PATTERN))) {
@@ -91,7 +94,13 @@ static int init(void)
 	win = utk_create_window(root, 50, 50, win_width-100, win_height-100, "foo");
 	utk_show(win);
 
-	utk_print_widget_tree(UBERTK_PRINT_ROOT);
+	vbox = utk_create_vbox(win, UTK_DEF_PADDING, UTK_DEF_SPACING);
+	utk_create_label(vbox, "a label");
+	utk_create_label(vbox, "another label");
+
+	utk_create_button(vbox, "a button", 0, 0, 0, 0);
+
+	utk_print_widget_tree(root);
 
 	glClearColor(1, 0, 0, 1);
 	return 0;
@@ -122,26 +131,69 @@ static void reshape(int x, int y)
 static void keydown(unsigned char key, int x, int y)
 {
 	if(key == 27) exit(0);
+
+	utk_keyboard_event(key, 1);
+	glutPostRedisplay();
 }
 
 static void keyup(unsigned char key, int x, int y)
 {
+	utk_keyboard_event(key, 0);
+	glutPostRedisplay();
+}
+
+static int glut_skey_to_keysym(int key)
+{
+	switch(key) {
+	case GLUT_KEY_LEFT:
+		return UTK_KEY_LEFT;
+
+	case GLUT_KEY_RIGHT:
+		return UTK_KEY_RIGHT;
+
+	case GLUT_KEY_UP:
+		return UTK_KEY_UP;
+
+	case GLUT_KEY_DOWN:
+		return UTK_KEY_DOWN;
+
+	case GLUT_KEY_HOME:
+		return UTK_KEY_HOME;
+
+	case GLUT_KEY_END:
+		return UTK_KEY_END;
+
+	default:
+		break;
+	}
+
+	return 0;
 }
 
 static void skeydown(int key, int x, int y)
 {
+	if(!(key = glut_skey_to_keysym(key))) return;
+	utk_keyboard_event(key, 1);
+	glutPostRedisplay();
 }
 
 static void skeyup(int key, int x, int y)
 {
+	if(!(key = glut_skey_to_keysym(key))) return;
+	utk_keyboard_event(key, 0);
+	glutPostRedisplay();
 }
 
 static void mouse(int bn, int st, int x, int y)
 {
+	utk_mbutton_event(bn, st == GLUT_DOWN ? 1 : 0, x, y);
+	glutPostRedisplay();
 }
 
 static void motion(int x, int y)
 {
+	utk_mmotion_event(x, y);
+	glutPostRedisplay();
 }
 
 /* UTK callbacks */
