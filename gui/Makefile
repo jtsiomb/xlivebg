@@ -1,17 +1,18 @@
 PREFIX ?= /usr/local
 
-csrc = $(wildcard src/*.c)
-ccsrc = $(wildcard src/*.cc)
-obj = $(csrc:.c=.o) $(ccsrc:.cc=.o)
-dep = $(csrc:.c=.d) $(ccsrc:.cc=.d)
+src = $(wildcard src/*.c)
+obj = $(src:.c=.o)
+dep = $(src:.c=.d)
 bin = xlivebg-gui
 
-CFLAGS = -pedantic -Wall -g -MMD
-CXXFLAGS = -pedantic -Wall -g -MMD
-LDFLAGS = -lfltk
+warn = -pedantic -Wall
+def = -DMINIGLUT_USE_LIBC
+
+CFLAGS = $(warn) -g -MMD $(def)
+LDFLAGS = -lX11 -lutk -ldrawtext -lGL -lm
 
 $(bin): $(obj)
-	$(CXX) -o $@ $(obj) $(LDFLAGS)
+	$(CC) -o $@ $(obj) $(LDFLAGS)
 
 -include $(dep)
 
