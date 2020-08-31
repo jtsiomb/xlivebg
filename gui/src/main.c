@@ -91,14 +91,15 @@ static int init(void)
 	glXUseXFont(font->fid, FIRST_GLYPH, NUM_GLYPHS, font_dlist_base);
 
 	root = utk_init(win_width, win_height);
-	win = utk_create_window(root, 50, 50, win_width-100, win_height-100, "foo");
+	win = utk_window(root, 50, 50, win_width-100, win_height-100, "foo");
 	utk_show(win);
 
-	vbox = utk_create_vbox(win, UTK_DEF_PADDING, UTK_DEF_SPACING);
-	utk_create_label(vbox, "a label");
-	utk_create_label(vbox, "another label");
+	vbox = utk_vbox(win, UTK_DEF_PADDING, UTK_DEF_SPACING);
+	utk_label(vbox, "a label");
+	utk_label(vbox, "another label");
 
-	utk_create_button(vbox, "a button", 0, 0, 0, 0);
+	utk_button(vbox, "a button", 0, 0, 0, 0);
+	utk_checkbox(vbox, "checkbox", 0, 0, 0);
 
 	utk_print_widget_tree(root);
 
