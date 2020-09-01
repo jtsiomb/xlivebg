@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <Xm/Xm.h>
 #include <Xm/MainW.h>
+#include <Xm/MessageB.h>
 #include <Xm/PushB.h>
 #include <Xm/List.h>
 #include "cmd.h"
@@ -13,23 +14,25 @@ static int create_bglist(Widget par);
 static void file_menu_handler(Widget lst, void *cls, void *calldata);
 static void help_menu_handler(Widget lst, void *cls, void *calldata);
 static void bgselect_handler(Widget lst, void *cls, void *calldata);
+static void messagebox(int type, const char *title, const char *msg);
 
 static Widget app_shell, win;
 static XtAppContext app;
 
 int main(int argc, char **argv)
 {
-	if(cmd_ping() == -1) {
-		/* TODO messagebox */
-		fprintf(stderr, "No response from xlivebg. Make sure it's running!\n");
-		return 1;
-	}
-
 	if(!(app_shell = XtVaOpenApplication(&app, "xlivebg-gui", 0, 0, &argc, argv,
 					0, sessionShellWidgetClass, (void*)0))) {
 		fprintf(stderr, "failed to initialize ui\n");
 		return -1;
 	}
+
+	if(cmd_ping() == -1) {
+		/* TODO messagebox */
+		messagebox(XmDIALOG_ERROR, "Fatal error", "No response from xlivebg. Make sure it's running!");
+		return 1;
+	}
+
 	win = XmCreateMainWindow(app_shell, "mainwin", 0, 0);
 	XtManageChild(win);
 
@@ -119,17 +122,21 @@ static int create_bglist(Widget par)
 
 static void file_menu_handler(Widget lst, void *cls, void *calldata)
 {
-	int item = (int)cls;
-
-	switch(item) {
-	case 0:
-		exit(0);
-	}
+	/*int item = (int)cls;*/
+	exit(0);
 }
+
 
 static void help_menu_handler(Widget lst, void *cls, void *calldata)
 {
-	/* TODO */
+	static const char *about_text = "xlivebg configuration tool\n\n"
+		"Copyright (C) 2020 John Tsiombikas <nuclear@member.fsf.org>\n\n"
+		"xlivebg-gui is free software, feel free to use, modify and/or\n"
+		"redistribute it, under the terms of the GNU General Public License\n"
+		"version 3, or at your option any later version published by the\n"
+		"Free Software Foundation.\n"
+		"See http://www.gnu.org/licenses/gpl.txt for details.\n";
+	messagebox(XmDIALOG_INFORMATION, "About xlivebg-gui", about_text);
 }
 
 static void bgselect_handler(Widget lst, void *cls, void *calldata)
@@ -139,5 +146,36 @@ static void bgselect_handler(Widget lst, void *cls, void *calldata)
 	if(selitem) {
 		bg_switch(selitem);
 		XtFree(selitem);
+	}
+}
+
+static void messagebox(int type, const char *title, const char *msg)
+{
+	XmString stitle = XmStringCreateSimple((char*)title);
+	XmString smsg = XmStringCreateLtoR((char*)msg, XmFONTLIST_DEFAULT_TAG);
+	Widget dlg;
+
+	switch(type) {
+	case XmDIALOG_WARNING:
+		dlg = XmCreateInformationDialog(app_shell, "warnmsg", 0, 0);
+		break;
+	case XmDIALOG_ERROR:
+		dlg = XmCreateErrorDialog(app_shell, "errormsg", 0, 0);
+		break;
+	case XmDIALOG_INFORMATION:
+	default:
+		dlg = XmCreateInformationDialog(app_shell, "infomsg", 0, 0);
+		break;
+	}
+	XtVaSetValues(dlg, XmNdialogTitle, stitle, XmNmessageString, smsg, (void*)0);
+	XtVaSetValues(dlg, XmNdialogStyle, XmDIALOG_APPLICATION_MODAL, (void*)0);
+	XmStringFree(stitle);
+	XmStringFree(smsg);
+	XtUnmanageChild(XmMessageBoxGetChild(dlg, XmDIALOG_HELP_BUTTON));
+	XtUnmanageChild(XmMessageBoxGetChild(dlg, XmDIALOG_CANCEL_BUTTON));
+	XtManageChild(dlg);
+
+	while(XtIsManaged(dlg)) {
+		XtAppProcessEvent(app, XtIMAll);
 	}
 }
