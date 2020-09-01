@@ -152,5 +152,6 @@ struct bginfo *bg_active(void)
 
 int bg_switch(const char *name)
 {
+	if(!name || !*name) return -1;
 	return cmd_setprop_str("xlivebg.active", name);
 }

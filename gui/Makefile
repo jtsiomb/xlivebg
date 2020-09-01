@@ -8,8 +8,8 @@ bin = xlivebg-gui
 warn = -pedantic -Wall
 def = -DMINIGLUT_USE_LIBC
 
-CFLAGS = $(warn) -g -MMD $(def) `pkg-config --cflags freetype2`
-LDFLAGS = `pkg-config --libs freetype2` -lX11 -lXft -lutk -lGL -lm
+CFLAGS = $(warn) -g -MMD $(def)
+LDFLAGS = -lXm -lXt -lX11 -lGL -lm
 
 $(bin): $(obj)
 	$(CC) -o $@ $(obj) $(LDFLAGS)
