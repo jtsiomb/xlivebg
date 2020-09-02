@@ -3,17 +3,26 @@
 #include <Xm/Xm.h>
 #include <Xm/MainW.h>
 #include <Xm/MessageB.h>
+#include <Xm/Label.h>
+#include <Xm/LabelG.h>
 #include <Xm/PushB.h>
 #include <Xm/List.h>
+#include <Xm/Frame.h>
+#include <Xm/RowColumn.h>
+#include <Xm/TextF.h>
+#include <Xm/FileSB.h>
 #include "cmd.h"
 #include "bg.h"
 
 static int init_gui(void);
 static void create_menu(void);
+static Widget create_pathfield(Widget par);
 static int create_bglist(Widget par);
 static void file_menu_handler(Widget lst, void *cls, void *calldata);
 static void help_menu_handler(Widget lst, void *cls, void *calldata);
 static void bgselect_handler(Widget lst, void *cls, void *calldata);
+static void browse_handler(Widget bn, void *cls, void *calldata);
+static void pathfield_handler(Widget txf, void *cls, void *calldata);
 static void messagebox(int type, const char *title, const char *msg);
 
 static Widget app_shell, win;
@@ -47,11 +56,37 @@ int main(int argc, char **argv)
 
 static int init_gui(void)
 {
+	Widget w, frm, vbox, wimgpath;
+	Arg arg;
+	char buf[512];
+
 	create_menu();
 
-	if(create_bglist(win) == -1) {
+	frm = XmCreateFrame(win, "frame", 0, 0);
+	XtSetArg(arg, XmNframeChildType, XmFRAME_TITLE_CHILD);
+	w = XmCreateLabelGadget(frm, "Global settings", &arg, 1);
+	XtManageChild(w);
+
+	vbox = XmCreateRowColumn(frm, "rowcolumn", 0, 0);
+	XtManageChild(vbox);
+
+	XtManageChild(XmCreateLabel(vbox, "Wallpapers:", 0, 0));
+	if(create_bglist(vbox) == -1) {
 		return -1;
 	}
+
+	XtManageChild(XmCreateLabel(vbox, "Background image:", 0, 0));
+	wimgpath = create_pathfield(vbox);
+
+	if(cmd_getprop_str("xlivebg.image", buf, sizeof buf) != -1) {
+		char *ptr = buf;
+		while(*ptr && *ptr != '\n' && *ptr != '\r') ptr++;
+		*ptr = 0;
+		XtVaSetValues(wimgpath, XmNvalue, buf, (void*)0);
+	}
+	XtManageChild(wimgpath);
+
+	XtManageChild(frm);
 	return 0;
 }
 
@@ -72,15 +107,34 @@ static void create_menu(void)
 	squit_key = XmStringCreateSimple("Ctrl-Q");
 	menu = XmVaCreateSimplePulldownMenu(menubar, "filemenu", 0, file_menu_handler,
 			XmVaPUSHBUTTON, squit, 'Q', "Ctrl<Key>q", squit_key, (void*)0);
-	XtManageChild(menu);
 	XmStringFree(squit);
 	XmStringFree(squit_key);
 
 	sabout = XmStringCreateSimple("About");
 	menu = XmVaCreateSimplePulldownMenu(menubar, "helpmenu", 1, help_menu_handler,
 			XmVaPUSHBUTTON, sabout, 'A', 0, 0, (void*)0);
-	XtManageChild(menu);
 	XmStringFree(sabout);
+}
+
+/* TODO specify files/directories/both, optional wildcards, etc */
+static Widget create_pathfield(Widget par)
+{
+	Widget hbox, tx_path, bn_browse;
+	Arg arg;
+
+	hbox = XmCreateRowColumn(par, "rowcolumn", 0, 0);
+	XtVaSetValues(hbox, XmNorientation, XmHORIZONTAL, (void*)0);
+	XtManageChild(hbox);
+
+	XtSetArg(arg, XmNcolumns, 40);
+	tx_path = XmCreateTextField(hbox, "textfield", &arg, 1);
+	XtAddCallback(tx_path, XmNactivateCallback, pathfield_handler, 0);
+
+	bn_browse = XmCreatePushButton(hbox, "...", 0, 0);
+	XtManageChild(bn_browse);
+	XtAddCallback(bn_browse, XmNactivateCallback, browse_handler, tx_path);
+
+	return tx_path;
 }
 
 static int create_bglist(Widget par)
@@ -147,6 +201,48 @@ static void bgselect_handler(Widget lst, void *cls, void *calldata)
 		bg_switch(selitem);
 		XtFree(selitem);
 	}
+}
+
+static void filesel_handler(Widget dlg, void *cls, void *calldata)
+{
+	char *fname;
+	XmFileSelectionBoxCallbackStruct *cbs = calldata;
+
+	if(cls) {
+		Widget field = cls;
+		if(!(fname = XmStringUnparse(cbs->value, XmFONTLIST_DEFAULT_TAG, XmCHARSET_TEXT,
+						XmCHARSET_TEXT, 0, 0, XmOUTPUT_ALL))) {
+			return;
+		}
+
+		printf("file selected: %s\n", fname);
+		XtVaSetValues(field, XmNvalue, fname, (void*)0);
+		XtFree(fname);
+	}
+	XtUnmanageChild(dlg);
+}
+
+static void browse_handler(Widget bn, void *cls, void *calldata)
+{
+	Widget dlg;
+	Arg arg;
+
+	XtSetArg(arg, XmNpathMode, XmPATH_MODE_RELATIVE);
+	dlg = XmCreateFileSelectionDialog(app_shell, "filesb", &arg, 1);
+	XtAddCallback(dlg, XmNcancelCallback, filesel_handler, 0);
+	XtAddCallback(dlg, XmNokCallback, filesel_handler, cls);
+	XtManageChild(dlg);
+
+	while(XtIsManaged(dlg)) {
+		XtAppProcessEvent(app, XtIMAll);
+	}
+}
+
+static void pathfield_handler(Widget txf, void *cls, void *calldata)
+{
+	char *text = XmTextFieldGetString(txf);
+	printf("path changed: %s\n", text);
+	XtFree(text);
 }
 
 static void messagebox(int type, const char *title, const char *msg)
