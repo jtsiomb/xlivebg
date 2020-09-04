@@ -22,7 +22,7 @@ static void file_menu_handler(Widget lst, void *cls, void *calldata);
 static void help_menu_handler(Widget lst, void *cls, void *calldata);
 static void bgselect_handler(Widget lst, void *cls, void *calldata);
 static void browse_handler(Widget bn, void *cls, void *calldata);
-static void pathfield_handler(Widget txf, void *cls, void *calldata);
+static void pathfield_modify_handler(Widget txf, void *cls, void *calldata);
 static void messagebox(int type, const char *title, const char *msg);
 
 static Widget app_shell, win;
@@ -82,7 +82,7 @@ static int init_gui(void)
 		char *ptr = buf;
 		while(*ptr && *ptr != '\n' && *ptr != '\r') ptr++;
 		*ptr = 0;
-		XtVaSetValues(wimgpath, XmNvalue, buf, (void*)0);
+		XmTextFieldSetString(wimgpath, buf);
 	}
 	XtManageChild(wimgpath);
 
@@ -93,7 +93,7 @@ static int init_gui(void)
 static void create_menu(void)
 {
 	XmString sfile, shelp, squit, sabout, squit_key;
-	Widget menubar, menu;
+	Widget menubar;
 
 	sfile = XmStringCreateSimple("File");
 	shelp = XmStringCreateSimple("Help");
@@ -105,13 +105,13 @@ static void create_menu(void)
 
 	squit = XmStringCreateSimple("Quit");
 	squit_key = XmStringCreateSimple("Ctrl-Q");
-	menu = XmVaCreateSimplePulldownMenu(menubar, "filemenu", 0, file_menu_handler,
+	XmVaCreateSimplePulldownMenu(menubar, "filemenu", 0, file_menu_handler,
 			XmVaPUSHBUTTON, squit, 'Q', "Ctrl<Key>q", squit_key, (void*)0);
 	XmStringFree(squit);
 	XmStringFree(squit_key);
 
 	sabout = XmStringCreateSimple("About");
-	menu = XmVaCreateSimplePulldownMenu(menubar, "helpmenu", 1, help_menu_handler,
+	XmVaCreateSimplePulldownMenu(menubar, "helpmenu", 1, help_menu_handler,
 			XmVaPUSHBUTTON, sabout, 'A', 0, 0, (void*)0);
 	XmStringFree(sabout);
 }
@@ -120,15 +120,16 @@ static void create_menu(void)
 static Widget create_pathfield(Widget par)
 {
 	Widget hbox, tx_path, bn_browse;
-	Arg arg;
+	Arg args[2];
 
 	hbox = XmCreateRowColumn(par, "rowcolumn", 0, 0);
 	XtVaSetValues(hbox, XmNorientation, XmHORIZONTAL, (void*)0);
 	XtManageChild(hbox);
 
-	XtSetArg(arg, XmNcolumns, 40);
-	tx_path = XmCreateTextField(hbox, "textfield", &arg, 1);
-	XtAddCallback(tx_path, XmNactivateCallback, pathfield_handler, 0);
+	XtSetArg(args[0], XmNcolumns, 40);
+	XtSetArg(args[1], XmNeditable, 0);
+	tx_path = XmCreateTextField(hbox, "textfield", args, 2);
+	XtAddCallback(tx_path, XmNvalueChangedCallback, pathfield_modify_handler, 0);
 
 	bn_browse = XmCreatePushButton(hbox, "...", 0, 0);
 	XtManageChild(bn_browse);
@@ -215,7 +216,6 @@ static void filesel_handler(Widget dlg, void *cls, void *calldata)
 			return;
 		}
 
-		printf("file selected: %s\n", fname);
 		XtVaSetValues(field, XmNvalue, fname, (void*)0);
 		XtFree(fname);
 	}
@@ -238,7 +238,7 @@ static void browse_handler(Widget bn, void *cls, void *calldata)
 	}
 }
 
-static void pathfield_handler(Widget txf, void *cls, void *calldata)
+static void pathfield_modify_handler(Widget txf, void *cls, void *calldata)
 {
 	char *text = XmTextFieldGetString(txf);
 	printf("path changed: %s\n", text);
