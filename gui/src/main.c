@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "xmutil.h"
 #include "cmd.h"
 #include "bg.h"
+
+#define BNCOL_WIDTH	42
+#define BNCOL_HEIGHT 32
 
 static int init_gui(void);
 static void create_menu(void);
@@ -10,13 +14,20 @@ static int create_bglist(Widget par);
 static void file_menu_handler(Widget lst, void *cls, void *calldata);
 static void help_menu_handler(Widget lst, void *cls, void *calldata);
 static void bgselect_handler(Widget lst, void *cls, void *calldata);
+static void bgimage_use_change(Widget w, void *cls, void *calldata);
 static void bgimage_path_change(const char *path);
+static void bgmask_use_change(Widget w, void *cls, void *calldata);
+static void bgmask_path_change(const char *path);
+static void colopt_change(Widget w, void *cls, void *calldata);
+static void bncolor_handler(Widget w, void *cls, void *calldata);
 static void messagebox(int type, const char *title, const char *msg);
 
 XtAppContext app;
 Widget app_shell;
 
 static Widget win;
+static int use_bgimage, use_bgmask;
+static Widget bn_endcol;
 
 int main(int argc, char **argv)
 {
@@ -44,15 +55,27 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+static char *clean_path_str(char *s)
+{
+	char *end;
+	while(*s && isspace(*s)) s++;
+
+	end = s;
+	while(*end && *end != '\n' && *end != '\r') end++;
+	*end = 0;
+
+	return s;
+}
+
 static int init_gui(void)
 {
-	Widget w, frm, vbox, wimgpath;
+	Widget frm, subfrm, vbox, subvbox, hbox;
 	char buf[512];
+	char *str;
 
 	create_menu();
 
 	frm = xm_frame(win, "Global settings");
-
 	vbox = xm_rowcol(frm, XmVERTICAL);
 
 	xm_label(vbox, "Wallpapers:");
@@ -60,16 +83,39 @@ static int init_gui(void)
 		return -1;
 	}
 
-	xm_label(vbox, "Background image:");
-	wimgpath = create_pathfield(vbox, 0, bgimage_path_change);
-
 	if(cmd_getprop_str("xlivebg.image", buf, sizeof buf) != -1) {
-		char *ptr = buf;
-		while(*ptr && *ptr != '\n' && *ptr != '\r') ptr++;
-		*ptr = 0;
-		XmTextFieldSetString(wimgpath, buf);
+		str = clean_path_str(buf);
+		use_bgimage = 1;
+	} else {
+		str = 0;
+		use_bgimage = 0;
 	}
-	XtManageChild(wimgpath);
+	subfrm = xm_frame(vbox, "Background image");
+	subvbox = xm_rowcol(subfrm, XmVERTICAL);
+	xm_checkbox(subvbox, "Use image", use_bgimage, bgimage_use_change, 0);
+	create_pathfield(subvbox, str, 0, bgimage_path_change);
+
+	if(cmd_getprop_str("xlivebg.anim_mask", buf, sizeof buf) != -1) {
+		str = clean_path_str(buf);
+		use_bgmask = 1;
+	} else {
+		str = 0;
+		use_bgmask = 0;
+	}
+	subfrm = xm_frame(vbox, "Animation mask");
+	subvbox = xm_rowcol(subfrm, XmVERTICAL);
+	xm_checkbox(subvbox, "Use mask", use_bgmask, bgmask_use_change, 0);
+	create_pathfield(subvbox, str, 0, bgmask_path_change);
+
+	subfrm = xm_frame(vbox, "Color");
+	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
+	xm_va_option_menu(hbox, colopt_change, 0, "Solid color", "Vertical gradient", "Horizontal gradient", (void*)0);
+	/*xm_button(hbox, "start", 0, 0);*/
+	xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, 0);
+	/*bn_endcol = xm_button(hbox, "end", 0, 0);*/
+	bn_endcol = xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, 0);
+	XtSetSensitive(bn_endcol, 0);
+
 	return 0;
 }
 
@@ -165,9 +211,125 @@ static void bgselect_handler(Widget lst, void *cls, void *calldata)
 	}
 }
 
+static void bgimage_use_change(Widget w, void *cls, void *calldata)
+{
+	Widget txf;
+	char *str;
+
+	if(XmToggleButtonGetState(w)) {
+		use_bgimage = 1;
+		txf = XtNameToWidget(XtParent(w), "rowcolumn.textfield");
+		if(txf && (str = XmTextFieldGetString(txf))) {
+			cmd_setprop_str("xlivebg.image", str);
+		}
+	} else {
+		use_bgimage = 0;
+	}
+}
+
 static void bgimage_path_change(const char *path)
 {
-	printf("new bgimage: %s\n", path);
+	if(use_bgimage) {
+		cmd_setprop_str("xlivebg.image", path);
+	}
+}
+
+static void bgmask_use_change(Widget w, void *cls, void *calldata)
+{
+	Widget txf;
+	char *str;
+
+	if(XmToggleButtonGetState(w)) {
+		use_bgmask = 1;
+		txf = XtNameToWidget(XtParent(w), "rowcolumn.textfield");
+		if(txf && (str = XmTextFieldGetString(txf))) {
+			cmd_setprop_str("xlivebg.anim_mask", str);
+		}
+	} else {
+		use_bgmask = 0;
+	}
+}
+
+static void bgmask_path_change(const char *path)
+{
+	if(use_bgmask) {
+		cmd_setprop_str("xlivebg.anim_mask", path);
+	}
+}
+
+static void colopt_change(Widget w, void *cls, void *calldata)
+{
+	int idx;
+	void *ptr;
+
+	XtVaGetValues(w, XmNuserData, &ptr, (void*)0);
+	idx = (int)ptr;
+
+	if(idx <= 0) {
+		XtSetSensitive(bn_endcol, 0);
+	} else {
+		XtSetSensitive(bn_endcol, 1);
+	}
+}
+
+static void bncolor_handler(Widget w, void *cls, void *calldata)
+{
+	Display *dpy;
+	Screen *scr;
+	int scrn;
+	Window win;
+	GC gc;
+	Colormap cmap;
+	XColor col;
+	int border;
+	XmDrawnButtonCallbackStruct *cbs = calldata;
+
+	switch(cbs->reason) {
+	case XmCR_ACTIVATE:
+		printf("clicked\n");
+		break;
+
+	case XmCR_EXPOSE:
+		printf("Expose\n");
+		dpy = XtDisplay(w);
+		win = XtWindow(w);
+		scr = XtScreen(w);
+		scrn = XScreenNumberOfScreen(scr);
+		gc = XDefaultGCOfScreen(scr);
+		cmap = DefaultColormapOfScreen(scr);
+		border = xm_get_border_size(w);
+		/*XtVaGetValues(w, XmNwidth, &width, XmNheight, &height, (void*)0);*/
+		XtVaSetValues(w, XmNwidth, 2 * border + BNCOL_WIDTH,
+				XmNheight, 2 * border + BNCOL_HEIGHT, (void*)0);
+
+		if(XtIsSensitive(w)) {
+			col.red = 65535;
+			col.green = col.blue = 0;
+			XAllocColor(dpy, cmap, &col);
+			XSetForeground(dpy, gc, col.pixel);
+		} else {
+			col.red = col.green = col.blue = 32768;
+			XAllocColor(dpy, cmap, &col);
+			XSetForeground(dpy, gc, col.pixel);
+		}
+		XSetFillStyle(dpy, gc, FillSolid);
+		XFillRectangle(dpy, win, gc, border, border, BNCOL_WIDTH, BNCOL_HEIGHT);
+
+		if(!XtIsSensitive(w)) {
+			static XSegment lseg[] = {
+				{5, 5, BNCOL_WIDTH - 5, BNCOL_HEIGHT - 5},
+				{5, BNCOL_HEIGHT - 5, BNCOL_WIDTH - 5, 5}
+			};
+			XSetLineAttributes(dpy, gc, 5, LineSolid, CapButt, JoinMiter);
+			XSetForeground(dpy, gc, BlackPixel(dpy, scrn));
+			XDrawSegments(dpy, win, gc, lseg, 2);
+		}
+		break;
+
+	case XmCR_RESIZE:
+		printf("resized\n");
+		break;
+	}
 }
 
 static void messagebox(int type, const char *title, const char *msg)
