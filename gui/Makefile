@@ -7,7 +7,7 @@ bin = xlivebg-gui
 
 warn = -pedantic -Wall
 def = -DMINIGLUT_USE_LIBC
-inc = ../libs/treestore/src
+inc = -I../libs/treestore/src
 
 CFLAGS = $(warn) -g -MMD $(def) $(inc)
 LDFLAGS = ../libs/treestore/libtreestore.a -lXm -lXt -lX11 -lGL -lm

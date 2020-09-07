@@ -215,6 +215,7 @@ static void bgselect_handler(Widget lst, void *cls, void *calldata)
 	if(selitem) {
 		bg_switch(selitem);
 		XtFree(selitem);
+		gen_wallpaper_ui();
 	}
 }
 

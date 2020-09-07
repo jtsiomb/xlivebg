@@ -267,8 +267,10 @@ static int proc_cmd_switch(int s, int argc, char **argv)
 
 static int proc_cmd_proplist(int s, int argc, char **argv)
 {
-	int len;
+	int len, num_lines;
 	struct xlivebg_plugin *p;
+	char buf[32];
+	char *ptr;
 
 	if(argv[1]) {
 		if(!(p = find_plugin(argv[1]))) {
@@ -291,13 +293,17 @@ static int proc_cmd_proplist(int s, int argc, char **argv)
 
 	send_status(s, 1);
 
+	num_lines = 0;
+	ptr = p->props;
+	while(*ptr) {
+		if(*ptr++ == '\n') num_lines++;
+	}
+
+	len = sprintf(buf, "%d\n", num_lines);
+	write(s, buf, len);
+
 	len = strlen(p->props);
 	write(s, p->props, len);
-
-	/* make sure to terminate the property list if it's malformed */
-	if(memcmp(p->props + len - 2, "}\n", 2) != 0) {
-		write(s, "}\n", 2);
-	}
 	return 0;
 }
 
