@@ -395,7 +395,9 @@ static void gen_wallpaper_ui(void)
 		case BGPROP_FILENAME:
 		case BGPROP_DIRNAME:
 			if(cmd_getprop_str(buf, buf, sizeof buf) != -1) {
-				create_pathfield(vbox, 0, 0, 0);
+				hbox = xm_rowcol(vbox, XmHORIZONTAL);
+				xm_label(hbox, prop->name);
+				create_pathfield(hbox, 0, 0, 0);
 			}
 			break;
 		}

@@ -211,7 +211,8 @@ static long memread(void *buf, size_t bytes, void *uptr)
 	bleft = mf->size - mf->cur;
 	if(bytes > bleft) bytes = bleft;
 
-	memcpy(buf, mf->buf, bytes);
+	memcpy(buf, mf->buf + mf->cur, bytes);
+	write(1, buf, bytes);
 	mf->cur += bytes;
 	return bytes;
 }
@@ -233,7 +234,7 @@ static int parse_proplist(struct bginfo *bg, char *plist, int plist_size)
 		fprintf(stderr, "failed to parse property list\n");
 		return -1;
 	}
-	if(strcpy(root->name, "proplist") != 0) {
+	if(strcmp(root->name, "proplist") != 0) {
 		fprintf(stderr, "parse_proplist(%s): unexpected root node \"%s\" (expected: proplist)\n",
 				bg->name, root->name);
 		ts_free_tree(root);

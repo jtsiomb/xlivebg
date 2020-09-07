@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 #include "treestore.h"
 
 #ifdef WIN32
@@ -534,6 +535,7 @@ void ts_add_attr(struct ts_node *node, struct ts_attr *attr)
 	} else {
 		node->attr_list = node->attr_tail = attr;
 	}
+	node->attr_count++;
 }
 
 struct ts_attr *ts_get_attr(struct ts_node *node, const char *name)
@@ -608,6 +610,8 @@ void ts_add_child(struct ts_node *node, struct ts_node *child)
 	} else {
 		node->child_list = node->child_tail = child;
 	}
+
+	node->child_count++;
 }
 
 int ts_remove_child(struct ts_node *node, struct ts_node *child)
@@ -629,6 +633,8 @@ int ts_remove_child(struct ts_node *node, struct ts_node *child)
 		node->child_tail = iter;
 	}
 	node->child_list = dummy.next;
+	node->child_count--;
+	assert(node->child_count >= 0);
 	return 0;
 }
 
