@@ -22,6 +22,7 @@ Widget xm_rowcol(Widget par, int orient);	/* XmVERTICAL/XmHORIZONTAL */
 Widget xm_button(Widget par, const char *text, XtCallbackProc cb, void *cls);
 Widget xm_drawn_button(Widget par, int width, int height, XtCallbackProc cb, void *cls);
 Widget xm_checkbox(Widget par, const char *text, int checked, XtCallbackProc cb, void *cls);
+Widget xm_textfield(Widget par, const char *text, XtCallbackProc cb, void *cls);
 Widget xm_option_menu(Widget par);
 Widget xm_va_option_menu(Widget par, XtCallbackProc cb, void *cls, ...);
 
@@ -30,5 +31,8 @@ int xm_get_border_size(Widget w);
 /* higher level app-specific utility functions and composite "widgets" */
 Widget create_pathfield(Widget par, const char *defpath, const char *filter,
 		void (*handler)(const char*));
+
+void messagebox(int type, const char *title, const char *msg);
+void color_picker_dialog(unsigned short *col);
 
 #endif /* XMUTIL_H_ */

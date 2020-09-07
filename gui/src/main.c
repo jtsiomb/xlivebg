@@ -20,14 +20,14 @@ static void bgmask_use_change(Widget w, void *cls, void *calldata);
 static void bgmask_path_change(const char *path);
 static void colopt_change(Widget w, void *cls, void *calldata);
 static void bncolor_handler(Widget w, void *cls, void *calldata);
-static void messagebox(int type, const char *title, const char *msg);
+static void gen_wallpaper_ui(void);
 
 XtAppContext app;
 Widget app_shell;
 
 static Widget win;
 static int use_bgimage, use_bgmask;
-static Widget bn_endcol;
+static Widget bn_endcol, frm_cur;
 
 int main(int argc, char **argv)
 {
@@ -75,7 +75,12 @@ static int init_gui(void)
 
 	create_menu();
 
-	frm = xm_frame(win, "Global settings");
+	hbox = xm_rowcol(win, XmHORIZONTAL);
+
+	frm = xm_frame(hbox, "Global settings");
+	frm_cur = xm_frame(hbox, "Wallpaper settings");
+
+	/* global settings */
 	vbox = xm_rowcol(frm, XmVERTICAL);
 
 	xm_label(vbox, "Wallpapers:");
@@ -115,6 +120,8 @@ static int init_gui(void)
 	/*bn_endcol = xm_button(hbox, "end", 0, 0);*/
 	bn_endcol = xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, 0);
 	XtSetSensitive(bn_endcol, 0);
+
+	gen_wallpaper_ui();
 
 	return 0;
 }
@@ -286,11 +293,10 @@ static void bncolor_handler(Widget w, void *cls, void *calldata)
 
 	switch(cbs->reason) {
 	case XmCR_ACTIVATE:
-		printf("clicked\n");
+		color_picker_dialog(0);
 		break;
 
 	case XmCR_EXPOSE:
-		printf("Expose\n");
 		dpy = XtDisplay(w);
 		win = XtWindow(w);
 		scr = XtScreen(w);
@@ -298,7 +304,6 @@ static void bncolor_handler(Widget w, void *cls, void *calldata)
 		gc = XDefaultGCOfScreen(scr);
 		cmap = DefaultColormapOfScreen(scr);
 		border = xm_get_border_size(w);
-		/*XtVaGetValues(w, XmNwidth, &width, XmNheight, &height, (void*)0);*/
 		XtVaSetValues(w, XmNwidth, 2 * border + BNCOL_WIDTH,
 				XmNheight, 2 * border + BNCOL_HEIGHT, (void*)0);
 
@@ -325,40 +330,75 @@ static void bncolor_handler(Widget w, void *cls, void *calldata)
 			XDrawSegments(dpy, win, gc, lseg, 2);
 		}
 		break;
-
-	case XmCR_RESIZE:
-		printf("resized\n");
-		break;
 	}
 }
 
-static void messagebox(int type, const char *title, const char *msg)
+
+static void gen_wallpaper_ui(void)
 {
-	XmString stitle = XmStringCreateSimple((char*)title);
-	XmString smsg = XmStringCreateLtoR((char*)msg, XmFONTLIST_DEFAULT_TAG);
-	Widget dlg;
+	int i, bval;
+	Widget w, vbox, hbox;
+	struct bginfo *bg;
+	XmString xmstr;
+	char buf[1024];
+	struct bgprop *prop;
 
-	switch(type) {
-	case XmDIALOG_WARNING:
-		dlg = XmCreateInformationDialog(app_shell, "warnmsg", 0, 0);
-		break;
-	case XmDIALOG_ERROR:
-		dlg = XmCreateErrorDialog(app_shell, "errormsg", 0, 0);
-		break;
-	case XmDIALOG_INFORMATION:
-	default:
-		dlg = XmCreateInformationDialog(app_shell, "infomsg", 0, 0);
-		break;
+	if(!(bg = bg_active())) {
+		return;
 	}
-	XtVaSetValues(dlg, XmNdialogTitle, stitle, XmNmessageString, smsg, (void*)0);
-	XtVaSetValues(dlg, XmNdialogStyle, XmDIALOG_APPLICATION_MODAL, (void*)0);
-	XmStringFree(stitle);
-	XmStringFree(smsg);
-	XtUnmanageChild(XmMessageBoxGetChild(dlg, XmDIALOG_HELP_BUTTON));
-	XtUnmanageChild(XmMessageBoxGetChild(dlg, XmDIALOG_CANCEL_BUTTON));
-	XtManageChild(dlg);
 
-	while(XtIsManaged(dlg)) {
-		XtAppProcessEvent(app, XtIMAll);
+	if((vbox = XtNameToWidget(frm_cur, "rowcol"))) {
+		XtDestroyWidget(vbox);
+	}
+	vbox = xm_rowcol(frm_cur, XmVERTICAL);
+
+	if((w = XtNameToWidget(frm_cur, "label"))) {
+		sprintf(buf, "Wallpaper settings: %s", bg->name);
+		xmstr = XmStringCreateSimple(buf);
+		XtVaSetValues(w, XmNlabelString, xmstr, (void*)0);
+		XmStringFree(xmstr);
+	}
+
+	prop = bg->prop;
+	for(i=0; i<bg->num_prop; i++) {
+		sprintf(buf, "xlivebg.%s.%s", bg->name, prop->name);
+		switch(prop->type) {
+		case BGPROP_BOOL:
+			if(cmd_getprop_int(buf, &bval) != -1) {
+				xm_checkbox(vbox, prop->name, bval, 0, 0);
+			}
+			break;
+
+		case BGPROP_TEXT:
+			/* TODO handle multi-line text */
+			if(cmd_getprop_str(buf, buf, sizeof buf) != -1) {
+				hbox = xm_rowcol(vbox, XmHORIZONTAL);
+				xm_label(hbox, prop->name);
+				xm_textfield(hbox, 0, 0, 0);
+			}
+			break;
+
+		case BGPROP_NUMBER:
+			/* TODO slider */
+			break;
+
+		case BGPROP_INTEGER:
+			/* TODO same */
+			break;
+
+		case BGPROP_COLOR:
+			/* TODO color */
+			break;
+
+		case BGPROP_PATHNAME:
+		case BGPROP_FILENAME:
+		case BGPROP_DIRNAME:
+			if(cmd_getprop_str(buf, buf, sizeof buf) != -1) {
+				create_pathfield(vbox, 0, 0, 0);
+			}
+			break;
+		}
+
+		prop++;
 	}
 }

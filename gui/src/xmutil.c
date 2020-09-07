@@ -21,12 +21,15 @@ Widget xm_label(Widget par, const char *text)
 Widget xm_frame(Widget par, const char *title)
 {
 	Widget w;
-	Arg arg;
+	Arg args[2];
+	XmString str = XmStringCreateSimple((char*)title);
 
 	w = XmCreateFrame(par, "frame", 0, 0);
-	XtSetArg(arg, XmNframeChildType, XmFRAME_TITLE_CHILD);
-	XtManageChild(XmCreateLabelGadget(w, (char*)title, &arg, 1));
+	XtSetArg(args[0], XmNframeChildType, XmFRAME_TITLE_CHILD);
+	XtSetArg(args[1], XmNlabelString, str);
+	XtManageChild(XmCreateLabelGadget(w, "label", args, 2));
 	XtManageChild(w);
+	XmStringFree(str);
 	return w;
 }
 
@@ -93,6 +96,22 @@ Widget xm_checkbox(Widget par, const char *text, int checked, XtCallbackProc cb,
 
 	if(cb) {
 		XtAddCallback(w, XmNvalueChangedCallback, cb, cls);
+	}
+	return w;
+}
+
+Widget xm_textfield(Widget par, const char *text, XtCallbackProc cb, void *cls)
+{
+	Widget w;
+
+	w = XmCreateTextField(par, "textfield", 0, 0);
+	XtManageChild(w);
+
+	if(text) {
+		XmTextFieldSetString(w, text);
+	}
+	if(cb) {
+		XtAddCallback(w, XmNactivateCallback, cb, cls);
 	}
 	return w;
 }
@@ -241,3 +260,38 @@ static void pathfield_modify(Widget txf, void *cls, void *calldata)
 	XtFree(text);
 }
 
+void messagebox(int type, const char *title, const char *msg)
+{
+	XmString stitle = XmStringCreateSimple((char*)title);
+	XmString smsg = XmStringCreateLtoR((char*)msg, XmFONTLIST_DEFAULT_TAG);
+	Widget dlg;
+
+	switch(type) {
+	case XmDIALOG_WARNING:
+		dlg = XmCreateInformationDialog(app_shell, "warnmsg", 0, 0);
+		break;
+	case XmDIALOG_ERROR:
+		dlg = XmCreateErrorDialog(app_shell, "errormsg", 0, 0);
+		break;
+	case XmDIALOG_INFORMATION:
+	default:
+		dlg = XmCreateInformationDialog(app_shell, "infomsg", 0, 0);
+		break;
+	}
+	XtVaSetValues(dlg, XmNdialogTitle, stitle, XmNmessageString, smsg, (void*)0);
+	XtVaSetValues(dlg, XmNdialogStyle, XmDIALOG_APPLICATION_MODAL, (void*)0);
+	XmStringFree(stitle);
+	XmStringFree(smsg);
+	XtUnmanageChild(XmMessageBoxGetChild(dlg, XmDIALOG_HELP_BUTTON));
+	XtUnmanageChild(XmMessageBoxGetChild(dlg, XmDIALOG_CANCEL_BUTTON));
+	XtManageChild(dlg);
+
+	while(XtIsManaged(dlg)) {
+		XtAppProcessEvent(app, XtIMAll);
+	}
+}
+
+void color_picker_dialog(unsigned short *col)
+{
+	messagebox(XmDIALOG_INFORMATION, "Not implemented yet", "TODO: create a color selection dialog");
+}

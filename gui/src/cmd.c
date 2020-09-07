@@ -57,14 +57,14 @@ int cmd_ping(void)
 	return 0;
 }
 
-int cmd_list(char *buf, int maxsz)
+static int cmd_multiline(const char *cmd, char *buf, int maxsz)
 {
 	int s, res;
 
 	if((s = open_conn()) == -1) {
 		return -1;
 	}
-	write(s, "list\n", 5);
+	write(s, cmd, strlen(cmd));
 
 	if(read_status(s) <= 0) {
 		close(s);
@@ -75,24 +75,24 @@ int cmd_list(char *buf, int maxsz)
 	return res;
 }
 
+int cmd_list(char *buf, int maxsz)
+{
+	return cmd_multiline("list\n", buf, maxsz);
+}
+
+int cmd_proplist(const char *bgname, char *buf, int maxsz)
+{
+	if(bgname) {
+		sprintf(cmdbuf, "lsprop %s\n", bgname);
+		return cmd_multiline(cmdbuf, buf, maxsz);
+	}
+	return cmd_multiline("lsprop\n", buf, maxsz);
+}
+
 int cmd_getprop_str(const char *name, char *buf, int maxsz)
 {
-	int s, len, res;
-
-	if((s = open_conn()) == -1) {
-		return -1;
-	}
-
-	len = sprintf(cmdbuf, "getpropstr %s\n", name);
-	write(s, cmdbuf, len);
-	if(read_status(s) <= 0) {
-		close(s);
-		return -1;
-	}
-
-	res = read_multi_lines(s, buf, maxsz);
-	close(s);
-	return res;
+	sprintf(cmdbuf, "getpropstr %s\n", name);
+	return cmd_multiline(cmdbuf, buf, maxsz);
 }
 
 int cmd_getprop_int(const char *name, int *ret)

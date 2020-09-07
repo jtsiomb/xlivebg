@@ -19,60 +19,54 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define BG_H_
 
 enum {
-	BGATTR_BOOL,
-	BGATTR_TEXT,
-	BGATTR_NUMBER,
-	BGATTR_INTEGER,
-	BGATTR_COLOR,
-	BGATTR_FILENAME = 0x100,
-	BGATTR_DIRNAME = 0x200,
-	BGATTR_PATHNAME = 0x300
+	BGPROP_BOOL,
+	BGPROP_TEXT,
+	BGPROP_NUMBER,
+	BGPROP_INTEGER,
+	BGPROP_COLOR,
+	BGPROP_FILENAME = 0x100,
+	BGPROP_DIRNAME = 0x200,
+	BGPROP_PATHNAME = 0x300
 };
 
-
-struct bgattr_text {
-	int type;
+struct bgprop_text {
 	int multiline;
 	char *text;
 };
 
-struct bgattr_number {
-	int type;
+struct bgprop_number {
 	float start, end;
 	float value;
 };
 
-struct bgattr_integer {
-	int type;
+struct bgprop_integer {
 	int start, end;
 	int value;
 };
 
-struct bgattr_color {
-	int type;
+struct bgprop_color {
 	float color[3];
 };
 
-struct bgattr_path {
-	int type;
+struct bgprop_path {
 	char *path;
 };
 
-union bgattr {
+struct bgprop {
 	int type;
-	struct bgattr_text text;
-	struct bgattr_number number;
-	struct bgattr_integer integer;
-	struct bgattr_color color;
-	struct bgattr_path path;
+	char *name, *desc;
+	struct bgprop_text text;
+	struct bgprop_number number;
+	struct bgprop_integer integer;
+	struct bgprop_color color;
+	struct bgprop_path path;
 };
 
 struct bginfo {
 	char *name, *desc;
-	char *props_str;
 
-	union bgattr *attr;
-	int num_attr;
+	struct bgprop *prop;
+	int num_prop;
 };
 
 #ifdef __cplusplus

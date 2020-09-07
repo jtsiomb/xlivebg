@@ -18,49 +18,52 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "treestore.h"
 #include "bg.h"
 #include "cmd.h"
+
+static int parse_proplist(struct bginfo *bg, char *plist, int plist_size);
 
 static struct bginfo *bglist;
 static int bglist_size;
 
 int bg_create_list(void)
 {
-	static char *liststr;
-	static int liststr_size;
+	static char *rbuf;
+	static int rbuf_size;
 	char *ptr, *end;
-	int size;
+	int i, size;
 	struct bginfo *bg;
 
 	free(bglist);
 
-	if(!liststr) {
-		liststr_size = 512;
-		if(!(liststr = malloc(liststr_size))) {
-			fprintf(stderr, "Failed to create wallpaper list buffer (%db)\n", liststr_size);
-			liststr_size = 0;
+	if(!rbuf) {
+		rbuf_size = 512;
+		if(!(rbuf = malloc(rbuf_size))) {
+			fprintf(stderr, "Failed to allocate wallpaper list buffer (%db)\n", rbuf_size);
+			rbuf_size = 0;
 			return -1;
 		}
 	}
 
-	if((size = cmd_list(liststr, liststr_size)) <= 0) {
+retry_list:
+	if((size = cmd_list(rbuf, rbuf_size)) <= 0) {
+		fprintf(stderr, "Failed to retrieve wallpaper list\n");
 		return -1;
 	}
-	if(size > liststr_size) {
-		free(liststr);
-		liststr_size = size;
-		if(!(liststr = malloc(liststr_size))) {
-			fprintf(stderr, "Failed to create wallpaper list buffer (%db)\n", liststr_size);
-			liststr_size = 0;
+	if(size > rbuf_size) {
+		free(rbuf);
+		rbuf_size = size;
+		if(!(rbuf = malloc(rbuf_size))) {
+			fprintf(stderr, "Failed to allocae wallpaper list buffer (%db)\n", rbuf_size);
+			rbuf_size = 0;
 			return -1;
 		}
-		if(cmd_list(liststr, liststr_size) <= 0) {
-			return -1;
-		}
+		goto retry_list;
 	}
 
 	bglist_size = 0;
-	ptr = liststr;
+	ptr = rbuf;
 	while(*ptr) {
 		if(*ptr++ == ':') bglist_size++;
 	}
@@ -73,7 +76,7 @@ int bg_create_list(void)
 
 	bg = bglist;
 	bglist_size = 0;
-	ptr = liststr;
+	ptr = rbuf;
 	for(;;) {
 		if(!(end = strchr(ptr, ':'))) break;
 		*end = 0;
@@ -89,8 +92,31 @@ int bg_create_list(void)
 			fprintf(stderr, "Failed to allocate wallpaper description\n");
 			goto fail;
 		}
+
 		bg++;
 		ptr = end + 1;
+	}
+
+	/* retrieve the list of properties for each wallpaper plugin */
+	for(i=0; i<bglist_size; i++) {
+		bg = bglist + i;
+retry_proplist:
+		if((size = cmd_proplist(bg->name, rbuf, rbuf_size)) <= 0) {
+			fprintf(stderr, "Failed to retreive property list for wallpaper: %s\n", bg->name);
+			continue;
+		}
+		if(size > rbuf_size) {
+			free(rbuf);
+			if(!(ptr = malloc(size))) {
+				fprintf(stderr, "Failed to allocate wallpaper properties buffer (%db)\n", rbuf_size);
+				continue;
+			}
+			rbuf = ptr;
+			rbuf_size = size;
+			goto retry_proplist;
+		}
+
+		parse_proplist(bg, rbuf, size);
 	}
 
 	return 0;
@@ -154,4 +180,124 @@ int bg_switch(const char *name)
 {
 	if(!name || !*name) return -1;
 	return cmd_setprop_str("xlivebg.active", name);
+}
+
+
+static int proptype(const char *s)
+{
+	if(strcmp(s, "bool") == 0) return BGPROP_BOOL;
+	if(strcmp(s, "text") == 0) return BGPROP_TEXT;
+	if(strcmp(s, "number") == 0) return BGPROP_NUMBER;
+	if(strcmp(s, "integer") == 0) return BGPROP_INTEGER;
+	if(strcmp(s, "color") == 0) return BGPROP_COLOR;
+	if(strcmp(s, "filename") == 0) return BGPROP_FILENAME;
+	if(strcmp(s, "dirname") == 0) return BGPROP_DIRNAME;
+	if(strcmp(s, "pathname") == 0) return BGPROP_PATHNAME;
+	return -1;
+}
+
+struct memfile {
+	char *buf;
+	int cur, size;
+};
+
+static long memread(void *buf, size_t bytes, void *uptr)
+{
+	struct memfile *mf = uptr;
+	int bleft;
+
+	if(mf->cur >= mf->size) return -1;
+
+	bleft = mf->size - mf->cur;
+	if(bytes > bleft) bytes = bleft;
+
+	memcpy(buf, mf->buf, bytes);
+	mf->cur += bytes;
+	return bytes;
+}
+
+static int parse_proplist(struct bginfo *bg, char *plist, int plist_size)
+{
+	struct memfile memfile;
+	struct ts_io io = {&memfile, memread, 0};
+	struct ts_node *root, *node;
+	const char *str, *idstr, *typestr;
+	struct bgprop *prop;
+	float *vec;
+
+	memfile.buf = plist;
+	memfile.cur = 0;
+	memfile.size = plist_size;
+
+	if(!(root = ts_load_io(&io))) {
+		fprintf(stderr, "failed to parse property list\n");
+		return -1;
+	}
+	if(strcpy(root->name, "proplist") != 0) {
+		fprintf(stderr, "parse_proplist(%s): unexpected root node \"%s\" (expected: proplist)\n",
+				bg->name, root->name);
+		ts_free_tree(root);
+		return -1;
+	}
+
+	if(!(prop = malloc(root->child_count * sizeof *prop))) {
+		fprintf(stderr, "parse_proplist(%s): failed to allocate %d properties\n",
+				bg->name, root->child_count);
+		ts_free_tree(root);
+		return -1;
+	}
+
+	bg->num_prop = 0;
+	node = root->child_list;
+	while(node) {
+		if(!(idstr = ts_get_attr_str(node, "id", 0)) ||
+				!(typestr = ts_get_attr_str(node, "type", 0))) {
+			fprintf(stderr, "parse_proplist(%s): invalid property %d\n", bg->name, bg->num_prop);
+			goto skip;
+		}
+		memset(prop, 0, sizeof *prop);	/* clear previous attempts */
+		if((prop->type = proptype(typestr)) == -1) {
+			fprintf(stderr, "parse_proplist(%s): invalid property type: %s\n", bg->name, typestr);
+			goto skip;
+		}
+		if(!(prop->name = strdup(idstr))) {
+			fprintf(stderr, "parse_proplist(%s): failed to allocate prop name: %s\n", bg->name, idstr);
+			goto skip;
+		}
+		if((str = ts_get_attr_str(node, "desc", 0))) {
+			prop->desc = strdup(str);
+		}
+
+		switch(prop->type) {
+		case BGPROP_TEXT:
+			prop->text.multiline = ts_get_attr_int(node, "multiline", 0);
+			break;
+
+		case BGPROP_NUMBER:
+			if((vec = ts_get_attr_vec(node, "range", 0))) {
+				prop->number.start = vec[0];
+				prop->number.end = vec[1];
+			}
+			break;
+
+		case BGPROP_INTEGER:
+			if((vec = ts_get_attr_vec(node, "range", 0))) {
+				prop->integer.start = vec[0];
+				prop->integer.end = vec[1];
+			}
+			break;
+		}
+
+		bg->num_prop++;
+
+		if(0) {
+skip:		free(prop->name);
+			free(prop->desc);
+		}
+		node = node->next;
+	}
+
+	bg->prop = prop;
+	ts_free_tree(root);
+	return 0;
 }
