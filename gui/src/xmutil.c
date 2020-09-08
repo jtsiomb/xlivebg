@@ -108,7 +108,7 @@ Widget xm_textfield(Widget par, const char *text, XtCallbackProc cb, void *cls)
 	XtManageChild(w);
 
 	if(text) {
-		XmTextFieldSetString(w, text);
+		XmTextFieldSetString(w, (char*)text);
 	}
 	if(cb) {
 		XtAddCallback(w, XmNactivateCallback, cb, cls);
@@ -146,6 +146,86 @@ Widget xm_va_option_menu(Widget par, XtCallbackProc cb, void *cls, ...)
 	va_end(ap);
 
 	return w;
+}
+
+Widget xm_sliderf(Widget par, const char *text, float val, float min, float max,
+		XtCallbackProc cb, void *cls)
+{
+	Widget w;
+	Arg argv[16];
+	int argc = 0;
+	XmString xmstr;
+	float delta;
+	int s = 1;
+	int ndecimal = 0;
+
+	if((delta = max - min) <= 1e-6) {
+		return xm_label(par, "INVALID SLIDER RANGE");
+	}
+	while(delta < 100.0f) {
+		delta *= 10.0f;
+		s *= 10;
+		ndecimal++;
+	}
+
+	if(text) {
+		xmstr = XmStringCreateSimple((char*)text);
+		XtSetArg(argv[argc], XmNtitleString, xmstr), argc++;
+	}
+	if(ndecimal) {
+		XtSetArg(argv[argc], XmNdecimalPoints, ndecimal), argc++;
+	}
+	XtSetArg(argv[argc], XmNminimum, min * s), argc++;
+	XtSetArg(argv[argc], XmNmaximum, max * s), argc++;
+	XtSetArg(argv[argc], XmNvalue, val * s), argc++;
+	XtSetArg(argv[argc], XmNshowValue, True), argc++;
+	XtSetArg(argv[argc], XmNorientation, XmHORIZONTAL), argc++;
+
+	w = XmCreateScale(par, "scale", argv, argc);
+	XtManageChild(w);
+
+	if(text) XmStringFree(xmstr);
+
+	if(cb) {
+		XtAddCallback(w, XmNdragCallback, cb, cls);
+		XtAddCallback(w, XmNvalueChangedCallback, cb, cls);
+	}
+	return w;
+}
+
+Widget xm_slideri(Widget par, const char *text, int val, int min, int max,
+		XtCallbackProc cb, void *cls)
+{
+	Widget w;
+	Arg argv[16];
+	int argc = 0;
+	XmString xmstr;
+
+	if(max <= min) {
+		return xm_label(par, "INVALID SLIDER RANGE");
+	}
+
+	if(text) {
+		xmstr = XmStringCreateSimple((char*)text);
+		XtSetArg(argv[argc], XmNtitleString, xmstr), argc++;
+	}
+	XtSetArg(argv[argc], XmNminimum, min), argc++;
+	XtSetArg(argv[argc], XmNmaximum, max), argc++;
+	XtSetArg(argv[argc], XmNvalue, val), argc++;
+	XtSetArg(argv[argc], XmNshowValue, True), argc++;
+	XtSetArg(argv[argc], XmNorientation, XmHORIZONTAL), argc++;
+
+	w = XmCreateScale(par, "scale", argv, argc);
+	XtManageChild(w);
+
+	if(text) XmStringFree(xmstr);
+
+	if(cb) {
+		XtAddCallback(w, XmNdragCallback, cb, cls);
+		XtAddCallback(w, XmNvalueChangedCallback, cb, cls);
+	}
+	return w;
+
 }
 
 int xm_get_border_size(Widget w)

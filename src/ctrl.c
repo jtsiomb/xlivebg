@@ -260,6 +260,7 @@ static int proc_cmd_switch(int s, int argc, char **argv)
 		fprintf(stderr, "proc_cmd_switch: no such plugin: \"%s\"\n", argv[1]);
 		return -1;
 	}
+	printf("CTRL: switch plugin: %s\n", p->name);
 	send_status(s, 1);
 	activate_plugin(p);
 	return 0;
@@ -337,6 +338,8 @@ static int proc_cmd_setprop(int s, int argc, char **argv)
 		fprintf(stderr, "proc_cmd_setprop: not enough arguments\n");
 		return -1;
 	}
+
+	printf("CTRL: setprop %s %s\n", argv[1], argv[2]);
 
 	type = propcmd_type(argv[0]);
 	switch(type) {

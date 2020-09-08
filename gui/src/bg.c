@@ -134,10 +134,17 @@ fail:
 
 void bg_destroy_list(void)
 {
-	int i;
+	int i, j;
 	for(i=0; i<bglist_size; i++) {
 		free(bglist[i].name);
 		free(bglist[i].desc);
+
+		for(j=0; j<bglist[i].num_prop; j++) {
+			free(bglist[i].prop[j].name);
+			free(bglist[i].prop[j].fullname);
+			free(bglist[i].prop[j].desc);
+		}
+		free(bglist[i].prop);
 	}
 	free(bglist);
 	bglist = 0;
@@ -212,7 +219,6 @@ static long memread(void *buf, size_t bytes, void *uptr)
 	if(bytes > bleft) bytes = bleft;
 
 	memcpy(buf, mf->buf + mf->cur, bytes);
-	write(1, buf, bytes);
 	mf->cur += bytes;
 	return bytes;
 }
@@ -247,6 +253,7 @@ static int parse_proplist(struct bginfo *bg, char *plist, int plist_size)
 		ts_free_tree(root);
 		return -1;
 	}
+	bg->prop = prop;
 
 	bg->num_prop = 0;
 	node = root->child_list;
@@ -265,6 +272,12 @@ static int parse_proplist(struct bginfo *bg, char *plist, int plist_size)
 			fprintf(stderr, "parse_proplist(%s): failed to allocate prop name: %s\n", bg->name, idstr);
 			goto skip;
 		}
+		if(!(prop->fullname = malloc(strlen(idstr) + strlen(bg->name) + 16))) {
+			fprintf(stderr, "parse_proplist(%s): failed to allocate prop fullname: xlivebg.%s.%s\n", bg->name, bg->name, idstr);
+			goto skip;
+		}
+		sprintf(prop->fullname, "xlivebg.%s.%s", bg->name, idstr);
+
 		if((str = ts_get_attr_str(node, "desc", 0))) {
 			prop->desc = strdup(str);
 		}
@@ -290,15 +303,16 @@ static int parse_proplist(struct bginfo *bg, char *plist, int plist_size)
 		}
 
 		bg->num_prop++;
+		prop++;
 
 		if(0) {
 skip:		free(prop->name);
+			free(prop->fullname);
 			free(prop->desc);
 		}
 		node = node->next;
 	}
 
-	bg->prop = prop;
 	ts_free_tree(root);
 	return 0;
 }

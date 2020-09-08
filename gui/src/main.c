@@ -20,6 +20,8 @@ static void bgmask_use_change(Widget w, void *cls, void *calldata);
 static void bgmask_path_change(const char *path);
 static void colopt_change(Widget w, void *cls, void *calldata);
 static void bncolor_handler(Widget w, void *cls, void *calldata);
+static void numprop_change(Widget w, void *cls, void *calldata);
+static void intprop_change(Widget w, void *cls, void *calldata);
 static void gen_wallpaper_ui(void);
 
 XtAppContext app;
@@ -334,10 +336,39 @@ static void bncolor_handler(Widget w, void *cls, void *calldata)
 	}
 }
 
+static void numprop_change(Widget w, void *cls, void *calldata)
+{
+	int i, ndecimal = 0;
+	float val, s = 1.0f;
+	struct bgprop *prop = cls;
+	XmScaleCallbackStruct *cbs = calldata;
+
+	XtVaGetValues(w, XmNdecimalPoints, &ndecimal, (void*)0);
+	for(i=0; i<ndecimal; i++) {
+		s *= 0.1f;
+	}
+	val = cbs->value * s;
+	if(val != prop->number.value) {
+		prop->number.value = val;
+		cmd_setprop_num(prop->fullname, val);
+	}
+}
+
+static void intprop_change(Widget w, void *cls, void *calldata)
+{
+	struct bgprop *prop = cls;
+	XmScaleCallbackStruct *cbs = calldata;
+
+	if(cbs->value != prop->integer.value) {
+		prop->integer.value = cbs->value;
+		cmd_setprop_int(prop->fullname, cbs->value);
+	}
+}
 
 static void gen_wallpaper_ui(void)
 {
-	int i, bval;
+	int i, bval, ival;
+	float fval;
 	Widget w, vbox, hbox;
 	struct bginfo *bg;
 	XmString xmstr;
@@ -362,17 +393,16 @@ static void gen_wallpaper_ui(void)
 
 	prop = bg->prop;
 	for(i=0; i<bg->num_prop; i++) {
-		sprintf(buf, "xlivebg.%s.%s", bg->name, prop->name);
 		switch(prop->type) {
 		case BGPROP_BOOL:
-			if(cmd_getprop_int(buf, &bval) != -1) {
+			if(cmd_getprop_int(prop->fullname, &bval) != -1) {
 				xm_checkbox(vbox, prop->name, bval, 0, 0);
 			}
 			break;
 
 		case BGPROP_TEXT:
 			/* TODO handle multi-line text */
-			if(cmd_getprop_str(buf, buf, sizeof buf) != -1) {
+			if(cmd_getprop_str(prop->fullname, buf, sizeof buf) != -1) {
 				hbox = xm_rowcol(vbox, XmHORIZONTAL);
 				xm_label(hbox, prop->name);
 				xm_textfield(hbox, 0, 0, 0);
@@ -380,11 +410,19 @@ static void gen_wallpaper_ui(void)
 			break;
 
 		case BGPROP_NUMBER:
-			/* TODO slider */
+			if(cmd_getprop_num(prop->fullname, &fval) != -1) {
+				prop->number.value = fval;
+				xm_sliderf(vbox, prop->name, fval, prop->number.start, prop->number.end,
+						numprop_change, prop);
+			}
 			break;
 
 		case BGPROP_INTEGER:
-			/* TODO same */
+			if(cmd_getprop_int(prop->fullname, &ival) != -1) {
+				prop->integer.value = ival;
+				xm_sliderf(vbox, prop->name, ival, prop->integer.start, prop->integer.end,
+						intprop_change, prop);
+			}
 			break;
 
 		case BGPROP_COLOR:
@@ -394,10 +432,10 @@ static void gen_wallpaper_ui(void)
 		case BGPROP_PATHNAME:
 		case BGPROP_FILENAME:
 		case BGPROP_DIRNAME:
-			if(cmd_getprop_str(buf, buf, sizeof buf) != -1) {
+			if(cmd_getprop_str(prop->fullname, buf, sizeof buf) != -1) {
 				hbox = xm_rowcol(vbox, XmHORIZONTAL);
 				xm_label(hbox, prop->name);
-				create_pathfield(hbox, 0, 0, 0);
+				create_pathfield(hbox, clean_path_str(buf), 0, 0);
 			}
 			break;
 		}

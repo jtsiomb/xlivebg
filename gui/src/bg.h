@@ -54,7 +54,7 @@ struct bgprop_path {
 
 struct bgprop {
 	int type;
-	char *name, *desc;
+	char *name, *fullname, *desc;
 	struct bgprop_text text;
 	struct bgprop_number number;
 	struct bgprop_integer integer;

@@ -3,7 +3,7 @@
 #include <GL/gl.h>
 #include "xlivebg.h"
 
-static void start(void *cls);
+static void start(long tmsec, void *cls);
 static void draw(long tmsec, void *cls);
 static void prop(const char *prop, void *cls);
 
@@ -13,7 +13,7 @@ static void prop(const char *prop, void *cls);
 	"        id = \"amplitude\"\n" \
 	"        desc = \"amplitude of the distortion\"\n" \
 	"        type = \"number\"\n" \
-	"        range = [0, 5]\n" \
+	"        range = [0, 1]\n" \
 	"    }\n" \
 	"    prop {\n" \
 	"        id = \"frequency\"\n" \
@@ -42,7 +42,7 @@ void register_plugin(void)
 	xlivebg_register_plugin(&plugin);
 }
 
-static void start(void *cls)
+static void start(long tmsec, void *cls)
 {
 	prop("amplitude", 0);
 	prop("frequency", 0);
