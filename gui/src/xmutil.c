@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include "xmutil.h"
@@ -245,6 +246,17 @@ const char *file_dialog(Widget shell, const char *start_dir, const char *filter,
 	Widget dlg;
 	Arg argv[3];
 	int argc = 0;
+	XmString xmstr_startdir = 0, xmstr_filter = 0;
+
+	if(start_dir && *start_dir) {
+		xmstr_startdir = XmStringCreateSimple((char*)start_dir);
+		XtSetArg(argv[argc], XmNdirectory, xmstr_startdir), argc++;
+	}
+	if(filter && *filter) {
+		xmstr_filter = XmStringCreateSimple((char*)filter);
+		XtSetArg(argv[argc], XmNdirMask, xmstr_filter), argc++;
+	}
+	XtSetArg(argv[argc], XmNpathMode, XmPATH_MODE_RELATIVE), argc++;
 
 	if(bufsz < sizeof bufsz) {
 		fprintf(stderr, "file_dialog: insufficient buffer size: %d\n", bufsz);
@@ -252,22 +264,13 @@ const char *file_dialog(Widget shell, const char *start_dir, const char *filter,
 	}
 	memcpy(buf, &bufsz, sizeof bufsz);
 
-	if(start_dir) {
-		XmString s = XmStringCreateSimple((char*)start_dir);
-		XtSetArg(argv[argc], XmNdirectory, s), argc++;
-		XmStringFree(s);
-	}
-	if(filter) {
-		XmString s = XmStringCreateSimple((char*)filter);
-		XtSetArg(argv[argc], XmNdirMask, s), argc++;
-		XmStringFree(s);
-	}
-	XtSetArg(argv[argc], XmNpathMode, XmPATH_MODE_RELATIVE), argc++;
-
 	dlg = XmCreateFileSelectionDialog(app_shell, "filesb", argv, argc);
 	XtAddCallback(dlg, XmNcancelCallback, filesel_handler, 0);
 	XtAddCallback(dlg, XmNokCallback, filesel_handler, buf);
 	XtManageChild(dlg);
+
+	if(xmstr_startdir) XmStringFree(xmstr_startdir);
+	if(xmstr_filter) XmStringFree(xmstr_filter);
 
 	while(XtIsManaged(dlg)) {
 		XtAppProcessEvent(app, XtIMAll);
@@ -304,16 +307,17 @@ static void pathfield_browse(Widget bn, void *cls, void *calldata);
 static void pathfield_modify(Widget txf, void *cls, void *calldata);
 
 Widget create_pathfield(Widget par, const char *defpath, const char *filter,
-		void (*handler)(const char*))
+		void (*handler)(const char*, void*), void *cls)
 {
 	Widget hbox, tx_path;
-	Arg args[2];
+	Arg args[3];
 
 	hbox = xm_rowcol(par, XmHORIZONTAL);
 
 	XtSetArg(args[0], XmNcolumns, 40);
 	XtSetArg(args[1], XmNeditable, 0);
-	tx_path = XmCreateTextField(hbox, "textfield", args, 2);
+	XtSetArg(args[2], XmNuserData, cls);
+	tx_path = XmCreateTextField(hbox, "textfield", args, 3);
 	XtManageChild(tx_path);
 	if(defpath) XmTextFieldSetString(tx_path, (char*)defpath);
 	XtAddCallback(tx_path, XmNvalueChangedCallback, pathfield_modify, (void*)handler);
@@ -325,26 +329,82 @@ Widget create_pathfield(Widget par, const char *defpath, const char *filter,
 static void pathfield_browse(Widget bn, void *cls, void *calldata)
 {
 	char buf[512];
+	char *s, *src, *dst, *lastslash, *initdir = 0;
 
-	if(file_dialog(app_shell, 0, 0, buf, sizeof buf)) {
+	if((s = XmTextFieldGetString(cls)) && *s) {
+		lastslash = 0;
+		src = s;
+		dst = buf;
+		while(*src && src - s < sizeof buf - 1) {
+			if(*src == '/') lastslash = dst;
+			*dst++ = *src++;
+		}
+		*dst = 0;
+
+		if(lastslash) *lastslash = 0;
+		if(*buf) {
+			initdir = buf;
+		}
+	}
+
+	if(file_dialog(app_shell, initdir, 0, buf, sizeof buf)) {
 		XmTextFieldSetString(cls, buf);
 	}
 }
 
 static void pathfield_modify(Widget txf, void *cls, void *calldata)
 {
-	void (*usercb)(const char*) = (void (*)(const char*))cls;
+	void *udata;
+	void (*usercb)(const char*, void*) = (void (*)(const char*, void*))cls;
 
 	char *text = XmTextFieldGetString(txf);
-	if(usercb) usercb(text);
+	if(usercb) {
+		XtVaGetValues(txf, XmNuserData, &udata, (void*)0);
+		usercb(text, udata);
+	}
 	XtFree(text);
 }
 
-void messagebox(int type, const char *title, const char *msg)
+static char *msgbox_text;
+static int msgbox_textsz;
+
+#define MSGBOX_FORMAT_TEXT(fmt, dofail) \
+	do {	\
+		char *tmp; \
+		int len, newlen; \
+		va_list ap;	\
+		if(!msgbox_text) { \
+			msgbox_textsz = 256; \
+			if(!(msgbox_text = malloc(msgbox_textsz))) { \
+				perror("Failed to allocate messagebox text buffer"); \
+				dofail; \
+			} \
+		} \
+		for(;;) {	\
+			va_start(ap, fmt);	\
+			len = vsnprintf(msgbox_text, msgbox_textsz, fmt, ap);	\
+			va_end(ap);	\
+			if(len == strlen(msgbox_text)) break;	\
+			newlen = len == -1 ? msgbox_textsz << 1 : len;	\
+			if(!(tmp = malloc(newlen))) {	\
+				fprintf(stderr, "Failed to resize messagebox buffer to %d bytes\n", newlen);	\
+				dofail;	\
+			}	\
+			free(msgbox_text);	\
+			msgbox_text = tmp;	\
+			msgbox_textsz = newlen;	\
+		}	\
+	} while(0)
+
+void messagebox(int type, const char *title, const char *msg, ...)
 {
-	XmString stitle = XmStringCreateSimple((char*)title);
-	XmString smsg = XmStringCreateLtoR((char*)msg, XmFONTLIST_DEFAULT_TAG);
+	XmString stitle, smsg;
 	Widget dlg;
+
+	MSGBOX_FORMAT_TEXT(msg, return);
+
+	stitle = XmStringCreateSimple((char*)title);
+	smsg = XmStringCreateLtoR(msgbox_text, XmFONTLIST_DEFAULT_TAG);
 
 	switch(type) {
 	case XmDIALOG_WARNING:
@@ -369,6 +429,42 @@ void messagebox(int type, const char *title, const char *msg)
 	while(XtIsManaged(dlg)) {
 		XtAppProcessEvent(app, XtIMAll);
 	}
+}
+
+static void qdlg_handler(Widget dlg, void *cls, void *calldata)
+{
+	int *resp = cls;
+	*resp = 1;
+}
+
+int questionbox(const char *title, const char *msg, ...)
+{
+	XmString stitle, smsg;
+	Widget dlg;
+	Arg argv[16];
+	int argc = 0;
+	int resp = 0;
+
+	MSGBOX_FORMAT_TEXT(msg, return -1);
+
+	stitle = XmStringCreateSimple((char*)title);
+	smsg = XmStringCreateLtoR(msgbox_text, XmFONTLIST_DEFAULT_TAG);
+
+	XtSetArg(argv[argc], XmNdialogTitle, stitle), argc++;
+	XtSetArg(argv[argc], XmNmessageString, smsg), argc++;
+	XtSetArg(argv[argc], XmNdialogStyle, XmDIALOG_APPLICATION_MODAL), argc++;
+	dlg = XmCreateQuestionDialog(app_shell, "questiondlg", argv, argc);
+	XmStringFree(stitle);
+	XmStringFree(smsg);
+	XtUnmanageChild(XmMessageBoxGetChild(dlg, XmDIALOG_HELP_BUTTON));
+
+	XtAddCallback(dlg, XmNokCallback, qdlg_handler, &resp);
+	XtManageChild(dlg);
+
+	while(XtIsManaged(dlg)) {
+		XtAppProcessEvent(app, XtIMAll);
+	}
+	return resp;
 }
 
 void color_picker_dialog(unsigned short *col)

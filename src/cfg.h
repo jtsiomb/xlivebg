@@ -33,6 +33,8 @@ struct cfg {
 	struct ts_node *ts;
 } cfg;
 
+extern char *cfgpath;
+
 #define CFGNAME_ACTIVE		"xlivebg.active"
 #define CFGNAME_IMAGE		"xlivebg.image"
 #define CFGNAME_ANIM_MASK	"xlivebg.anim_mask"

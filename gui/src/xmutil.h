@@ -35,9 +35,10 @@ int xm_get_border_size(Widget w);
 
 /* higher level app-specific utility functions and composite "widgets" */
 Widget create_pathfield(Widget par, const char *defpath, const char *filter,
-		void (*handler)(const char*));
+		void (*handler)(const char*, void*), void *cls);
 
-void messagebox(int type, const char *title, const char *msg);
+void messagebox(int type, const char *title, const char *msg, ...);
+int questionbox(const char *title, const char *msg, ...);
 void color_picker_dialog(unsigned short *col);
 
 #endif /* XMUTIL_H_ */

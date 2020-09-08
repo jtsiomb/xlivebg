@@ -57,6 +57,18 @@ int cmd_ping(void)
 	return 0;
 }
 
+int cmd_save(void)
+{
+	int s, res;
+	if((s = open_conn()) == -1) {
+		return -1;
+	}
+	write(s, "save\n", 5);
+	res = read_status(s);
+	close(s);
+	return res;
+}
+
 static int cmd_multiline(const char *cmd, char *buf, int maxsz)
 {
 	int s, res;
@@ -73,6 +85,22 @@ static int cmd_multiline(const char *cmd, char *buf, int maxsz)
 	res = read_multi_lines(s, buf, maxsz);
 	close(s);
 	return res;
+}
+
+int cmd_cfgpath(char *buf, int maxsz)
+{
+	char *ptr = buf;
+	int res = cmd_multiline("cfgpath\n", buf, maxsz);
+	if(res < 0) return res;
+
+	while(*ptr) {
+		if(*ptr == '\n' || *ptr == '\r') {
+			*ptr = 0;
+			break;
+		}
+		ptr++;
+	}
+	return 0;
 }
 
 int cmd_list(char *buf, int maxsz)

@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 int cmd_ping(void);
+int cmd_save(void);
+int cmd_cfgpath(char *buf, int maxsz);
 
 int cmd_list(char *buf, int maxsz);
 int cmd_proplist(const char *bgname, char *buf, int maxsz);

@@ -11,17 +11,19 @@
 static int init_gui(void);
 static void create_menu(void);
 static int create_bglist(Widget par);
+static void savecfg_handler(Widget w, void *cls, void *calldata);
 static void file_menu_handler(Widget lst, void *cls, void *calldata);
 static void help_menu_handler(Widget lst, void *cls, void *calldata);
 static void bgselect_handler(Widget lst, void *cls, void *calldata);
 static void bgimage_use_change(Widget w, void *cls, void *calldata);
-static void bgimage_path_change(const char *path);
+static void bgimage_path_change(const char *path, void *cls);
 static void bgmask_use_change(Widget w, void *cls, void *calldata);
-static void bgmask_path_change(const char *path);
+static void bgmask_path_change(const char *path, void *cls);
 static void colopt_change(Widget w, void *cls, void *calldata);
 static void bncolor_handler(Widget w, void *cls, void *calldata);
 static void numprop_change(Widget w, void *cls, void *calldata);
 static void intprop_change(Widget w, void *cls, void *calldata);
+static void pathprop_change(const char *path, void *cls);
 static void gen_wallpaper_ui(void);
 
 XtAppContext app;
@@ -80,7 +82,10 @@ static int init_gui(void)
 	hbox = xm_rowcol(win, XmHORIZONTAL);
 
 	frm = xm_frame(hbox, "Global settings");
-	frm_cur = xm_frame(hbox, "Wallpaper settings");
+
+	vbox = xm_rowcol(hbox, XmVERTICAL);
+	frm_cur = xm_frame(vbox, "Wallpaper settings");
+	xm_button(xm_rowcol(vbox, XmHORIZONTAL), "Save configuration", savecfg_handler, 0);
 
 	/* global settings */
 	vbox = xm_rowcol(frm, XmVERTICAL);
@@ -100,7 +105,7 @@ static int init_gui(void)
 	subfrm = xm_frame(vbox, "Background image");
 	subvbox = xm_rowcol(subfrm, XmVERTICAL);
 	xm_checkbox(subvbox, "Use image", use_bgimage, bgimage_use_change, 0);
-	create_pathfield(subvbox, str, 0, bgimage_path_change);
+	create_pathfield(subvbox, str, 0, bgimage_path_change, 0);
 
 	if(cmd_getprop_str("xlivebg.anim_mask", buf, sizeof buf) != -1) {
 		str = clean_path_str(buf);
@@ -112,7 +117,7 @@ static int init_gui(void)
 	subfrm = xm_frame(vbox, "Animation mask");
 	subvbox = xm_rowcol(subfrm, XmVERTICAL);
 	xm_checkbox(subvbox, "Use mask", use_bgmask, bgmask_use_change, 0);
-	create_pathfield(subvbox, str, 0, bgmask_path_change);
+	create_pathfield(subvbox, str, 0, bgmask_path_change, 0);
 
 	subfrm = xm_frame(vbox, "Color");
 	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
@@ -191,6 +196,18 @@ static int create_bglist(Widget par)
 	return 0;
 }
 
+static void savecfg_handler(Widget w, void *cls, void *calldata)
+{
+	char cfgfile[512];
+
+	if(cmd_cfgpath(cfgfile, sizeof cfgfile) != -1) {
+		if(!questionbox("Are you sure?", "Saving will overwrite \"%s\", are you sure?", cfgfile)) {
+			return;
+		}
+	}
+	cmd_save();
+}
+
 static void file_menu_handler(Widget lst, void *cls, void *calldata)
 {
 	/*int item = (int)cls;*/
@@ -237,7 +254,7 @@ static void bgimage_use_change(Widget w, void *cls, void *calldata)
 	}
 }
 
-static void bgimage_path_change(const char *path)
+static void bgimage_path_change(const char *path, void *cls)
 {
 	if(use_bgimage) {
 		cmd_setprop_str("xlivebg.image", path);
@@ -260,7 +277,7 @@ static void bgmask_use_change(Widget w, void *cls, void *calldata)
 	}
 }
 
-static void bgmask_path_change(const char *path)
+static void bgmask_path_change(const char *path, void *cls)
 {
 	if(use_bgmask) {
 		cmd_setprop_str("xlivebg.anim_mask", path);
@@ -365,6 +382,13 @@ static void intprop_change(Widget w, void *cls, void *calldata)
 	}
 }
 
+static void pathprop_change(const char *path, void *cls)
+{
+	struct bgprop *prop = cls;
+
+	cmd_setprop_str(prop->fullname, path);
+}
+
 static void gen_wallpaper_ui(void)
 {
 	int i, bval, ival;
@@ -435,7 +459,7 @@ static void gen_wallpaper_ui(void)
 			if(cmd_getprop_str(prop->fullname, buf, sizeof buf) != -1) {
 				hbox = xm_rowcol(vbox, XmHORIZONTAL);
 				xm_label(hbox, prop->name);
-				create_pathfield(hbox, clean_path_str(buf), 0, 0);
+				create_pathfield(hbox, clean_path_str(buf), 0, pathprop_change, prop);
 			}
 			break;
 		}

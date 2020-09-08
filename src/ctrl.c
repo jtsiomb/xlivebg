@@ -20,12 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <alloca.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "ctrl.h"
 #include "plugin.h"
+#include "cfg.h"
 
 struct client {
 	int s;
@@ -175,6 +177,8 @@ static int proc_cmd_switch(int s, int argc, char **argv);
 static int proc_cmd_proplist(int s, int argc, char **argv);
 static int proc_cmd_setprop(int s, int argc, char **argv);
 static int proc_cmd_getprop(int s, int argc, char **argv);
+static int proc_cmd_save(int s, int argc, char **argv);
+static int proc_cmd_cfgpath(int s, int argc, char **argv);
 static int proc_cmd_ping(int s, int argc, char **argv);
 
 struct {
@@ -192,6 +196,8 @@ struct {
 	{"getpropnum", proc_cmd_getprop},
 	{"getpropint", proc_cmd_getprop},
 	{"getpropvec", proc_cmd_getprop},
+	{"save", proc_cmd_save},
+	{"cfgpath", proc_cmd_cfgpath},
 	{"ping", proc_cmd_ping},
 	{0, 0}
 };
@@ -449,6 +455,30 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 	}
 
 	return 0;
+}
+
+static int proc_cmd_save(int s, int argc, char **argv)
+{
+	fprintf(stderr, "proc_cmd_save not implemented yet\n");
+	send_status(s, 0);	/* TODO */
+	return 0;
+}
+
+static int proc_cmd_cfgpath(int s, int argc, char **argv)
+{
+	char *buf;
+	int len;
+
+	if(!cfgpath || !*cfgpath) {
+		send_status(s, 0);
+		return 0;
+	}
+
+	send_status(s, 1);
+	len = strlen(cfgpath) + 3;
+	buf = alloca(len + 1);
+	sprintf(buf, "1\n%s\n", cfgpath);
+	write(s, buf, len);
 }
 
 static int proc_cmd_ping(int s, int argc, char **argv)

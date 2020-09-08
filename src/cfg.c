@@ -4,12 +4,13 @@
 #include "treestore.h"
 #include "cfg.h"
 
+char *cfgpath;
+
 void init_cfg(void)
 {
 	static float zero_vec[4];
 	float color[4];
 	struct ts_node *ts;
-	char *cfgpath;
 	const char *str;
 	float *vec;
 
