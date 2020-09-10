@@ -389,6 +389,17 @@ static void pathprop_change(const char *path, void *cls)
 	cmd_setprop_str(prop->fullname, path);
 }
 
+static void boolprop_change(Widget w, void *cls, void *calldata)
+{
+	struct bgprop *prop = cls;
+	XmToggleButtonCallbackStruct *cbs = calldata;
+
+	if(cbs->set != prop->integer.value) {
+		prop->integer.value = cbs->set;
+		cmd_setprop_int(prop->fullname, cbs->set);
+	}
+}
+
 static void gen_wallpaper_ui(void)
 {
 	int i, bval, ival;
@@ -420,7 +431,8 @@ static void gen_wallpaper_ui(void)
 		switch(prop->type) {
 		case BGPROP_BOOL:
 			if(cmd_getprop_int(prop->fullname, &bval) != -1) {
-				xm_checkbox(vbox, prop->name, bval, 0, 0);
+				prop->integer.value = bval;
+				xm_checkbox(vbox, prop->name, bval, boolprop_change, prop);
 			}
 			break;
 

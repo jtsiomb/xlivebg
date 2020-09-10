@@ -192,7 +192,7 @@ int bg_switch(const char *name)
 
 static int proptype(const char *s)
 {
-	if(strcmp(s, "bool") == 0) return BGPROP_BOOL;
+	if(strcmp(s, "boolean") == 0) return BGPROP_BOOL;
 	if(strcmp(s, "text") == 0) return BGPROP_TEXT;
 	if(strcmp(s, "number") == 0) return BGPROP_NUMBER;
 	if(strcmp(s, "integer") == 0) return BGPROP_INTEGER;
