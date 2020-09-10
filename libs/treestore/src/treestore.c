@@ -373,6 +373,7 @@ int ts_set_value_arr(struct ts_value *tsv, int count, const struct ts_value *arr
 			return -1;
 		}
 		tsv->type = TS_VECTOR;
+		tsv->vec_size = count;
 
 		for(i=0; i<count; i++) {
 			tsv->vec[i] = tsv->array[i].fnum;

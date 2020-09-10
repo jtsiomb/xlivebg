@@ -459,8 +459,11 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 
 static int proc_cmd_save(int s, int argc, char **argv)
 {
-	fprintf(stderr, "proc_cmd_save not implemented yet\n");
-	send_status(s, 0);	/* TODO */
+	if(save_cfg(0) == -1) {
+		send_status(s, 0);
+		return -1;
+	}
+	send_status(s, 1);
 	return 0;
 }
 

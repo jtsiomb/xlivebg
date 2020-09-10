@@ -47,6 +47,7 @@ extern char *cfgpath;
 #define CFGNAME_CROP_DIR	"xlivebg.crop_dir"
 
 void init_cfg(void);
+int save_cfg(const char *fname);
 
 int cfg_parse_fit(const char *str);
 

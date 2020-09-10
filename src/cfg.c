@@ -71,6 +71,11 @@ void init_cfg(void)
 	cfg.ts = ts;
 }
 
+int save_cfg(const char *fname)
+{
+	return ts_save(cfg.ts, fname ? fname : cfgpath);
+}
+
 int cfg_parse_fit(const char *str)
 {
 	if(strcasecmp(str, "full") == 0) {
