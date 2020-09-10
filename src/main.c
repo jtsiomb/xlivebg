@@ -34,6 +34,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "xlivebg.h"
 #include "cfg.h"
 #include "ctrl.h"
+#include "imageman.h"
 
 /* create_xwindow flags */
 enum {
@@ -417,6 +418,8 @@ int xlivebg_init_gl(void)
 
 void xlivebg_destroy_gl(void)
 {
+	destroy_all_textures();
+
 	glXMakeCurrent(dpy, 0, 0);
 	glXDestroyContext(dpy, ctx);
 }

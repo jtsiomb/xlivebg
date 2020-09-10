@@ -66,6 +66,17 @@ void init_imgman(void)
 	}
 }
 
+void destroy_all_textures(void)
+{
+	int i;
+	for(i=0; i<num_images; i++) {
+		if(images[i]->tex) {
+			glDeleteTextures(1, &images[i]->tex);
+			images[i]->tex = 0;
+		}
+	}
+}
+
 int create_image(struct xlivebg_image *img, int width, int height, uint32_t *pix)
 {
 	memset(img, 0, sizeof *img);
@@ -148,6 +159,29 @@ int find_image(const char *name)
 		}
 	}
 	return -1;
+}
+
+int dump_image(struct xlivebg_image *img, const char *fname)
+{
+	return img_save_pixels(fname, img->pixels, img->width, img->height, IMG_FMT_RGBA32);
+}
+
+int dump_image_tex(struct xlivebg_image *img, const char *fname)
+{
+	int res;
+	void *pixels;
+
+	if(!(pixels = malloc(img->width * img->height * 4))) {
+		return -1;
+	}
+	glPushAttrib(GL_TEXTURE_BIT);
+	glBindTexture(GL_TEXTURE_2D, img->tex);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glPopAttrib();
+
+	res = img_save_pixels(fname, pixels, img->width, img->height, IMG_FMT_RGBA32);
+	free(pixels);
+	return res;
 }
 
 struct xlivebg_image *get_bg_image(int scr)

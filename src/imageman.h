@@ -24,6 +24,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 void init_imgman(void);
 
+void destroy_all_textures(void);
+
 int create_image(struct xlivebg_image *img, int width, int height, uint32_t *pix);
 void destroy_image(struct xlivebg_image *img);
 
@@ -34,6 +36,8 @@ struct xlivebg_image *get_image(int idx);
 int get_image_count(void);
 
 int find_image(const char *name);
+
+int dump_image_tex(struct xlivebg_image *img, const char *fname);
 
 struct xlivebg_image *get_bg_image(int scr);
 struct xlivebg_image *get_anim_mask(int scr);
