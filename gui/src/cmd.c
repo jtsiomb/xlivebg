@@ -14,7 +14,7 @@ static int read_status(int fd);
 static int num_resp_lines(int s);
 static int read_multi_lines(int s, char *buf, int maxsz);
 
-static char cmdbuf[512];
+static char cmdbuf[4096];
 
 
 static int open_conn(void)
@@ -320,8 +320,9 @@ static int read_multi_lines(int s, char *buf, int maxsz)
 		sptr = cmdbuf;
 		while(*sptr) {
 			if(maxsz-- > 0) {
-				*dptr++ = *sptr++;
+				*dptr++ = *sptr;
 			}
+			sptr++;
 			str_size++;
 		}
 	}

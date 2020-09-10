@@ -8,9 +8,10 @@
 #include "data.h"
 
 #define DEF_STAR_COUNT	2048
-#define DEF_STAR_SPEED	10.0f
+#define DEF_STAR_SPEED	5.0f
 #define DEF_STAR_SIZE	1.0f
 #define DEF_FOLLOW		0.25f
+#define DEF_FOLLOW_SPEED	0.6f
 
 #define MAX_STAR_COUNT	65536
 #define STAR_DEPTH	100
@@ -33,6 +34,7 @@ static void perspective(float *m, float vfov, float aspect, float znear, float z
 
 static struct star *star;
 static struct xlivebg_image pimg, bolt;
+static float targ[2], cam[2];
 
 #define PROPLIST	\
 	"proplist {\n" \
@@ -46,7 +48,7 @@ static struct xlivebg_image pimg, bolt;
 	"        id = \"speed\"\n" \
 	"        desc = \"travel speed\"\n" \
 	"        type = \"number\"\n" \
-	"        range = [1, 100]\n" \
+	"        range = [1, 60]\n" \
 	"    }\n" \
 	"    prop {\n" \
 	"        id = \"size\"\n" \
@@ -60,6 +62,12 @@ static struct xlivebg_image pimg, bolt;
 	"        type = \"number\"\n" \
 	"        range = [0, 1]\n" \
 	"    }\n" \
+	"    prop {\n" \
+	"        id = \"follow-speed\"\n" \
+	"        desc = \"speed at which the view changes to follow the mouse\"\n" \
+	"        type = \"number\"\n" \
+	"        range = [0.25, 5]\n" \
+	"    }\n" \
 	"}\n"
 
 
@@ -67,7 +75,7 @@ static struct xlivebg_plugin plugin = {
 	"stars",
 	"Starfield effect",
 	PROPLIST,
-	XLIVEBG_25FPS,
+	XLIVEBG_20FPS,
 	init, 0,
 	start, 0,
 	draw,
@@ -78,6 +86,7 @@ static struct xlivebg_plugin plugin = {
 static int star_count;
 static float star_speed, star_size;
 static float follow;
+static float follow_speed;
 
 void register_plugin(void)
 {
@@ -97,6 +106,7 @@ static int init(void *cls)
 	xlivebg_defcfg_num("xlivebg.stars.speed", DEF_STAR_SPEED);
 	xlivebg_defcfg_num("xlivebg.stars.size", DEF_STAR_SIZE);
 	xlivebg_defcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
+	xlivebg_defcfg_num("xlivebg.stars.follow-speed", DEF_FOLLOW_SPEED);
 	return 0;
 }
 
@@ -106,6 +116,7 @@ static void start(long tmsec, void *cls)
 	prop("speed", 0);
 	prop("size", 0);
 	prop("follow", 0);
+	prop("follow-speed", 0);
 }
 
 static void prop(const char *name, void *cls)
@@ -141,7 +152,11 @@ static void prop(const char *name, void *cls)
 		}
 		break;
 	case 'f':
-		follow = xlivebg_getcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
+		if(!name[6]) {
+			follow = xlivebg_getcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
+		} else if(name[6] == '-') {
+			follow_speed = xlivebg_getcfg_num("xlivebg.stars.follow-speed", DEF_FOLLOW_SPEED);
+		}
 		break;
 	}
 }
@@ -152,9 +167,21 @@ static void draw(long tmsec, void *cls)
 	struct xlivebg_screen *scr;
 	float proj[16];
 	float aspect;
+	static long prev_upd;
+	long dtms = tmsec - prev_upd;
+	prev_upd = tmsec;
 
 	if(follow > 0.0f) {
+		float t = follow_speed * (dtms / 1000.0f);
+
+		scr = xlivebg_screen(0);
 		xlivebg_mouse_pos(&mx, &my);
+		aspect = (float)scr->root_width / (float)scr->root_height;
+		targ[0] = ((float)mx / (float)scr->root_width - 0.5f) * follow * aspect;
+		targ[1] = (0.5f - (float)my / (float)scr->root_height) * follow;
+
+		cam[0] += (targ[0] - cam[0]) * t;
+		cam[1] += (targ[1] - cam[1]) * t;
 	}
 
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -172,12 +199,7 @@ static void draw(long tmsec, void *cls)
 		glLoadIdentity();
 
 		if(follow > 0.0f) {
-			float u, v, theta, phi;
-			u = (float)mx / (float)scr->root_width - 0.5f;
-			v = 0.5f - (float)my / (float)scr->root_height;
-
-			aspect = (float)scr->root_width / (float)scr->root_height;
-			gluLookAt(0, 0, 0, u * follow * aspect, v * follow, -1, 0, 1, 0);
+			gluLookAt(0, 0, 0, cam[0], cam[1], -1, 0, 1, 0);
 		}
 
 		draw_stars(tmsec);
@@ -251,13 +273,13 @@ static void draw_stars(long tmsec)
 
 		glColor4f(1, 1, 1, t);
 		glTexCoord2f(0, 0);
-		glVertex3f(pos.x - sz, pos.y - sz, pos.z);
+		glVertex3f(pos.x - sz, pos.y - sz, pos.z - ssize);
 		glTexCoord2f(1, 0);
-		glVertex3f(pos.x + sz, pos.y - sz, pos.z);
+		glVertex3f(pos.x + sz, pos.y - sz, pos.z - ssize);
 		glTexCoord2f(1, 1);
-		glVertex3f(pos.x + sz, pos.y + sz, pos.z);
+		glVertex3f(pos.x + sz, pos.y + sz, pos.z - ssize);
 		glTexCoord2f(0, 1);
-		glVertex3f(pos.x - sz, pos.y + sz, pos.z);
+		glVertex3f(pos.x - sz, pos.y + sz, pos.z - ssize);
 	}
 	glEnd();
 
