@@ -611,7 +611,6 @@ void ts_add_child(struct ts_node *node, struct ts_node *child)
 	} else {
 		node->child_list = node->child_tail = child;
 	}
-
 	node->child_count++;
 }
 

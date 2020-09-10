@@ -63,7 +63,7 @@ static float targ[2], cam[2];
 	"        range = [0, 1]\n" \
 	"    }\n" \
 	"    prop {\n" \
-	"        id = \"follow-speed\"\n" \
+	"        id = \"follow_speed\"\n" \
 	"        desc = \"speed at which the view changes to follow the mouse\"\n" \
 	"        type = \"number\"\n" \
 	"        range = [0.25, 5]\n" \
@@ -83,6 +83,7 @@ static struct xlivebg_plugin plugin = {
 	0, 0
 };
 
+static long prev_upd;
 static int star_count;
 static float star_speed, star_size;
 static float follow;
@@ -106,7 +107,7 @@ static int init(void *cls)
 	xlivebg_defcfg_num("xlivebg.stars.speed", DEF_STAR_SPEED);
 	xlivebg_defcfg_num("xlivebg.stars.size", DEF_STAR_SIZE);
 	xlivebg_defcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
-	xlivebg_defcfg_num("xlivebg.stars.follow-speed", DEF_FOLLOW_SPEED);
+	xlivebg_defcfg_num("xlivebg.stars.follow_speed", DEF_FOLLOW_SPEED);
 	return 0;
 }
 
@@ -116,7 +117,9 @@ static void start(long tmsec, void *cls)
 	prop("speed", 0);
 	prop("size", 0);
 	prop("follow", 0);
-	prop("follow-speed", 0);
+	prop("follow_speed", 0);
+
+	prev_upd = tmsec;
 }
 
 static void prop(const char *name, void *cls)
@@ -154,8 +157,8 @@ static void prop(const char *name, void *cls)
 	case 'f':
 		if(!name[6]) {
 			follow = xlivebg_getcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
-		} else if(name[6] == '-') {
-			follow_speed = xlivebg_getcfg_num("xlivebg.stars.follow-speed", DEF_FOLLOW_SPEED);
+		} else if(name[6] == '_') {
+			follow_speed = xlivebg_getcfg_num("xlivebg.stars.follow_speed", DEF_FOLLOW_SPEED);
 		}
 		break;
 	}
@@ -167,8 +170,9 @@ static void draw(long tmsec, void *cls)
 	struct xlivebg_screen *scr;
 	float proj[16];
 	float aspect;
-	static long prev_upd;
-	long dtms = tmsec - prev_upd;
+	long dtms;
+
+	dtms = tmsec - prev_upd;
 	prev_upd = tmsec;
 
 	if(follow > 0.0f) {
