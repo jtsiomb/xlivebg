@@ -3,13 +3,14 @@
 #include <string.h>
 #include <math.h>
 #include <GL/gl.h>
+#include <GL/glu.h>
 #include "xlivebg.h"
 #include "data.h"
 
 #define DEF_STAR_COUNT	2048
 #define DEF_STAR_SPEED	10.0f
 #define DEF_STAR_SIZE	1.0f
-#define DEF_STAR_FOLLOW	1
+#define DEF_FOLLOW		0.25f
 
 #define MAX_STAR_COUNT	65536
 #define STAR_DEPTH	100
@@ -56,7 +57,8 @@ static struct xlivebg_image pimg, bolt;
 	"    prop {\n" \
 	"        id = \"follow\"\n" \
 	"        desc = \"follow mouse pointer\"\n" \
-	"        type = \"boolean\"\n" \
+	"        type = \"number\"\n" \
+	"        range = [0, 1]\n" \
 	"    }\n" \
 	"}\n"
 
@@ -75,7 +77,7 @@ static struct xlivebg_plugin plugin = {
 
 static int star_count;
 static float star_speed, star_size;
-static int follow;
+static float follow;
 
 void register_plugin(void)
 {
@@ -94,7 +96,7 @@ static int init(void *cls)
 	xlivebg_defcfg_int("xlivebg.stars.count", DEF_STAR_COUNT);
 	xlivebg_defcfg_num("xlivebg.stars.speed", DEF_STAR_SPEED);
 	xlivebg_defcfg_num("xlivebg.stars.size", DEF_STAR_SIZE);
-	xlivebg_defcfg_int("xlivebg.stars.follow", DEF_STAR_FOLLOW);
+	xlivebg_defcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
 	return 0;
 }
 
@@ -139,16 +141,21 @@ static void prop(const char *name, void *cls)
 		}
 		break;
 	case 'f':
-		follow = xlivebg_getcfg_int("xlivebg.stars.follow", DEF_STAR_FOLLOW);
+		follow = xlivebg_getcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
 		break;
 	}
 }
 
 static void draw(long tmsec, void *cls)
 {
-	int i, num_scr;
+	int i, num_scr, mx, my;
 	struct xlivebg_screen *scr;
 	float proj[16];
+	float aspect;
+
+	if(follow > 0.0f) {
+		xlivebg_mouse_pos(&mx, &my);
+	}
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -163,6 +170,15 @@ static void draw(long tmsec, void *cls)
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+
+		if(follow > 0.0f) {
+			float u, v, theta, phi;
+			u = (float)mx / (float)scr->root_width - 0.5f;
+			v = 0.5f - (float)my / (float)scr->root_height;
+
+			aspect = (float)scr->root_width / (float)scr->root_height;
+			gluLookAt(0, 0, 0, u * follow * aspect, v * follow, -1, 0, 1, 0);
+		}
 
 		draw_stars(tmsec);
 	}

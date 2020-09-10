@@ -112,6 +112,7 @@ static int xrr_get_output(Display *dpy, XRRScreenResources *res, int idx, struct
 		scr->height = crtc->height;
 		scr->phys_width = out->mm_width;
 		scr->phys_height = out->mm_height;
+		scr->aspect = (float)scr->width / (float)scr->height;
 
 		scr->vport[0] = scr->x;
 		scr->vport[1] = scr->root_height - scr->height - scr->y;
@@ -171,7 +172,6 @@ void get_output(Display *dpy, int idx, struct xlivebg_screen *scr)
 
 		scr->root_width = wattr.width;
 		scr->root_height = wattr.height;
-		scr->aspect = (float)scr->width / (float)scr->height;
 
 		if(xrr_get_output(dpy, res, i, scr) != -1) {
 			if(count++ >= idx) break;
