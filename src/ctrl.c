@@ -479,6 +479,7 @@ static int proc_cmd_cfgpath(int s, int argc, char **argv)
 	buf = alloca(len + 1);
 	sprintf(buf, "1\n%s\n", cfgpath);
 	write(s, buf, len);
+	return 0;
 }
 
 static int proc_cmd_ping(int s, int argc, char **argv)

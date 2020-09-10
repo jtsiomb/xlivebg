@@ -1,6 +1,6 @@
 /*
 xlivebg - live wallpapers for the X window system
-Copyright (C) 2019  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "cfg.h"
 
 static int gen_test_image(struct xlivebg_image *img, int width, int height);
-static void update_texture(struct xlivebg_image *img);
 
 static struct xlivebg_image **images;
 static int num_images, max_images;
@@ -113,6 +112,68 @@ int load_image(struct xlivebg_image *img, const char *fname)
 	if((img->path = malloc(strlen(fname) + 1))) {
 		strcpy(img->path, fname);
 	}
+	return 0;
+}
+
+struct memdata {
+	char *data;
+	long size, curpos;
+};
+
+static size_t memread(void *buf, size_t bytes, void *uptr)
+{
+	struct memdata *mem = uptr;
+	long left = mem->size - mem->curpos;
+
+	if(left <= 0) return 0;
+	if((long)bytes > left) bytes = left;
+	memcpy(buf, mem->data + mem->curpos, bytes);
+	mem->curpos += bytes;
+	return bytes;
+}
+
+static long memseek(long offs, int whence, void *uptr)
+{
+	struct memdata *mem = uptr;
+
+	switch(whence) {
+	case SEEK_SET:
+		mem->curpos = offs;
+		break;
+	case SEEK_CUR:
+		mem->curpos += offs;
+		break;
+	case SEEK_END:
+		mem->curpos = mem->size + offs;
+		break;
+	}
+	if(mem->curpos < 0) mem->curpos = 0;
+	if(mem->curpos > mem->size) mem->curpos = mem->size;
+	return mem->curpos;
+}
+
+int load_image_mem(struct xlivebg_image *img, void *data, long datasz)
+{
+	struct img_pixmap pixmap;
+	struct memdata memdata;
+	struct img_io io = {0, memread, 0, memseek};
+
+	memdata.data = data;
+	memdata.size = datasz;
+	memdata.curpos = 0;
+	io.uptr = &memdata;
+
+	img_init(&pixmap);
+	if(img_read(&pixmap, &io) == -1 || img_convert(&pixmap, IMG_FMT_RGBA32) == -1) {
+		img_destroy(&pixmap);
+		fprintf(stderr, "xlivebg: failed to read image from memory\n");
+		return -1;
+	}
+
+	memset(img, 0, sizeof *img);
+	img->pixels = pixmap.pixels;
+	img->width = pixmap.width;
+	img->height = pixmap.height;
 	return 0;
 }
 
@@ -233,7 +294,7 @@ static int gen_test_image(struct xlivebg_image *img, int width, int height)
 	return 0;
 }
 
-static void update_texture(struct xlivebg_image *img)
+void update_texture(struct xlivebg_image *img)
 {
 	if(!img) return;
 

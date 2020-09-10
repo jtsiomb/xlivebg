@@ -1,6 +1,6 @@
 /*
 xlivebg - live wallpapers for the X window system
-Copyright (C) 2019  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,6 +30,9 @@ int create_image(struct xlivebg_image *img, int width, int height, uint32_t *pix
 void destroy_image(struct xlivebg_image *img);
 
 int load_image(struct xlivebg_image *img, const char *fname);
+int load_image_mem(struct xlivebg_image *img, void *data, long datasz);
+void update_texture(struct xlivebg_image *img);
+
 int add_image(struct xlivebg_image *img);
 
 struct xlivebg_image *get_image(int idx);

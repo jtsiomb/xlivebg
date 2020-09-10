@@ -234,6 +234,21 @@ struct xlivebg_image *xlivebg_anim_mask(int scr)
 	return get_anim_mask(scr);
 }
 
+int xlivebg_memory_image(struct xlivebg_image *img, void *data, long datasz)
+{
+	if(load_image_mem(img, data, datasz) == -1) {
+		return -1;
+	}
+	add_image(img);
+	return 0;
+}
+
+unsigned int xlivebg_image_texture(struct xlivebg_image *img)
+{
+	update_texture(img);
+	return img->tex;
+}
+
 int xlivebg_fit_mode(int scr)
 {
 	/* TODO per-screen */
@@ -387,6 +402,30 @@ int xlivebg_setcfg_vec(const char *cfgpath, float *vec)
 	}
 	update_cfg(cfgpath, aval);
 	return 0;
+}
+
+int xlivebg_defcfg_str(const char *cfgpath, const char *str)
+{
+	if(xlivebg_havecfg(cfgpath)) return 0;
+	return xlivebg_setcfg_str(cfgpath, str);
+}
+
+int xlivebg_defcfg_num(const char *cfgpath, float val)
+{
+	if(xlivebg_havecfg(cfgpath)) return 0;
+	return xlivebg_setcfg_num(cfgpath, val);
+}
+
+int xlivebg_defcfg_int(const char *cfgpath, int val)
+{
+	if(xlivebg_havecfg(cfgpath)) return 0;
+	return xlivebg_setcfg_int(cfgpath, val);
+}
+
+int xlivebg_defcfg_vec(const char *cfgpath, float *vec)
+{
+	if(xlivebg_havecfg(cfgpath)) return 0;
+	return xlivebg_setcfg_vec(cfgpath, vec);
 }
 
 

@@ -3,6 +3,7 @@
 #include <GL/gl.h>
 #include "xlivebg.h"
 
+static int init(void *cls);
 static void start(long tmsec, void *cls);
 static void draw(long tmsec, void *cls);
 static void prop(const char *prop, void *cls);
@@ -40,6 +41,13 @@ static float ampl, freq;
 void register_plugin(void)
 {
 	xlivebg_register_plugin(&plugin);
+}
+
+static int init(void *cls)
+{
+	xlivebg_defcfg_num("xlivebg.distort.amplitude", 0.025f);
+	xlivebg_defcfg_num("xlivebg.distort.frequency", 8.0f);
+	return 0;
 }
 
 static void start(long tmsec, void *cls)
