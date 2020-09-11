@@ -25,6 +25,7 @@ static void numprop_change(Widget w, void *cls, void *calldata);
 static void intprop_change(Widget w, void *cls, void *calldata);
 static void pathprop_change(const char *path, void *cls);
 static void gen_wallpaper_ui(void);
+static void set_status(const char *s);
 
 XtAppContext app;
 Widget app_shell;
@@ -32,6 +33,7 @@ Widget app_shell;
 static Widget win;
 static int use_bgimage, use_bgmask;
 static Widget bn_endcol, frm_cur;
+static Widget lb_status;
 
 int main(int argc, char **argv)
 {
@@ -53,6 +55,9 @@ int main(int argc, char **argv)
 	if(init_gui() == -1) {
 		return 1;
 	}
+
+	lb_status = xm_label(win, "");
+	XtVaSetValues(win, XmNmessageWindow, lb_status, (void*)0);
 
 	XtRealizeWidget(app_shell);
 	XtAppMainLoop(app);
@@ -478,4 +483,11 @@ static void gen_wallpaper_ui(void)
 
 		prop++;
 	}
+}
+
+static void set_status(const char *s)
+{
+	XmString xs = XmStringCreateSimple((char*)s);
+	XtVaSetValues(lb_status, XmNlabelString, xs);
+	XmStringFree(xs);
 }

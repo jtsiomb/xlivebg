@@ -371,7 +371,7 @@ static int msgbox_textsz;
 #define MSGBOX_FORMAT_TEXT(fmt, dofail) \
 	do {	\
 		char *tmp; \
-		int len, newlen; \
+		int len, newsz; \
 		va_list ap;	\
 		if(!msgbox_text) { \
 			msgbox_textsz = 256; \
@@ -385,14 +385,14 @@ static int msgbox_textsz;
 			len = vsnprintf(msgbox_text, msgbox_textsz, fmt, ap);	\
 			va_end(ap);	\
 			if(len == strlen(msgbox_text)) break;	\
-			newlen = len == -1 ? msgbox_textsz << 1 : len;	\
-			if(!(tmp = malloc(newlen))) {	\
-				fprintf(stderr, "Failed to resize messagebox buffer to %d bytes\n", newlen);	\
+			newsz = len == -1 ? msgbox_textsz << 1 : len + 1;	\
+			if(!(tmp = malloc(newsz))) {	\
+				fprintf(stderr, "Failed to resize messagebox buffer to %d bytes\n", newsz);	\
 				dofail;	\
 			}	\
 			free(msgbox_text);	\
 			msgbox_text = tmp;	\
-			msgbox_textsz = newlen;	\
+			msgbox_textsz = newsz;	\
 		}	\
 	} while(0)
 
