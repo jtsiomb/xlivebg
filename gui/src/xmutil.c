@@ -483,7 +483,10 @@ struct coldlg_data {
 	XImage ximg;
 	Widget cbox;
 	Widget rgbslider[3];
+	float hsv[3];
 };
+
+static void update_colbox_image(struct coldlg_data *cdata);
 
 #define CBOX_WIDTH		180
 #define CBOX_HEIGHT		180
@@ -509,22 +512,57 @@ static void colbox_expose(Widget cbox, void *cls, void *calldata)
 
 static void colbox_mouse(Widget widget, XEvent *xev, char **argv, unsigned int *argcptr)
 {
+	int x, y;
+	float r, g, b;
+	struct coldlg_data *cdata;
+
+	XtVaGetValues(widget, XmNuserData, &cdata, (void*)0);
+
+	switch(xev->type) {
+	case ButtonPressMask:
+		x = xev->xbutton.x;
+		y = xev->xbutton.y;
+		if(0) {
+	case MotionNotify:
+			x = xev->xmotion.x;
+			y = xev->xmotion.y;
+		}
+
+		if(x < 0 || x >= COLOR_WIDGET_WIDTH || y < 0 || y >= COLOR_WIDGET_HEIGHT) {
+			return;
+		}
+
+		if(x < CBOX_WIDTH) {
+			cdata->hsv[1] = (float)x / (float)CBOX_WIDTH;
+			cdata->hsv[2] = 1.0f - (float)y / (float)CBOX_HEIGHT;
+		} else {
+			cdata->hsv[0] = 1.0f - (float)y / (float)HUEBAR_HEIGHT;
+		}
+		update_colbox_image(cdata);
+
+		hsv_to_rgb(&r, &g, &b, cdata->hsv[0], cdata->hsv[1], cdata->hsv[2]);
+		XmScaleSetValue(cdata->rgbslider[0], r * 255.0f);
+		XmScaleSetValue(cdata->rgbslider[1], g * 255.0f);
+		XmScaleSetValue(cdata->rgbslider[2], b * 255.0f);
+	}
 }
 
 #define H_THRES		(1.0f / HUEBAR_HEIGHT)
 #define S_THRES		(1.0f / CBOX_WIDTH)
 #define V_THRES		(1.0f / CBOX_HEIGHT)
 
-static void update_colbox_image(struct coldlg_data *cdata, float h, float s, float v)
+static void update_colbox_image(struct coldlg_data *cdata)
 {
 	int i, j, r, g, b;
-	float sel_h = h;
-	float sel_s = s;
-	float sel_v = v;
+	float h, s, v, sel_h, sel_s, sel_v;
 	float color[3];
 	uint32 *pixels, *pptr, pcol;
 	XColor xcol;
 	Colormap cmap;
+
+	sel_h = cdata->hsv[0];
+	sel_s = cdata->hsv[1];
+	sel_v = cdata->hsv[2];
 
 	cmap = DefaultColormap(cdata->dpy, XScreenNumberOfScreen(cdata->scr));
 	XtVaGetValues(cdata->cbox, XmNbackground, &xcol.pixel, (void*)0);
@@ -537,7 +575,7 @@ static void update_colbox_image(struct coldlg_data *cdata, float h, float s, flo
 		for(j=0; j<CBOX_WIDTH; j++) {
 			s = (float)j / (float)CBOX_WIDTH;
 
-			hsv_to_rgb(color, color + 1, color + 2, h, s, v);
+			hsv_to_rgb(color, color + 1, color + 2, sel_h, s, v);
 			r = color[0] * 255.0f;
 			g = color[1] * 255.0f;
 			b = color[2] * 255.0f;
@@ -582,15 +620,14 @@ static void update_colbox_image(struct coldlg_data *cdata, float h, float s, flo
 static void coldlg_rgbslider(Widget slider, void *cls, void *calldata)
 {
 	int r, g, b;
-	float h, s, v;
 	struct coldlg_data *cdata = cls;
 
 	XmScaleGetValue(cdata->rgbslider[0], &r);
 	XmScaleGetValue(cdata->rgbslider[1], &g);
 	XmScaleGetValue(cdata->rgbslider[2], &b);
 
-	rgb_to_hsv(r / 255.0f, g / 255.0f, b / 255.0f, &h, &s, &v);
-	update_colbox_image(cdata, h, s, v);
+	rgb_to_hsv(r / 255.0f, g / 255.0f, b / 255.0f, cdata->hsv, cdata->hsv + 1, cdata->hsv + 2);
+	update_colbox_image(cdata);
 }
 
 void color_picker_dialog(unsigned short *col)
@@ -637,6 +674,7 @@ void color_picker_dialog(unsigned short *col)
 	XtSetArg(args[3], XmNresizePolicy, XmRESIZE_NONE);
 	cbox = XmCreateDrawingArea(frm, "colorbox", args, 4);
 	XtVaSetValues(cbox, XmNtopAttachment, XmATTACH_FORM, XmNleftAttachment, XmATTACH_FORM, (void*)0);
+	XtVaSetValues(cbox, XmNuserData, &cdata, (void*)0);
 
 	XtAddCallback(cbox, XmNexposeCallback, colbox_expose, &cdata);
 
@@ -685,7 +723,7 @@ void color_picker_dialog(unsigned short *col)
 
 	XtManageChild(dlg);
 
-	update_colbox_image(&cdata, 0, 0, 0);
+	update_colbox_image(&cdata);
 
 	while(XtIsManaged(dlg)) {
 		XtAppProcessEvent(app, XtIMAll);
