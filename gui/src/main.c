@@ -488,6 +488,6 @@ static void gen_wallpaper_ui(void)
 static void set_status(const char *s)
 {
 	XmString xs = XmStringCreateSimple((char*)s);
-	XtVaSetValues(lb_status, XmNlabelString, xs);
+	XtVaSetValues(lb_status, XmNlabelString, xs, (void*)0);
 	XmStringFree(xs);
 }

@@ -2,7 +2,13 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <math.h>
 #include "xmutil.h"
+
+typedef unsigned int uint32;
+
+static void rgb_to_hsv(float r, float g, float b, float *h, float *s, float *v);
+static void hsv_to_rgb(float *r, float *g, float *b, float h, float s, float v);
 
 extern XtAppContext app;
 extern Widget app_shell;
@@ -467,7 +473,315 @@ int questionbox(const char *title, const char *msg, ...)
 	return resp;
 }
 
+
+/* ---- color selection dialog ---- */
+struct coldlg_data {
+	Display *dpy;
+	Screen *scr;
+	Window root;
+	GC gc;
+	XImage ximg;
+	Widget cbox;
+	Widget rgbslider[3];
+};
+
+#define CBOX_WIDTH		180
+#define CBOX_HEIGHT		180
+#define HUEBAR_WIDTH	32
+#define HUEBAR_HEIGHT	CBOX_HEIGHT
+#define COLOR_WIDGET_WIDTH	(CBOX_WIDTH + HUEBAR_WIDTH)
+#define COLOR_WIDGET_HEIGHT CBOX_HEIGHT
+
+static void coldlg_handler(Widget dlg, void *cls, void *calldata)
+{
+	unsigned short *out = cls;
+
+	XtUnmanageChild(dlg);
+}
+
+static void colbox_expose(Widget cbox, void *cls, void *calldata)
+{
+	struct coldlg_data *cdata = cls;
+	Window w = XtWindow(cbox);
+
+	XPutImage(cdata->dpy, w, cdata->gc, &cdata->ximg, 0, 0, 0, 0, COLOR_WIDGET_WIDTH, COLOR_WIDGET_HEIGHT);
+}
+
+static void colbox_mouse(Widget widget, XEvent *xev, char **argv, unsigned int *argcptr)
+{
+}
+
+#define H_THRES		(1.0f / HUEBAR_HEIGHT)
+#define S_THRES		(1.0f / CBOX_WIDTH)
+#define V_THRES		(1.0f / CBOX_HEIGHT)
+
+static void update_colbox_image(struct coldlg_data *cdata, float h, float s, float v)
+{
+	int i, j, r, g, b;
+	float sel_h = h;
+	float sel_s = s;
+	float sel_v = v;
+	float color[3];
+	uint32 *pixels, *pptr, pcol;
+	XColor xcol;
+	Colormap cmap;
+
+	cmap = DefaultColormap(cdata->dpy, XScreenNumberOfScreen(cdata->scr));
+	XtVaGetValues(cdata->cbox, XmNbackground, &xcol.pixel, (void*)0);
+	XQueryColor(cdata->dpy, cmap, &xcol);
+
+	pptr = pixels = (uint32*)cdata->ximg.data;
+
+	for(i=0; i<CBOX_HEIGHT; i++) {
+		v = 1.0f - (float)i / (float)CBOX_HEIGHT;
+		for(j=0; j<CBOX_WIDTH; j++) {
+			s = (float)j / (float)CBOX_WIDTH;
+
+			hsv_to_rgb(color, color + 1, color + 2, h, s, v);
+			r = color[0] * 255.0f;
+			g = color[1] * 255.0f;
+			b = color[2] * 255.0f;
+			pcol = (r << 16) | (g << 8) | b;
+
+			if(fabs(v - sel_v) <= V_THRES || fabs(s - sel_s) <= S_THRES) {
+				pcol = ~pcol;
+			}
+
+			*pptr++ = pcol;
+		}
+		pptr += HUEBAR_WIDTH;
+	}
+
+	pptr = pixels + CBOX_WIDTH;
+	for(i=0; i<HUEBAR_HEIGHT; i++) {
+		h = 1.0f - (float)i / (float)HUEBAR_HEIGHT;
+
+		hsv_to_rgb(color, color + 1, color + 2, h, 1.0f, 1.0f);
+		r = color[0] * 255.0f;
+		g = color[1] * 255.0f;
+		b = color[2] * 255.0f;
+		pcol = (r << 16) | (g << 8) | b;
+
+		if(fabs(h - sel_h) <= H_THRES) {
+			pcol = ~pcol;
+		}
+
+		for(j=0; j<5; j++) {
+			pptr[j] = xcol.pixel;
+		}
+		for(j=5; j<HUEBAR_WIDTH; j++) {
+			pptr[j] = pcol;
+		}
+		pptr += COLOR_WIDGET_WIDTH;
+	}
+
+	colbox_expose(cdata->cbox, cdata, 0);
+}
+
+
+static void coldlg_rgbslider(Widget slider, void *cls, void *calldata)
+{
+	int r, g, b;
+	float h, s, v;
+	struct coldlg_data *cdata = cls;
+
+	XmScaleGetValue(cdata->rgbslider[0], &r);
+	XmScaleGetValue(cdata->rgbslider[1], &g);
+	XmScaleGetValue(cdata->rgbslider[2], &b);
+
+	rgb_to_hsv(r / 255.0f, g / 255.0f, b / 255.0f, &h, &s, &v);
+	update_colbox_image(cdata, h, s, v);
+}
+
 void color_picker_dialog(unsigned short *col)
 {
-	messagebox(XmDIALOG_INFORMATION, "Not implemented yet", "TODO: create a color selection dialog");
+	Widget dlg, frm, cbox, rslider, gslider, bslider;
+	Arg args[16];
+	XmString xs_ok, xs_cancel;
+	struct coldlg_data cdata;
+	uint32 *pptr;
+	static const char *transl_str =
+		"<Btn1Down>: colbox_mouse()\n"
+		"<Btn1Up>: colbox_mouse()\n"
+		"<Btn1Motion>: colbox_mouse()\n";
+	static int actions_registered;
+
+	if(!actions_registered) {
+		XtActionsRec act;
+
+		act.string = "colbox_mouse";
+		act.proc = colbox_mouse;
+
+		XtAppAddActions(app, &act, 1);
+		actions_registered = 1;
+	}
+
+
+	xs_ok = XmStringCreateSimple("OK");
+	xs_cancel = XmStringCreateSimple("Cancel");
+
+	XtSetArg(args[0], XmNokLabelString, xs_ok);
+	XtSetArg(args[1], XmNcancelLabelString, xs_cancel);
+	dlg = XmCreateTemplateDialog(app_shell, "colordlg", args, 2);
+
+	XtAddCallback(dlg, XmNokCallback, coldlg_handler, col);
+	XtAddCallback(dlg, XmNcancelCallback, coldlg_handler, 0);
+
+	frm = XmCreateForm(dlg, "form", 0, 0);
+	XtManageChild(frm);
+
+	/* color selector widgets */
+	XtSetArg(args[0], XmNtranslations, XtParseTranslationTable(transl_str));
+	XtSetArg(args[1], XmNwidth, COLOR_WIDGET_WIDTH);
+	XtSetArg(args[2], XmNheight, COLOR_WIDGET_HEIGHT);
+	XtSetArg(args[3], XmNresizePolicy, XmRESIZE_NONE);
+	cbox = XmCreateDrawingArea(frm, "colorbox", args, 4);
+	XtVaSetValues(cbox, XmNtopAttachment, XmATTACH_FORM, XmNleftAttachment, XmATTACH_FORM, (void*)0);
+
+	XtAddCallback(cbox, XmNexposeCallback, colbox_expose, &cdata);
+
+	cdata.dpy = XtDisplay(cbox);
+	cdata.scr = XtScreen(cbox);
+	cdata.root = RootWindowOfScreen(cdata.scr);
+
+	cdata.gc = XCreateGC(cdata.dpy, cdata.root, 0, 0);
+
+	memset(&cdata.ximg, 0, sizeof cdata.ximg);
+	cdata.ximg.width = COLOR_WIDGET_WIDTH;
+	cdata.ximg.height = COLOR_WIDGET_HEIGHT;
+	cdata.ximg.format = ZPixmap;
+	cdata.ximg.data = malloc(COLOR_WIDGET_WIDTH * COLOR_WIDGET_HEIGHT * 4);
+	cdata.ximg.byte_order = cdata.ximg.bitmap_bit_order = LSBFirst;	/* XXX */
+	cdata.ximg.bitmap_unit = 8;
+	cdata.ximg.bitmap_pad = 8;
+	cdata.ximg.depth = 24;
+	cdata.ximg.bits_per_pixel = 32;
+	cdata.ximg.bytes_per_line = COLOR_WIDGET_WIDTH * 4;
+	cdata.ximg.red_mask = 0xff0000;
+	cdata.ximg.green_mask = 0xff00;
+	cdata.ximg.blue_mask = 0xff;
+	XInitImage(&cdata.ximg);
+	XtManageChild(cbox);
+
+	cdata.cbox = cbox;
+
+	/* RGB sliders */
+	rslider = xm_slideri(frm, "Red", 0, 0, 255, coldlg_rgbslider, &cdata);
+	gslider = xm_slideri(frm, "Green", 0, 0, 255, coldlg_rgbslider, &cdata);
+	bslider = xm_slideri(frm, "Blue", 0, 0, 255, coldlg_rgbslider, &cdata);
+
+	XtVaSetValues(rslider, XmNtopAttachment, XmATTACH_FORM, XmNrightAttachment, XmATTACH_FORM,
+			XmNleftAttachment, XmATTACH_WIDGET, XmNleftWidget, cbox, (void*)0);
+	XtVaSetValues(gslider, XmNtopAttachment, XmATTACH_WIDGET, XmNtopWidget, rslider,
+			XmNleftAttachment, XmATTACH_WIDGET,	XmNleftWidget, cbox,
+			XmNrightAttachment, XmATTACH_FORM, (void*)0);
+	XtVaSetValues(bslider, XmNtopAttachment, XmATTACH_WIDGET, XmNtopWidget, gslider,
+			XmNleftAttachment, XmATTACH_WIDGET,	XmNleftWidget, cbox,
+			XmNrightAttachment, XmATTACH_FORM, (void*)0);
+
+	cdata.rgbslider[0] = rslider;
+	cdata.rgbslider[1] = gslider;
+	cdata.rgbslider[2] = bslider;
+
+	XtManageChild(dlg);
+
+	update_colbox_image(&cdata, 0, 0, 0);
+
+	while(XtIsManaged(dlg)) {
+		XtAppProcessEvent(app, XtIMAll);
+	}
+
+	free(cdata.ximg.data);
+	XFreeGC(cdata.dpy, cdata.gc);
 }
+
+
+static inline float min3(float a, float b, float c)
+{
+	float ret = a;
+	if (b < ret) ret = b;
+	if (c < ret) ret = c;
+	return ret;
+}
+
+static inline float max3(float a, float b, float c)
+{
+	float ret = a;
+	if (b > ret) ret = b;
+	if (c > ret) ret = c;
+	return ret;
+}
+
+/* rgb_to_hsv and hsv_to_rgb written by samurai for ubertk in the long long ago */
+static void rgb_to_hsv(float r, float g, float b, float *h, float *s, float *v)
+{
+	float min, max, delta;
+
+	min = min3( r, g, b );
+	max = max3( r, g, b );
+	*v = max;
+
+	delta = max - min;
+
+	if( max != 0 )
+		*s = delta / max;
+	else {
+		*s = 0;
+		*h = -1;
+		return;
+	}
+
+	if(!delta) delta = 1.0f;
+
+	if( r == max )
+		*h = ( g - b ) / delta;
+	else if( g == max )
+		*h = 2 + ( b - r ) / delta;
+	else
+		*h = 4 + ( r - g ) / delta;
+
+	*h *= 60;
+	if( *h < 0 )
+		*h += 360;
+
+	*h /= 360;
+}
+
+
+#define RETRGB(red, green, blue) \
+	do { \
+		*r = (red); \
+		*g = (green); \
+		*b = (blue); \
+		return; \
+	} while(0)
+
+static void hsv_to_rgb(float *r, float *g, float *b, float h, float s, float v)
+{
+	float sec, frac, o, p, q;
+	int hidx;
+
+	if(s == 0.0f) {
+		*r = *g = *b = v;
+		return;
+	}
+
+	sec = floor(h * (360.0f / 60.0f));
+	frac = (h * (360.0f / 60.0f)) - sec;
+
+	o = v * (1.0f - s);
+	p = v * (1.0f - s * frac);
+	q = v * (1.0f - s * (1.0f - frac));
+
+	hidx = (int)sec;
+	switch(hidx) {
+	default:
+	case 0: RETRGB(v, q, o);
+	case 1: RETRGB(p, v, o);
+	case 2: RETRGB(o, v, q);
+	case 3: RETRGB(o, p, v);
+	case 4: RETRGB(q, o, v);
+	case 5: RETRGB(v, o, p);
+	}
+}
+

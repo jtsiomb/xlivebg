@@ -12,9 +12,14 @@
 #include <Xm/List.h>
 #include <Xm/Frame.h>
 #include <Xm/RowColumn.h>
+#include <Xm/Form.h>
 #include <Xm/TextF.h>
 #include <Xm/FileSB.h>
 #include <Xm/Scale.h>
+#include <Xm/SelectioB.h>
+#include <Xm/DialogS.h>
+#include <Xm/PanedW.h>
+#include <Xm/DrawingA.h>
 
 /* motif widget creation convenience wrappers */
 Widget xm_label(Widget par, const char *text);
