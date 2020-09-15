@@ -44,6 +44,6 @@ Widget create_pathfield(Widget par, const char *defpath, const char *filter,
 
 void messagebox(int type, const char *title, const char *msg, ...);
 int questionbox(const char *title, const char *msg, ...);
-void color_picker_dialog(unsigned short *col);
+int color_picker_dialog(unsigned short *col);
 
 #endif /* XMUTIL_H_ */

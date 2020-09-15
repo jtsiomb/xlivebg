@@ -34,6 +34,7 @@ static Widget win;
 static int use_bgimage, use_bgmask;
 static Widget bn_endcol, frm_cur;
 static Widget lb_status;
+static float bgcol[2][4];
 
 int main(int argc, char **argv)
 {
@@ -124,13 +125,16 @@ static int init_gui(void)
 	xm_checkbox(subvbox, "Use mask", use_bgmask, bgmask_use_change, 0);
 	create_pathfield(subvbox, str, 0, bgmask_path_change, 0);
 
+	cmd_getprop_vec("xlivebg.color_top", bgcol[0]);
+	cmd_getprop_vec("xlivebg.color_bottom", bgcol[1]);
+
 	subfrm = xm_frame(vbox, "Color");
 	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
 	xm_va_option_menu(hbox, colopt_change, 0, "Solid color", "Vertical gradient", "Horizontal gradient", (void*)0);
 	/*xm_button(hbox, "start", 0, 0);*/
-	xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, 0);
+	xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, bgcol[0]);
 	/*bn_endcol = xm_button(hbox, "end", 0, 0);*/
-	bn_endcol = xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, 0);
+	bn_endcol = xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, bgcol[1]);
 	XtSetSensitive(bn_endcol, 0);
 
 	gen_wallpaper_ui();
@@ -314,11 +318,26 @@ static void bncolor_handler(Widget w, void *cls, void *calldata)
 	Colormap cmap;
 	XColor col;
 	int border;
+	unsigned short rgb[3];
+	int cidx = cls == bgcol[0] ? 0 : 1;
 	XmDrawnButtonCallbackStruct *cbs = calldata;
+	static const char *colprop_str[] = {"xlivebg.color_top", "xlivebg.color_bottom"};
 
 	switch(cbs->reason) {
 	case XmCR_ACTIVATE:
-		color_picker_dialog(0);
+		rgb[0] = bgcol[cidx][0] * 65535.0f;
+		rgb[1] = bgcol[cidx][1] * 65535.0f;
+		rgb[2] = bgcol[cidx][2] * 65535.0f;
+
+		if(!color_picker_dialog(rgb)) {
+			break;
+		}
+		printf("setcol[%d]: %d %d %d\n", cidx, (int)rgb[0], (int)rgb[1], (int)rgb[2]);
+		bgcol[cidx][0] = rgb[0] / 65535.0f;
+		bgcol[cidx][1] = rgb[1] / 65535.0f;
+		bgcol[cidx][2] = rgb[2] / 65535.0f;
+		cmd_setprop_vec(colprop_str[cidx], bgcol[cidx]);
+		XClearArea(XtDisplay(w), XtWindow(w), 0, 0, 0, 0, True);
 		break;
 
 	case XmCR_EXPOSE:
@@ -333,8 +352,10 @@ static void bncolor_handler(Widget w, void *cls, void *calldata)
 				XmNheight, 2 * border + BNCOL_HEIGHT, (void*)0);
 
 		if(XtIsSensitive(w)) {
-			col.red = 65535;
-			col.green = col.blue = 0;
+			col.red = bgcol[cidx][0] * 65535.0f;
+			col.green = bgcol[cidx][1] * 65535.0f;
+			col.blue = bgcol[cidx][2] * 65535.0f;
+			printf("expose[%d]: %d %d %d\n", cidx, (int)col.red, (int)col.green, (int)col.blue);
 			XAllocColor(dpy, cmap, &col);
 			XSetForeground(dpy, gc, col.pixel);
 		} else {

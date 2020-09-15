@@ -484,6 +484,7 @@ struct coldlg_data {
 	Widget cbox;
 	Widget rgbslider[3];
 	float hsv[3];
+	int label_width, status;
 };
 
 static void update_colbox_image(struct coldlg_data *cdata);
@@ -492,22 +493,43 @@ static void update_colbox_image(struct coldlg_data *cdata);
 #define CBOX_HEIGHT		180
 #define HUEBAR_WIDTH	32
 #define HUEBAR_HEIGHT	CBOX_HEIGHT
+#define COLSEL_HEIGHT	32
 #define COLOR_WIDGET_WIDTH	(CBOX_WIDTH + HUEBAR_WIDTH)
-#define COLOR_WIDGET_HEIGHT CBOX_HEIGHT
+#define COLOR_WIDGET_HEIGHT (CBOX_HEIGHT + COLSEL_HEIGHT)
 
 static void coldlg_handler(Widget dlg, void *cls, void *calldata)
 {
-	unsigned short *out = cls;
+	struct coldlg_data *cdata = cls;
+
+	if(cdata) cdata->status = 1;
 
 	XtUnmanageChild(dlg);
 }
 
 static void colbox_expose(Widget cbox, void *cls, void *calldata)
 {
+	XColor xcol;
+	unsigned long bgcol;
 	struct coldlg_data *cdata = cls;
-	Window w = XtWindow(cbox);
+	Window win = XtWindow(cbox);
+	Colormap cmap;
+	float rgb[3];
 
-	XPutImage(cdata->dpy, w, cdata->gc, &cdata->ximg, 0, 0, 0, 0, COLOR_WIDGET_WIDTH, COLOR_WIDGET_HEIGHT);
+	XPutImage(cdata->dpy, win, cdata->gc, &cdata->ximg, 0, 0, 0, 0, COLOR_WIDGET_WIDTH, CBOX_HEIGHT);
+
+	XtVaGetValues(cdata->cbox, XmNbackground, &bgcol, (void*)0);
+	XSetForeground(cdata->dpy, cdata->gc, bgcol);
+	XFillRectangle(cdata->dpy, win, cdata->gc, 0, CBOX_HEIGHT, COLOR_WIDGET_WIDTH, COLSEL_HEIGHT);
+
+	hsv_to_rgb(rgb, rgb + 1, rgb + 2, cdata->hsv[0], cdata->hsv[1], cdata->hsv[2]);
+	cmap = DefaultColormap(cdata->dpy, XScreenNumberOfScreen(cdata->scr));
+	xcol.red = rgb[0] * 65535.0f;
+	xcol.green = rgb[1] * 65535.0f;
+	xcol.blue = rgb[2] * 65535.0f;
+	XAllocColor(cdata->dpy, cmap, &xcol);
+	XSetForeground(cdata->dpy, cdata->gc, xcol.pixel);
+	XFillRectangle(cdata->dpy, win, cdata->gc, cdata->label_width * 3 / 2, CBOX_HEIGHT + 5,
+			COLOR_WIDGET_WIDTH / 3, COLSEL_HEIGHT - 5);
 }
 
 static void colbox_mouse(Widget widget, XEvent *xev, char **argv, unsigned int *argcptr)
@@ -528,7 +550,7 @@ static void colbox_mouse(Widget widget, XEvent *xev, char **argv, unsigned int *
 			y = xev->xmotion.y;
 		}
 
-		if(x < 0 || x >= COLOR_WIDGET_WIDTH || y < 0 || y >= COLOR_WIDGET_HEIGHT) {
+		if(x < 0 || x >= COLOR_WIDGET_WIDTH || y < 0 || y >= CBOX_HEIGHT) {
 			return;
 		}
 
@@ -630,13 +652,14 @@ static void coldlg_rgbslider(Widget slider, void *cls, void *calldata)
 	update_colbox_image(cdata);
 }
 
-void color_picker_dialog(unsigned short *col)
+int color_picker_dialog(unsigned short *col)
 {
-	Widget dlg, frm, cbox, rslider, gslider, bslider;
+	static unsigned short defcol[3];
+	Widget w, dlg, frm, cbox, rslider, gslider, bslider;
+	Dimension width, height;
 	Arg args[16];
 	XmString xs_ok, xs_cancel;
 	struct coldlg_data cdata;
-	uint32 *pptr;
 	static const char *transl_str =
 		"<Btn1Down>: colbox_mouse()\n"
 		"<Btn1Up>: colbox_mouse()\n"
@@ -661,7 +684,7 @@ void color_picker_dialog(unsigned short *col)
 	XtSetArg(args[1], XmNcancelLabelString, xs_cancel);
 	dlg = XmCreateTemplateDialog(app_shell, "colordlg", args, 2);
 
-	XtAddCallback(dlg, XmNokCallback, coldlg_handler, col);
+	XtAddCallback(dlg, XmNokCallback, coldlg_handler, &cdata);
 	XtAddCallback(dlg, XmNcancelCallback, coldlg_handler, 0);
 
 	frm = XmCreateForm(dlg, "form", 0, 0);
@@ -702,11 +725,21 @@ void color_picker_dialog(unsigned short *col)
 	XtManageChild(cbox);
 
 	cdata.cbox = cbox;
+	cdata.status = 0;
+
+	if(!col) col = defcol;
+	rgb_to_hsv(col[0] / 65535.0f, col[1] / 65535.0f, col[2] / 65535.0f,
+			cdata.hsv, cdata.hsv + 1, cdata.hsv + 2);
+
+	w = xm_label(cbox, "Color:");
+	XtVaGetValues(w, XmNwidth, &width, XmNheight, &height, (void*)0);
+	XtVaSetValues(w, XmNx, 0, XmNy, (CBOX_HEIGHT + 5 + COLOR_WIDGET_HEIGHT - height) / 2, (void*)0);
+	cdata.label_width = width;
 
 	/* RGB sliders */
-	rslider = xm_slideri(frm, "Red", 0, 0, 255, coldlg_rgbslider, &cdata);
-	gslider = xm_slideri(frm, "Green", 0, 0, 255, coldlg_rgbslider, &cdata);
-	bslider = xm_slideri(frm, "Blue", 0, 0, 255, coldlg_rgbslider, &cdata);
+	rslider = xm_slideri(frm, "Red", (int)col[0] * 255 / 65535, 0, 255, coldlg_rgbslider, &cdata);
+	gslider = xm_slideri(frm, "Green", (int)col[1] * 255 / 65535, 0, 255, coldlg_rgbslider, &cdata);
+	bslider = xm_slideri(frm, "Blue", (int)col[2] * 255 / 65535, 0, 255, coldlg_rgbslider, &cdata);
 
 	XtVaSetValues(rslider, XmNtopAttachment, XmATTACH_FORM, XmNrightAttachment, XmATTACH_FORM,
 			XmNleftAttachment, XmATTACH_WIDGET, XmNleftWidget, cbox, (void*)0);
@@ -731,6 +764,15 @@ void color_picker_dialog(unsigned short *col)
 
 	free(cdata.ximg.data);
 	XFreeGC(cdata.dpy, cdata.gc);
+
+	if(cdata.status) {
+		float rgb[3];
+		hsv_to_rgb(rgb, rgb + 1, rgb + 2, cdata.hsv[0], cdata.hsv[1], cdata.hsv[2]);
+		col[0] = rgb[0] * 65535.0f;
+		col[1] = rgb[1] * 65535.0f;
+		col[2] = rgb[2] * 65535.0f;
+	}
+	return cdata.status;
 }
 
 

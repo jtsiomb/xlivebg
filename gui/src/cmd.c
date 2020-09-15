@@ -195,6 +195,8 @@ int cmd_getprop_vec(const char *name, float *ret)
 	for(i=len; i<4; i++) {
 		ret[i] = 0;
 	}
+
+	printf("got vector: %g %g %g\n", ret[0], ret[1], ret[2]);
 	return 0;
 }
 
