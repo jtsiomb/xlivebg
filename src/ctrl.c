@@ -444,7 +444,7 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 			return -1;
 		}
 		send_status(s, 1);
-		len = sprintf(buf, "1\n[%g %g %g %g]\n", vval[0], vval[1], vval[2], vval[3]);
+		len = sprintf(buf, "1\n[%g, %g, %g, %g]\n", vval[0], vval[1], vval[2], vval[3]);
 		write(s, buf, len);
 		break;
 
