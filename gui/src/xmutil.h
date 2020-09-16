@@ -25,6 +25,7 @@
 Widget xm_label(Widget par, const char *text);
 Widget xm_frame(Widget par, const char *title);
 Widget xm_rowcol(Widget par, int orient);	/* XmVERTICAL/XmHORIZONTAL */
+Widget xm_form(Widget par);
 Widget xm_button(Widget par, const char *text, XtCallbackProc cb, void *cls);
 Widget xm_drawn_button(Widget par, int width, int height, XtCallbackProc cb, void *cls);
 Widget xm_checkbox(Widget par, const char *text, int checked, XtCallbackProc cb, void *cls);
@@ -38,9 +39,16 @@ Widget xm_slideri(Widget par, const char *text, int val, int min, int max,
 
 int xm_get_border_size(Widget w);
 
+enum { XM_TOP = 1, XM_BOTTOM = 2, XM_LEFT = 4, XM_RIGHT = 8 };
+void xm_attach_form(Widget w, unsigned int dirmask);
+void xm_attach_widget(Widget w, unsigned int dir, Widget wtarg);
+
 /* higher level app-specific utility functions and composite "widgets" */
 Widget create_pathfield(Widget par, const char *defpath, const char *filter,
 		void (*handler)(const char*, void*), void *cls);
+
+Widget color_button(Widget par, int width, int height, int r, int g, int b,
+		void (*handler)(int, int, int, void*), void *cls);
 
 void messagebox(int type, const char *title, const char *msg, ...);
 int questionbox(const char *title, const char *msg, ...);

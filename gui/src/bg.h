@@ -45,7 +45,7 @@ struct bgprop_integer {
 };
 
 struct bgprop_color {
-	float color[3];
+	int r, g, b;
 };
 
 struct bgprop_path {

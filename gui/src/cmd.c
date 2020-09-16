@@ -191,12 +191,10 @@ int cmd_getprop_vec(const char *name, float *ret)
 	}
 	close(s);
 
-	len = sscanf(cmdbuf, "[%f, %f, %f, %f]", ret, ret + 1, ret + 2, ret + 3);
+	len = sscanf(cmdbuf, "%f %f %f %f", ret, ret + 1, ret + 2, ret + 3);
 	for(i=len; i<4; i++) {
 		ret[i] = 0;
 	}
-
-	printf("got vector: %g %g %g\n", ret[0], ret[1], ret[2]);
 	return 0;
 }
 
@@ -249,7 +247,7 @@ int cmd_setprop_vec(const char *name, float *val)
 	if((s = open_conn()) == -1) {
 		return -1;
 	}
-	len = sprintf(cmdbuf, "propvec %s [%g, %g, %g, %g]\n", name, val[0], val[1], val[2], val[3]);
+	len = sprintf(cmdbuf, "propvec %s %g %g %g %g\n", name, val[0], val[1], val[2], val[3]);
 	write(s, cmdbuf, len);
 	res = read_status(s);
 	close(s);

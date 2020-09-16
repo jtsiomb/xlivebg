@@ -51,6 +51,13 @@ Widget xm_rowcol(Widget par, int orient)
 	return w;
 }
 
+Widget xm_form(Widget par)
+{
+	Widget w = XmCreateForm(par, "form", 0, 0);
+	XtManageChild(w);
+	return w;
+}
+
 Widget xm_button(Widget par, const char *text, XtCallbackProc cb, void *cls)
 {
 	Widget w;
@@ -245,6 +252,54 @@ int xm_get_border_size(Widget w)
 	return highlight + shadow;
 }
 
+void xm_attach_form(Widget w, unsigned int dirmask)
+{
+	Arg args[8];
+	int i, count = 0;
+	/* these must correspond to the XM_TOP, XM_BOTTOM, etc ... bits in xmutil.h */
+	static char *attname[] = {
+		XmNtopAttachment, XmNbottomAttachment, XmNleftAttachment, XmNrightAttachment
+	};
+
+	for(i=0; i<4; i++) {
+		if(dirmask & 1) {
+			XtSetArg(args[count], attname[i], XmATTACH_FORM);
+			count++;
+		}
+		dirmask >>= 1;
+	}
+
+	if(count) {
+		XtSetValues(w, args, count);
+	}
+}
+
+static void *dirattach(unsigned int dir)
+{
+	switch(dir) {
+	case XM_TOP: return XmNtopAttachment;
+	case XM_BOTTOM: return XmNbottomAttachment;
+	case XM_LEFT: return XmNleftAttachment;
+	case XM_RIGHT: return XmNrightAttachment;
+	}
+	return 0;
+}
+static void *dirwidget(unsigned int dir)
+{
+	switch(dir) {
+	case XM_TOP: return XmNtopWidget;
+	case XM_BOTTOM: return XmNbottomWidget;
+	case XM_LEFT: return XmNleftWidget;
+	case XM_RIGHT: return XmNrightWidget;
+	}
+	return 0;
+}
+
+void xm_attach_widget(Widget w, unsigned int dir, Widget wtarg)
+{
+	XtVaSetValues(w, dirattach(dir), XmATTACH_WIDGET, dirwidget(dir), wtarg, (void*)0);
+}
+
 static void filesel_handler(Widget dlg, void *cls, void *calldata);
 
 const char *file_dialog(Widget shell, const char *start_dir, const char *filter, char *buf, int bufsz)
@@ -369,6 +424,114 @@ static void pathfield_modify(Widget txf, void *cls, void *calldata)
 		usercb(text, udata);
 	}
 	XtFree(text);
+}
+
+struct colbn_data {
+	Display *dpy;
+	Screen *scr;
+	int scrn;
+	Window win;
+	GC gc;
+	int border, width, height;
+
+	unsigned short color[3];
+	void (*usercb)(int, int, int, void*);
+	void *userdata;
+};
+
+static void colbn_destructor(Widget bn, void *cls, void *calldata)
+{
+	struct colbn_data *cdata = cls;
+	if(cdata->gc) XFreeGC(cdata->dpy, cdata->gc);
+	free(cdata);
+}
+
+static void colbn_handler(Widget bn, void *cls, void *calldata)
+{
+	XColor xcol;
+	Colormap cmap;
+	struct colbn_data *cdata = cls;
+	XmDrawnButtonCallbackStruct *cbs = calldata;
+	XSegment lseg[2];
+
+	if(!cdata->dpy) {
+		cdata->dpy = XtDisplay(bn);
+		cdata->win = XtWindow(bn);
+		cdata->scr = XtScreen(bn);
+		cdata->scrn = XScreenNumberOfScreen(cdata->scr);
+		cdata->gc = XCreateGC(cdata->dpy, cdata->win, 0, 0);
+
+		XSetFillStyle(cdata->dpy, cdata->gc, FillSolid);
+		XSetLineAttributes(cdata->dpy, cdata->gc, 5, LineSolid, CapButt, JoinMiter);
+	}
+
+	switch(cbs->reason) {
+	case XmCR_ACTIVATE:
+		if(!color_picker_dialog(cdata->color)) break;
+
+		if(cdata->usercb) {
+			cdata->usercb(cdata->color[0], cdata->color[1], cdata->color[2], cdata->userdata);
+		}
+		/* XXX try to just fallthrough instead? */
+		XClearArea(cdata->dpy, cdata->win, 0, 0, 0, 0, True);	/* force expose */
+		break;
+
+	case XmCR_EXPOSE:
+		cmap = DefaultColormapOfScreen(cdata->scr);
+
+		if(XtIsSensitive(bn)) {
+			xcol.red = cdata->color[0];
+			xcol.green = cdata->color[1];
+			xcol.blue = cdata->color[2];
+			XAllocColor(cdata->dpy, cmap, &xcol);
+			XSetForeground(cdata->dpy, cdata->gc, xcol.pixel);
+			XFillRectangle(cdata->dpy, cdata->win, cdata->gc, cdata->border, cdata->border,
+					cdata->width, cdata->height);
+		} else {
+			xcol.red = xcol.green = xcol.blue = 32768;
+			XAllocColor(cdata->dpy, cmap, &xcol);
+			XSetForeground(cdata->dpy, cdata->gc, xcol.pixel);
+			XFillRectangle(cdata->dpy, cdata->win, cdata->gc, cdata->border, cdata->border,
+					cdata->width, cdata->height);
+
+			lseg[0].x1 = lseg[0].y1 = 5;
+			lseg[0].x2 = cdata->width - 5;
+			lseg[0].y2 = cdata->height - 5;
+			lseg[1].x1 = lseg[1].y2 = 5;
+			lseg[1].y1 = cdata->height - 5;
+			lseg[1].x2 = cdata->width - 5;
+
+			XSetForeground(cdata->dpy, cdata->gc, BlackPixel(cdata->dpy, cdata->scrn));
+			XDrawSegments(cdata->dpy, cdata->win, cdata->gc, lseg, 2);
+		}
+		break;
+	}
+}
+
+Widget color_button(Widget par, int width, int height, int r, int g, int b,
+		void (*handler)(int, int, int, void*), void *cls)
+{
+	Widget bn;
+	struct colbn_data *cdata;
+
+	if(!(cdata = calloc(1, sizeof *cdata))) {
+		fprintf(stderr, "xmutil: color_button failed to allocate colbn_data buffer\n");
+		return 0;
+	}
+	cdata->color[0] = r;
+	cdata->color[1] = g;
+	cdata->color[2] = b;
+	cdata->usercb = handler;
+	cdata->userdata = cls;
+
+	bn = xm_drawn_button(par, width, height, colbn_handler, cdata);
+	XtAddCallback(bn, XmNdestroyCallback, colbn_destructor, cdata);
+
+	cdata->border = xm_get_border_size(bn);
+	cdata->width = width;
+	cdata->height = height;
+
+	return bn;
 }
 
 static char *msgbox_text;

@@ -5,7 +5,7 @@ obj = $(src:.c=.o)
 dep = $(src:.c=.d)
 bin = xlivebg-gui
 
-warn = -pedantic -Wall
+warn = -Wall -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 def = -DMINIGLUT_USE_LIBC
 inc = -I../libs/treestore/src
 

@@ -333,7 +333,7 @@ static int propcmd_type(const char *argv0)
 
 static int proc_cmd_setprop(int s, int argc, char **argv)
 {
-	int type, count;
+	int i, type;
 	int ival;
 	float fval;
 	char *endp;
@@ -345,7 +345,11 @@ static int proc_cmd_setprop(int s, int argc, char **argv)
 		return -1;
 	}
 
-	printf("CTRL: setprop %s %s\n", argv[1], argv[2]);
+	fputs("CTRL: setprop", stdout);
+	for(i=1; i<argc; i++) {
+		printf(" %s", argv[i]);
+	}
+	putchar('\n');
 
 	type = propcmd_type(argv[0]);
 	switch(type) {
@@ -367,10 +371,14 @@ static int proc_cmd_setprop(int s, int argc, char **argv)
 		}
 		break;
 	case XLIVEBG_PROP_VECTOR:
-		if(!(count = sscanf(argv[2], "[%f, %f, %f, %f]", vval, vval + 1, vval + 2, vval + 3))) {
-			goto setfailed;
-		}
-		if(xlivebg_setcfg_vec(argv[2], vval) == -1) {
+		if(argc < 3) goto setfailed;
+
+		vval[0] = atof(argv[2]);
+		if(argc > 3) vval[1] = atof(argv[3]);
+		if(argc > 4) vval[2] = atof(argv[4]);
+		if(argc > 5) vval[3] = atof(argv[5]);
+
+		if(xlivebg_setcfg_vec(argv[1], vval) == -1) {
 			goto setfailed;
 		}
 		break;
@@ -444,13 +452,13 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 			return -1;
 		}
 		send_status(s, 1);
-		len = sprintf(buf, "1\n[%g, %g, %g, %g]\n", vval[0], vval[1], vval[2], vval[3]);
+		len = sprintf(buf, "1\n%g %g %g %g\n", vval[0], vval[1], vval[2], vval[3]);
 		write(s, buf, len);
 		break;
 
 	default:
 		send_status(s, 0);
-		fprintf(stderr, "proc_cmd_setprop: invalid type\n");
+		fprintf(stderr, "proc_cmd_getprop: invalid type\n");
 		return -1;
 	}
 

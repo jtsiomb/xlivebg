@@ -12,6 +12,7 @@
 #define DEF_STAR_SIZE	1.0f
 #define DEF_FOLLOW		0.25f
 #define DEF_FOLLOW_SPEED	0.6f
+static float def_star_color[] = {1, 1, 1, 1};
 
 #define MAX_STAR_COUNT	65536
 #define STAR_DEPTH	100
@@ -57,6 +58,11 @@ static float targ[2], cam[2];
 	"        range = [0.25, 4.0]\n" \
 	"    }\n" \
 	"    prop {\n" \
+	"        id = \"color\"\n" \
+	"        desc = \"star color\"\n" \
+	"        type = \"color\"\n" \
+	"    }\n" \
+	"    prop {\n" \
 	"        id = \"follow\"\n" \
 	"        desc = \"follow mouse pointer\"\n" \
 	"        type = \"number\"\n" \
@@ -88,6 +94,7 @@ static int star_count;
 static float star_speed, star_size;
 static float follow;
 static float follow_speed;
+static float star_col[3];
 
 void register_plugin(void)
 {
@@ -106,6 +113,7 @@ static int init(void *cls)
 	xlivebg_defcfg_int("xlivebg.stars.count", DEF_STAR_COUNT);
 	xlivebg_defcfg_num("xlivebg.stars.speed", DEF_STAR_SPEED);
 	xlivebg_defcfg_num("xlivebg.stars.size", DEF_STAR_SIZE);
+	xlivebg_defcfg_vec("xlivebg.stars.color", def_star_color);
 	xlivebg_defcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
 	xlivebg_defcfg_num("xlivebg.stars.follow_speed", DEF_FOLLOW_SPEED);
 	return 0;
@@ -116,6 +124,7 @@ static void start(long tmsec, void *cls)
 	prop("count", 0);
 	prop("speed", 0);
 	prop("size", 0);
+	prop("color", 0);
 	prop("follow", 0);
 	prop("follow_speed", 0);
 
@@ -126,9 +135,9 @@ static void prop(const char *name, void *cls)
 {
 	int i;
 	float width;
+	float *vec;
 
-	switch(name[0]) {
-	case 'c':
+	if(strcmp(name, "count") == 0) {
 		star_count = xlivebg_getcfg_int("xlivebg.stars.count", DEF_STAR_COUNT);
 		if(star_count > MAX_STAR_COUNT) {
 			star_count = MAX_STAR_COUNT;
@@ -145,22 +154,22 @@ static void prop(const char *name, void *cls)
 				star[i].lenxy = sqrt(star[i].pos.x * star[i].pos.x + star[i].pos.y * star[i].pos.y);
 			}
 		}
-		break;
 
-	case 's':
-		if(name[1] == 'p') {
-			star_speed = xlivebg_getcfg_num("xlivebg.stars.speed", DEF_STAR_SPEED);
-		} else if(name[1] == 'i') {
-			star_size = xlivebg_getcfg_num("xlivebg.stars.size", DEF_STAR_SIZE);
-		}
-		break;
-	case 'f':
-		if(!name[6]) {
-			follow = xlivebg_getcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
-		} else if(name[6] == '_') {
-			follow_speed = xlivebg_getcfg_num("xlivebg.stars.follow_speed", DEF_FOLLOW_SPEED);
-		}
-		break;
+	} else if(strcmp(name, "speed") == 0) {
+		star_speed = xlivebg_getcfg_num("xlivebg.stars.speed", DEF_STAR_SPEED);
+
+	} else if(strcmp(name, "size") == 0) {
+		star_size = xlivebg_getcfg_num("xlivebg.stars.size", DEF_STAR_SIZE);
+
+	} else if(strcmp(name, "color") == 0) {
+		vec = xlivebg_getcfg_vec("xlivebg.stars.color", def_star_color);
+		memcpy(star_col, vec, sizeof star_col);
+
+	} else if(strcmp(name, "follow") == 0) {
+		follow = xlivebg_getcfg_num("xlivebg.stars.follow", DEF_FOLLOW);
+
+	} else if(strcmp(name, "follow_speed") == 0) {
+		follow_speed = xlivebg_getcfg_num("xlivebg.stars.follow_speed", DEF_FOLLOW_SPEED);
 	}
 }
 
@@ -254,7 +263,7 @@ static void draw_stars(long tmsec)
 		y0 += pos.y;
 		y1 += pos.y;
 
-		glColor4f(1, 1, 1, t);
+		glColor4f(star_col[0], star_col[1], star_col[2], t);
 		glTexCoord2f(0, 1);
 		glVertex3f(x0, y0, pos.z);
 		glTexCoord2f(1, 1);
@@ -275,7 +284,7 @@ static void draw_stars(long tmsec)
 		t = z / STAR_DEPTH;
 		pos.z = z - STAR_DEPTH;
 
-		glColor4f(1, 1, 1, t);
+		glColor4f(star_col[0], star_col[1], star_col[2], t);
 		glTexCoord2f(0, 0);
 		glVertex3f(pos.x - sz, pos.y - sz, pos.z - ssize);
 		glTexCoord2f(1, 0);

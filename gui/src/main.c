@@ -20,7 +20,7 @@ static void bgimage_path_change(const char *path, void *cls);
 static void bgmask_use_change(Widget w, void *cls, void *calldata);
 static void bgmask_path_change(const char *path, void *cls);
 static void colopt_change(Widget w, void *cls, void *calldata);
-static void bncolor_handler(Widget w, void *cls, void *calldata);
+static void color_change(int r, int g, int b, void *cls);
 static void numprop_change(Widget w, void *cls, void *calldata);
 static void intprop_change(Widget w, void *cls, void *calldata);
 static void pathprop_change(const char *path, void *cls);
@@ -43,9 +43,9 @@ int main(int argc, char **argv)
 		fprintf(stderr, "failed to initialize ui\n");
 		return -1;
 	}
+	XtVaSetValues(app_shell, XmNallowShellResize, True, (void*)0);
 
 	if(cmd_ping() == -1) {
-		/* TODO messagebox */
 		messagebox(XmDIALOG_ERROR, "Fatal error", "No response from xlivebg. Make sure it's running!");
 		return 1;
 	}
@@ -79,19 +79,25 @@ static char *clean_path_str(char *s)
 
 static int init_gui(void)
 {
-	Widget frm, subfrm, vbox, subvbox, hbox;
+	Widget bn, frm, subfrm, vbox, subvbox, hbox, form, rightform;
 	char buf[512];
 	char *str;
 
 	create_menu();
 
-	hbox = xm_rowcol(win, XmHORIZONTAL);
+	form = xm_form(win);
 
-	frm = xm_frame(hbox, "Global settings");
+	frm = xm_frame(form, "Global settings");
+	rightform = xm_form(form);
 
-	vbox = xm_rowcol(hbox, XmVERTICAL);
-	frm_cur = xm_frame(vbox, "Wallpaper settings");
-	xm_button(xm_rowcol(vbox, XmHORIZONTAL), "Save configuration", savecfg_handler, 0);
+	xm_attach_form(frm, XM_TOP | XM_LEFT | XM_BOTTOM);
+	xm_attach_form(rightform, XM_TOP | XM_RIGHT | XM_BOTTOM);
+	xm_attach_widget(rightform, XM_LEFT, frm);
+
+	frm_cur = xm_frame(rightform, "Wallpaper settings");
+	xm_attach_form(frm_cur, XM_TOP | XM_LEFT | XM_RIGHT);
+	bn = xm_button(rightform, "Save configuration", savecfg_handler, 0);
+	xm_attach_form(bn, XM_BOTTOM | XM_LEFT | XM_RIGHT);
 
 	/* global settings */
 	vbox = xm_rowcol(frm, XmVERTICAL);
@@ -131,10 +137,10 @@ static int init_gui(void)
 	subfrm = xm_frame(vbox, "Color");
 	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
 	xm_va_option_menu(hbox, colopt_change, 0, "Solid color", "Vertical gradient", "Horizontal gradient", (void*)0);
-	/*xm_button(hbox, "start", 0, 0);*/
-	xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, bgcol[0]);
-	/*bn_endcol = xm_button(hbox, "end", 0, 0);*/
-	bn_endcol = xm_drawn_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bncolor_handler, bgcol[1]);
+	color_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bgcol[0][0] * 65535.0f, bgcol[0][1] * 65535.0f,
+			bgcol[0][2] * 65535.0f, color_change, 0);
+	bn_endcol = color_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bgcol[1][0] * 65535.0f,
+			bgcol[1][1] * 65535.0f, bgcol[1][2] * 65535.0f, color_change, (void*)1);
 	XtSetSensitive(bn_endcol, 0);
 
 	gen_wallpaper_ui();
@@ -144,7 +150,7 @@ static int init_gui(void)
 
 static void create_menu(void)
 {
-	XmString sfile, shelp, squit, sabout, squit_key;
+	XmString sfile, shelp, ssave, ssave_key, squit, sabout, squit_key;
 	Widget menubar;
 
 	sfile = XmStringCreateSimple("File");
@@ -155,10 +161,16 @@ static void create_menu(void)
 	XmStringFree(sfile);
 	XmStringFree(shelp);
 
+	ssave = XmStringCreateSimple("Save");
+	ssave_key = XmStringCreateSimple("Ctrl-S");
 	squit = XmStringCreateSimple("Quit");
 	squit_key = XmStringCreateSimple("Ctrl-Q");
 	XmVaCreateSimplePulldownMenu(menubar, "filemenu", 0, file_menu_handler,
-			XmVaPUSHBUTTON, squit, 'Q', "Ctrl<Key>q", squit_key, (void*)0);
+			XmVaPUSHBUTTON, ssave, 'S', "Ctrl<Key>s", ssave_key,
+			XmVaPUSHBUTTON, squit, 'Q', "Ctrl<Key>q", squit_key,
+			(void*)0);
+	XmStringFree(ssave);
+	XmStringFree(ssave_key);
 	XmStringFree(squit);
 	XmStringFree(squit_key);
 
@@ -219,8 +231,15 @@ static void savecfg_handler(Widget w, void *cls, void *calldata)
 
 static void file_menu_handler(Widget lst, void *cls, void *calldata)
 {
-	/*int item = (int)cls;*/
-	exit(0);
+	int item = (int)cls;
+	switch(item) {
+	case 0:
+		savecfg_handler(0, 0, 0);
+		break;
+
+	case 1:
+		exit(0);
+	}
 }
 
 
@@ -308,75 +327,15 @@ static void colopt_change(Widget w, void *cls, void *calldata)
 	}
 }
 
-static void bncolor_handler(Widget w, void *cls, void *calldata)
+static void color_change(int r, int g, int b, void *cls)
 {
-	Display *dpy;
-	Screen *scr;
-	int scrn;
-	Window win;
-	GC gc;
-	Colormap cmap;
-	XColor col;
-	int border;
-	unsigned short rgb[3];
-	int cidx = cls == bgcol[0] ? 0 : 1;
-	XmDrawnButtonCallbackStruct *cbs = calldata;
+	int cidx = (int)cls;
 	static const char *colprop_str[] = {"xlivebg.color_top", "xlivebg.color_bottom"};
 
-	switch(cbs->reason) {
-	case XmCR_ACTIVATE:
-		rgb[0] = bgcol[cidx][0] * 65535.0f;
-		rgb[1] = bgcol[cidx][1] * 65535.0f;
-		rgb[2] = bgcol[cidx][2] * 65535.0f;
-
-		if(!color_picker_dialog(rgb)) {
-			break;
-		}
-		printf("setcol[%d]: %d %d %d\n", cidx, (int)rgb[0], (int)rgb[1], (int)rgb[2]);
-		bgcol[cidx][0] = rgb[0] / 65535.0f;
-		bgcol[cidx][1] = rgb[1] / 65535.0f;
-		bgcol[cidx][2] = rgb[2] / 65535.0f;
-		cmd_setprop_vec(colprop_str[cidx], bgcol[cidx]);
-		XClearArea(XtDisplay(w), XtWindow(w), 0, 0, 0, 0, True);
-		break;
-
-	case XmCR_EXPOSE:
-		dpy = XtDisplay(w);
-		win = XtWindow(w);
-		scr = XtScreen(w);
-		scrn = XScreenNumberOfScreen(scr);
-		gc = XDefaultGCOfScreen(scr);
-		cmap = DefaultColormapOfScreen(scr);
-		border = xm_get_border_size(w);
-		XtVaSetValues(w, XmNwidth, 2 * border + BNCOL_WIDTH,
-				XmNheight, 2 * border + BNCOL_HEIGHT, (void*)0);
-
-		if(XtIsSensitive(w)) {
-			col.red = bgcol[cidx][0] * 65535.0f;
-			col.green = bgcol[cidx][1] * 65535.0f;
-			col.blue = bgcol[cidx][2] * 65535.0f;
-			printf("expose[%d]: %d %d %d\n", cidx, (int)col.red, (int)col.green, (int)col.blue);
-			XAllocColor(dpy, cmap, &col);
-			XSetForeground(dpy, gc, col.pixel);
-		} else {
-			col.red = col.green = col.blue = 32768;
-			XAllocColor(dpy, cmap, &col);
-			XSetForeground(dpy, gc, col.pixel);
-		}
-		XSetFillStyle(dpy, gc, FillSolid);
-		XFillRectangle(dpy, win, gc, border, border, BNCOL_WIDTH, BNCOL_HEIGHT);
-
-		if(!XtIsSensitive(w)) {
-			static XSegment lseg[] = {
-				{5, 5, BNCOL_WIDTH - 5, BNCOL_HEIGHT - 5},
-				{5, BNCOL_HEIGHT - 5, BNCOL_WIDTH - 5, 5}
-			};
-			XSetLineAttributes(dpy, gc, 5, LineSolid, CapButt, JoinMiter);
-			XSetForeground(dpy, gc, BlackPixel(dpy, scrn));
-			XDrawSegments(dpy, win, gc, lseg, 2);
-		}
-		break;
-	}
+	bgcol[cidx][0] = r / 65535.0f;
+	bgcol[cidx][1] = g / 65535.0f;
+	bgcol[cidx][2] = b / 65535.0f;
+	cmd_setprop_vec(colprop_str[cidx], bgcol[cidx]);
 }
 
 static void numprop_change(Widget w, void *cls, void *calldata)
@@ -426,10 +385,27 @@ static void boolprop_change(Widget w, void *cls, void *calldata)
 	}
 }
 
+static void colprop_change(int r, int g, int b, void *cls)
+{
+	float vval[4];
+	struct bgprop *prop = cls;
+
+	if(r != prop->color.r || g != prop->color.g || b != prop->color.b) {
+		prop->color.r = r;
+		prop->color.g = g;
+		prop->color.b = b;
+		vval[0] = r / 65535.0f;
+		vval[1] = g / 65535.0f;
+		vval[2] = b / 65535.0f;
+		vval[3] = 1.0f;
+		cmd_setprop_vec(prop->fullname, vval);
+	}
+}
+
 static void gen_wallpaper_ui(void)
 {
 	int i, bval, ival;
-	float fval;
+	float fval, vval[4];
 	Widget w, vbox, hbox;
 	struct bginfo *bg;
 	XmString xmstr;
@@ -440,7 +416,7 @@ static void gen_wallpaper_ui(void)
 		return;
 	}
 
-	if((vbox = XtNameToWidget(frm_cur, "rowcol"))) {
+	if((vbox = XtNameToWidget(frm_cur, "vbox"))) {
 		XtDestroyWidget(vbox);
 	}
 	vbox = xm_rowcol(frm_cur, XmVERTICAL);
@@ -458,7 +434,7 @@ static void gen_wallpaper_ui(void)
 		case BGPROP_BOOL:
 			if(cmd_getprop_int(prop->fullname, &bval) != -1) {
 				prop->integer.value = bval;
-				xm_checkbox(vbox, prop->name, bval, boolprop_change, prop);
+				w = xm_checkbox(vbox, prop->name, bval, boolprop_change, prop);
 			}
 			break;
 
@@ -474,7 +450,7 @@ static void gen_wallpaper_ui(void)
 		case BGPROP_NUMBER:
 			if(cmd_getprop_num(prop->fullname, &fval) != -1) {
 				prop->number.value = fval;
-				xm_sliderf(vbox, prop->name, fval, prop->number.start, prop->number.end,
+				w = xm_sliderf(vbox, prop->name, fval, prop->number.start, prop->number.end,
 						numprop_change, prop);
 			}
 			break;
@@ -482,13 +458,18 @@ static void gen_wallpaper_ui(void)
 		case BGPROP_INTEGER:
 			if(cmd_getprop_int(prop->fullname, &ival) != -1) {
 				prop->integer.value = ival;
-				xm_sliderf(vbox, prop->name, ival, prop->integer.start, prop->integer.end,
+				w = xm_sliderf(vbox, prop->name, ival, prop->integer.start, prop->integer.end,
 						intprop_change, prop);
 			}
 			break;
 
 		case BGPROP_COLOR:
-			/* TODO color */
+			if(cmd_getprop_vec(prop->fullname, vval) != -1) {
+				hbox = xm_rowcol(vbox, XmHORIZONTAL);
+				xm_label(hbox, prop->name);
+				color_button(hbox, 48, 24, vval[0] * 65535.0f, vval[1] * 65535.0f,
+						vval[2] * 65535.0f, colprop_change, prop);
+			}
 			break;
 
 		case BGPROP_PATHNAME:
