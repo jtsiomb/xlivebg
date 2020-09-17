@@ -7,15 +7,15 @@
 #include "xlivebg.h"
 #include "data.h"
 
-#define DEF_STAR_COUNT	2048
+#define DEF_STAR_COUNT	3000
 #define DEF_STAR_SPEED	5.0f
-#define DEF_STAR_SIZE	1.0f
+#define DEF_STAR_SIZE	1.3f
 #define DEF_FOLLOW		0.25f
 #define DEF_FOLLOW_SPEED	0.6f
 static float def_star_color[] = {1, 1, 1, 1};
 
 #define MAX_STAR_COUNT	65536
-#define STAR_DEPTH	100
+#define STAR_DEPTH	80
 
 struct vec3 {
 	float x, y, z;
@@ -24,6 +24,12 @@ struct vec3 {
 struct star {
 	struct vec3 pos;
 	float lenxy;
+};
+
+struct vertex {
+	float u, v;
+	unsigned char r, g, b, a;
+	float x, y, z;
 };
 
 static int init(void *cls);
@@ -37,13 +43,16 @@ static struct star *star;
 static struct xlivebg_image pimg, bolt;
 static float targ[2], cam[2];
 
+static struct vertex *varr;
+static unsigned short *iarr;
+
 #define PROPLIST	\
 	"proplist {\n" \
 	"    prop {\n" \
 	"        id = \"count\"\n" \
 	"        desc = \"number of stars\"\n" \
 	"        type = \"integer\"\n" \
-	"        range = [100, 4000]\n" \
+	"        range = [500, 5000]\n" \
 	"    }\n" \
 	"    prop {\n" \
 	"        id = \"speed\"\n" \
@@ -145,7 +154,7 @@ static void prop(const char *name, void *cls)
 
 		free(star);
 		if((star = malloc(star_count * sizeof *star))) {
-			width = STAR_DEPTH / 6.0f;
+			width = STAR_DEPTH / 3.0f;
 			for(i=0; i<star_count; i++) {
 				star[i].pos.x = width * (2.0f * (float)rand() / (float)RAND_MAX - 1.0f);
 				star[i].pos.y = width * (2.0f * (float)rand() / (float)RAND_MAX - 1.0f);
@@ -154,6 +163,20 @@ static void prop(const char *name, void *cls)
 				star[i].lenxy = sqrt(star[i].pos.x * star[i].pos.x + star[i].pos.y * star[i].pos.y);
 			}
 		}
+		varr = malloc(star_count * 4 * sizeof *varr);
+		if((iarr = malloc(star_count * 6 * sizeof *iarr))) {
+			unsigned short *iptr = iarr;
+			for(i=0; i<star_count; i++) {
+				int voffs = i * 4;
+				*iptr++ = voffs;
+				*iptr++ = voffs + 1;
+				*iptr++ = voffs + 2;
+				*iptr++ = voffs;
+				*iptr++ = voffs + 2;
+				*iptr++ = voffs + 3;
+			}
+		}
+
 
 	} else if(strcmp(name, "speed") == 0) {
 		star_speed = xlivebg_getcfg_num("xlivebg.stars.speed", DEF_STAR_SPEED);
@@ -205,7 +228,7 @@ static void draw(long tmsec, void *cls)
 		xlivebg_gl_viewport(i);
 
 		glMatrixMode(GL_PROJECTION);
-		perspective(proj, 50.0 / 180.0 * M_PI, scr->aspect, 0.5, 500.0);
+		perspective(proj, 50.0 / 180.0 * M_PI, scr->aspect, 0.1, STAR_DEPTH * 1.2);
 		glLoadMatrixf(proj);
 
 		glMatrixMode(GL_MODELVIEW);
@@ -219,12 +242,34 @@ static void draw(long tmsec, void *cls)
 	}
 }
 
+static unsigned char cur_col[4];
+#define COLOR(r, g, b, a)	\
+	do { \
+		cur_col[0] = (r) * 255.0f; \
+		cur_col[1] = (g) * 255.0f; \
+		cur_col[2] = (b) * 255.0f; \
+		cur_col[3] = (a) * 255.0f; \
+	} while(0)
+#define TEXCOORD(tu, tv) (vptr->u = tu, vptr->v = tv)
+#define VERTEX(vx, vy, vz) \
+	do { \
+		vptr->x = vx; \
+		vptr->y = vy; \
+		vptr->z = vz; \
+		vptr->r = cur_col[0]; \
+		vptr->g = cur_col[1]; \
+		vptr->b = cur_col[2]; \
+		vptr->a = cur_col[3]; \
+		vptr++; \
+	} while(0)
+
 static void draw_stars(long tmsec)
 {
 	int i;
 	float z, t, x, y, x0, y0, x1, y1, theta, sz, ssize;
 	struct vec3 pos;
 	double tsec = (double)tmsec / 1000.0;
+	struct vertex *vptr;
 
 	glPushAttrib(GL_ENABLE_BIT);
 	glDisable(GL_DEPTH_TEST);
@@ -238,7 +283,8 @@ static void draw_stars(long tmsec)
 
 	ssize = star_size * 0.035f;
 
-	glBegin(GL_QUADS);
+	vptr = varr;
+	//glBegin(GL_QUADS);
 	for(i=0; i<star_count; i++) {
 		pos = star[i].pos;
 		z = fmod(pos.z + tsec * star_speed, STAR_DEPTH);
@@ -263,38 +309,47 @@ static void draw_stars(long tmsec)
 		y0 += pos.y;
 		y1 += pos.y;
 
-		glColor4f(star_col[0], star_col[1], star_col[2], t);
-		glTexCoord2f(0, 1);
-		glVertex3f(x0, y0, pos.z);
-		glTexCoord2f(1, 1);
-		glVertex3f(x1, y1, pos.z);
-		glTexCoord2f(1, 0);
-		glVertex3f(x1, y1, pos.z - ssize * 16.0);
-		glTexCoord2f(0, 0);
-		glVertex3f(x0, y0, pos.z - ssize * 16.0);
+		COLOR(star_col[0], star_col[1], star_col[2], t);
+		TEXCOORD(0, 1);
+		VERTEX(x0, y0, pos.z);
+		TEXCOORD(1, 1);
+		VERTEX(x1, y1, pos.z);
+		TEXCOORD(1, 0);
+		VERTEX(x1, y1, pos.z - ssize * 16.0);
+		TEXCOORD(0, 0);
+		VERTEX(x0, y0, pos.z - ssize * 16.0);
 	}
-	glEnd();
+	//glEnd();
 
+	glInterleavedArrays(GL_T2F_C4UB_V3F, 0, varr);
+	glDrawElements(GL_TRIANGLES, star_count * 6, GL_UNSIGNED_SHORT, iarr);
+
+	vptr = varr;
 	glBindTexture(GL_TEXTURE_2D, xlivebg_image_texture(&pimg));
 	sz = ssize * 4.0;
-	glBegin(GL_QUADS);
+	//glBegin(GL_QUADS);
 	for(i=0; i<star_count; i++) {
 		pos = star[i].pos;
 		z = fmod(pos.z + tsec * star_speed, STAR_DEPTH);
 		t = z / STAR_DEPTH;
 		pos.z = z - STAR_DEPTH;
 
-		glColor4f(star_col[0], star_col[1], star_col[2], t);
-		glTexCoord2f(0, 0);
-		glVertex3f(pos.x - sz, pos.y - sz, pos.z - ssize);
-		glTexCoord2f(1, 0);
-		glVertex3f(pos.x + sz, pos.y - sz, pos.z - ssize);
-		glTexCoord2f(1, 1);
-		glVertex3f(pos.x + sz, pos.y + sz, pos.z - ssize);
-		glTexCoord2f(0, 1);
-		glVertex3f(pos.x - sz, pos.y + sz, pos.z - ssize);
+		COLOR(star_col[0], star_col[1], star_col[2], t);
+		TEXCOORD(0, 0);
+		VERTEX(pos.x - sz, pos.y - sz, pos.z - ssize);
+		TEXCOORD(1, 0);
+		VERTEX(pos.x + sz, pos.y - sz, pos.z - ssize);
+		TEXCOORD(1, 1);
+		VERTEX(pos.x + sz, pos.y + sz, pos.z - ssize);
+		TEXCOORD(0, 1);
+		VERTEX(pos.x - sz, pos.y + sz, pos.z - ssize);
 	}
-	glEnd();
+	//glEnd();
+	glDrawElements(GL_TRIANGLES, star_count * 6, GL_UNSIGNED_SHORT, iarr);
+
+	glDisableClientState(GL_VERTEX_ARRAY_POINTER);
+	glDisableClientState(GL_COLOR_ARRAY_POINTER);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY_POINTER);
 
 	glPopAttrib();
 }
