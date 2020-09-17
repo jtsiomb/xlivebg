@@ -29,6 +29,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ctrl.h"
 
 static int cmd_generic(int argc, char **argv);
+static int cmd_getupd(int argc, char **argv);
 static int cmd_list(int argc, char **argv);
 static int cmd_lsprop(int argc, char **argv);
 static int cmd_setprop(int argc, char **argv);
@@ -44,6 +45,8 @@ static struct {
 	int (*func)(int, char**);
 } commands[] = {
 	{"ping", cmd_generic},
+	{"save", cmd_generic},
+	{"getupd", cmd_getupd},
 	{"list", cmd_list},
 	{"switch", cmd_generic},
 	{"lsprop", cmd_lsprop},
@@ -117,6 +120,43 @@ static int cmd_generic(int argc, char **argv)
 
 	fprintf(stderr, "Command %s failed\n", argv[1]);
 	return -1;
+}
+
+static int cmd_getupd(int argc, char **argv)
+{
+	char buf[256];
+	char *endp;
+	int state = 0;
+	long val;
+
+	write(sock, "getupd\n", 7);
+
+	while(read_line(sock, buf, sizeof buf) >= 0) {
+		switch(state) {
+		case 0:
+			if(strcmp(buf, "OK!\n") != 0) {
+				fprintf(stderr, "getupd command failed\n");
+				return -1;
+			}
+			state++;
+			break;
+
+		case 1:
+		case 2:
+			val = strtol(buf, &endp, 10);
+			if(endp == buf || (state == 1 && val != 1)) {
+				fprintf(stderr, "Got invalid response to getupd command!\n");
+				return -1;
+			}
+			if(state > 1) {
+				printf("%ld us (%g fps)\n", val, 1000000.0f / val);
+				return 0;
+			}
+			state++;
+		}
+	}
+
+	return 0;
 }
 
 static int cmd_list(int argc, char **argv)

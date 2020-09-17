@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include "app.h"
 #include "ctrl.h"
 #include "plugin.h"
 #include "cfg.h"
@@ -180,6 +181,7 @@ static int proc_cmd_getprop(int s, int argc, char **argv);
 static int proc_cmd_save(int s, int argc, char **argv);
 static int proc_cmd_cfgpath(int s, int argc, char **argv);
 static int proc_cmd_ping(int s, int argc, char **argv);
+static int proc_cmd_getupd(int s, int argc, char **argv);
 
 struct {
 	const char *cmd;
@@ -199,6 +201,7 @@ struct {
 	{"save", proc_cmd_save},
 	{"cfgpath", proc_cmd_cfgpath},
 	{"ping", proc_cmd_ping},
+	{"getupd", proc_cmd_getupd},
 	{0, 0}
 };
 
@@ -496,5 +499,16 @@ static int proc_cmd_cfgpath(int s, int argc, char **argv)
 static int proc_cmd_ping(int s, int argc, char **argv)
 {
 	send_status(s, 1);
+	return 0;
+}
+
+static int proc_cmd_getupd(int s, int argc, char **argv)
+{
+	char buf[128];
+	int len;
+
+	send_status(s, 1);
+	len = sprintf(buf, "1\n%ld\n", upd_interval_usec);
+	write(s, buf, len);
 	return 0;
 }

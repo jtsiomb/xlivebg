@@ -9,7 +9,7 @@
 
 #define DEF_STAR_COUNT	3000
 #define DEF_STAR_SPEED	5.0f
-#define DEF_STAR_SIZE	1.3f
+#define DEF_STAR_SIZE	1.6f
 #define DEF_FOLLOW		0.25f
 #define DEF_FOLLOW_SPEED	0.6f
 static float def_star_color[] = {1, 1, 1, 1};
