@@ -26,6 +26,7 @@ struct cfg {
 	char *image, *anm_mask;
 	struct color color[2];
 	int fps_override;
+	long fps_override_interval;
 	int fit;
 	float zoom;
 	float crop_dir[2];

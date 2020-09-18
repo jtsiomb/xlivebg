@@ -177,6 +177,7 @@ int main(int argc, char **argv)
 		fd_set rdset;
 		struct timeval *timeout;
 		int i, max_fd, num_ctrl_sock;
+		long interval;
 		int *ctrl_sock;
 
 		while(XPending(dpy)) {
@@ -211,13 +212,15 @@ int main(int argc, char **argv)
 			if(s > max_fd) max_fd = s;
 		}
 
-		if(upd_interval_usec > 0) {
+		interval = (cfg.fps_override > 0) ? cfg.fps_override_interval : upd_interval_usec;
+
+		if(interval > 0) {
 			struct timeval now;
 			long usec;
 
 			gettimeofday(&now, 0);
 
-			usec = upd_interval_usec - (now.tv_sec - tv.tv_sec) * 1000000 - (now.tv_usec - tv.tv_usec);
+			usec = interval - (now.tv_sec - tv.tv_sec) * 1000000 - (now.tv_usec - tv.tv_usec);
 			if(usec < 0) usec = 0;
 
 			tv.tv_sec = usec / 1000000;

@@ -544,6 +544,9 @@ static int update_builtin_cfg(const char *cfgpath, struct ts_value *tsval)
 	}
 	if(strcmp(cfgpath, CFGNAME_FPS) == 0) {
 		cfg.fps_override = tsval->inum;
+		if(cfg.fps_override > 0) {
+			cfg.fps_override_interval = 1000000 / cfg.fps_override;
+		}
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_FIT) == 0) {

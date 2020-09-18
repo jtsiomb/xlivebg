@@ -24,6 +24,8 @@ static void color_change(int r, int g, int b, void *cls);
 static void numprop_change(Widget w, void *cls, void *calldata);
 static void intprop_change(Widget w, void *cls, void *calldata);
 static void pathprop_change(const char *path, void *cls);
+static void forcefps_handler(Widget w, void *cls, void *calldata);
+static void fps_change(Widget w, void *cls, void *calldata);
 static void gen_wallpaper_ui(void);
 static void set_status(const char *s);
 
@@ -34,6 +36,8 @@ static Widget win;
 static int use_bgimage, use_bgmask;
 static Widget bn_endcol, frm_cur;
 static Widget lb_status;
+static Widget spin_fps;
+static int user_fps = 30;
 static float bgcol[2][4];
 
 int main(int argc, char **argv)
@@ -82,6 +86,7 @@ static int init_gui(void)
 	Widget bn, frm, subfrm, vbox, subvbox, hbox, form, rightform;
 	char buf[512];
 	char *str;
+	int fps = -1;
 
 	create_menu();
 
@@ -142,6 +147,22 @@ static int init_gui(void)
 	bn_endcol = color_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bgcol[1][0] * 65535.0f,
 			bgcol[1][1] * 65535.0f, bgcol[1][2] * 65535.0f, color_change, (void*)1);
 	XtSetSensitive(bn_endcol, 0);
+
+	subfrm = xm_frame(vbox, "Frame rate");
+	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
+	cmd_getprop_int("xlivebg.fps", &fps);
+	xm_checkbox(hbox, "Force", fps >= 0, forcefps_handler, 0);
+
+	spin_fps = xm_spinboxi(hbox, 0, 0, 60, fps_change, 0);
+	if(fps < 0) {
+		long upd_rate;
+		XtSetSensitive(spin_fps, 0);
+		if(cmd_getupd(&upd_rate) >= 0) {
+			fps = 1000000 / upd_rate;
+		}
+	}
+	XtVaSetValues(spin_fps, XmNvalue, fps, (void*)0);
+	xm_label(hbox, "fps");
 
 	gen_wallpaper_ui();
 
@@ -399,6 +420,35 @@ static void colprop_change(int r, int g, int b, void *cls)
 		vval[2] = b / 65535.0f;
 		vval[3] = 1.0f;
 		cmd_setprop_vec(prop->fullname, vval);
+	}
+}
+
+static void forcefps_handler(Widget w, void *cls, void *calldata)
+{
+	XmToggleButtonCallbackStruct *cbs = calldata;
+
+	XtSetSensitive(spin_fps, cbs->set);
+
+	if(cbs->set) {
+		XtVaSetValues(spin_fps, XmNposition, user_fps, (void*)0);
+		cmd_setprop_int("xlivebg.fps", user_fps);
+	} else {
+		long upd_rate;
+		if(cmd_getupd(&upd_rate) > 0) {
+			user_fps = 1000000 / upd_rate;
+		}
+		XtVaSetValues(spin_fps, XmNposition, user_fps, (void*)0);
+		cmd_setprop_int("xlivebg.fps", -1);
+	}
+}
+
+static void fps_change(Widget w, void *cls, void *calldata)
+{
+	XmSpinBoxCallbackStruct *cbs = calldata;
+
+	if(cbs->position != user_fps) {
+		user_fps = cbs->position;
+		cmd_setprop_int("xlivebg.fps", user_fps);
 	}
 }
 

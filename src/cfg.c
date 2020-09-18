@@ -58,6 +58,10 @@ void init_cfg(void)
 	memcpy(cfg.color + 1, vec, sizeof *cfg.color);
 
 	cfg.fps_override = ts_lookup_int(ts, CFGNAME_FPS, -1);
+	if(cfg.fps_override > 0) {
+		cfg.fps_override_interval = 1000000 / cfg.fps_override;
+	}
+
 
 	if((str = ts_lookup_str(ts, CFGNAME_FIT, 0))) {
 		cfg.fit = cfg_parse_fit(str);

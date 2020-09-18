@@ -16,6 +16,7 @@
 #include <Xm/TextF.h>
 #include <Xm/FileSB.h>
 #include <Xm/Scale.h>
+#include <Xm/SSpinB.h>
 #include <Xm/SelectioB.h>
 #include <Xm/DialogS.h>
 #include <Xm/PanedW.h>
@@ -36,6 +37,8 @@ Widget xm_sliderf(Widget par, const char *text, float val, float min, float max,
 		XtCallbackProc cb, void *cls);
 Widget xm_slideri(Widget par, const char *text, int val, int min, int max,
 		XtCallbackProc cb, void *cls);
+
+Widget xm_spinboxi(Widget par, int val, int min, int max, XtCallbackProc cb, void *cls);
 
 int xm_get_border_size(Widget w);
 

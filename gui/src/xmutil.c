@@ -242,6 +242,27 @@ Widget xm_slideri(Widget par, const char *text, int val, int min, int max,
 
 }
 
+Widget xm_spinboxi(Widget par, int val, int min, int max, XtCallbackProc cb, void *cls)
+{
+	Arg args[16];
+	Widget w;
+
+	XtSetArg(args[0], XmNspinBoxChildType, XmNUMERIC);
+	XtSetArg(args[1], XmNminimumValue, min);
+	XtSetArg(args[2], XmNmaximumValue, max);
+	XtSetArg(args[3], XmNincrementValue, 1);
+	XtSetArg(args[4], XmNpositionType, XmPOSITION_VALUE);
+	XtSetArg(args[5], XmNposition, val);
+	XtSetArg(args[6], XmNeditable, 0);
+	w = XmCreateSimpleSpinBox(par, "sspin", args, 7);
+	XtManageChild(w);
+
+	if(cb) {
+		XtAddCallback(w, XmNvalueChangedCallback, cb, cls);
+	}
+	return w;
+}
+
 int xm_get_border_size(Widget w)
 {
 	Dimension highlight, shadow;

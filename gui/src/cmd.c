@@ -255,6 +255,32 @@ int cmd_setprop_vec(const char *name, float *val)
 }
 
 
+int cmd_getupd(long *ret)
+{
+	int s;
+	long upd_rate;
+	char *endp;
+
+	if((s = open_conn()) == -1) {
+		return -1;
+	}
+	write(s, "getupd\n", 7);
+	if(read_status(s) <= 0) {
+		close(s);
+		return -1;
+	}
+	if(num_resp_lines(s) <= 0 || read_line(s, cmdbuf, sizeof cmdbuf) == -1) {
+		close(s);
+		return -1;
+	}
+	close(s);
+
+	upd_rate = strtol(cmdbuf, &endp, 10);
+	if(endp == cmdbuf) return -1;
+	*ret = upd_rate;
+	return 0;
+}
+
 static char inbuf[1024];
 static char *inbuf_head = inbuf;
 static char *inbuf_tail = inbuf;
