@@ -26,7 +26,7 @@
 Widget xm_label(Widget par, const char *text);
 Widget xm_frame(Widget par, const char *title);
 Widget xm_rowcol(Widget par, int orient);	/* XmVERTICAL/XmHORIZONTAL */
-Widget xm_form(Widget par);
+Widget xm_form(Widget par, int grid);
 Widget xm_button(Widget par, const char *text, XtCallbackProc cb, void *cls);
 Widget xm_drawn_button(Widget par, int width, int height, XtCallbackProc cb, void *cls);
 Widget xm_checkbox(Widget par, const char *text, int checked, XtCallbackProc cb, void *cls);
@@ -45,6 +45,7 @@ int xm_get_border_size(Widget w);
 enum { XM_TOP = 1, XM_BOTTOM = 2, XM_LEFT = 4, XM_RIGHT = 8 };
 void xm_attach_form(Widget w, unsigned int dirmask);
 void xm_attach_widget(Widget w, unsigned int dir, Widget wtarg);
+void xm_attach_pos(Widget w, unsigned int dir, int pos);
 
 /* higher level app-specific utility functions and composite "widgets" */
 Widget create_pathfield(Widget par, const char *defpath, const char *filter,

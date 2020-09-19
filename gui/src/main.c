@@ -24,6 +24,9 @@ static void color_change(int r, int g, int b, void *cls);
 static void numprop_change(Widget w, void *cls, void *calldata);
 static void intprop_change(Widget w, void *cls, void *calldata);
 static void pathprop_change(const char *path, void *cls);
+static void fitmode_change(Widget w, void *cls, void *calldata);
+static void cropzoom_change(Widget w, void *cls, void *calldata);
+static void cropdir_change(Widget w, void *cls, void *calldata);
 static void forcefps_handler(Widget w, void *cls, void *calldata);
 static void fps_change(Widget w, void *cls, void *calldata);
 static void gen_wallpaper_ui(void);
@@ -39,6 +42,8 @@ static Widget lb_status;
 static Widget slider_fps;
 static int user_fps = 30;
 static float bgcol[2][4];
+static float cropdir[4];
+static Widget frm_cropopt;
 
 int main(int argc, char **argv)
 {
@@ -83,17 +88,18 @@ static char *clean_path_str(char *s)
 
 static int init_gui(void)
 {
-	Widget bn, lb, chkbox, frm, subfrm, vbox, subvbox, hbox, form, rightform;
+	Widget bn, lb, chkbox, slider, frm, subfrm, vbox, subvbox, hbox, form, rightform;
 	char buf[512];
 	char *str;
+	float fval;
 	int forcefps;
 
 	create_menu();
 
-	form = xm_form(win);
+	form = xm_form(win, 0);
 
 	frm = xm_frame(form, "Global settings");
-	rightform = xm_form(form);
+	rightform = xm_form(form, 0);
 
 	xm_attach_form(frm, XM_TOP | XM_LEFT | XM_BOTTOM);
 	xm_attach_form(rightform, XM_TOP | XM_RIGHT | XM_BOTTOM);
@@ -148,9 +154,53 @@ static int init_gui(void)
 			bgcol[1][1] * 65535.0f, bgcol[1][2] * 65535.0f, color_change, (void*)1);
 	XtSetSensitive(bn_endcol, 0);
 
+	/* --- fit --- */
+	subfrm = xm_frame(vbox, "Background image fit");
+	subvbox = xm_rowcol(subfrm, XmVERTICAL);
+
+	hbox = xm_rowcol(subvbox, XmHORIZONTAL);
+	xm_label(hbox, "mode");
+	xm_va_option_menu(hbox, fitmode_change, 0, "Full", "Crop", "Stretch", (void*)0);
+
+	frm_cropopt = xm_frame(subvbox, "Crop options");
+	form = xm_form(frm_cropopt, 3);
+
+	fval = 1;
+	cmd_getprop_num("xlivebg.crop_zoom", &fval);
+	lb = xm_label(form, "zoom");
+	xm_attach_pos(lb, XM_TOP, 0);
+	xm_attach_pos(lb, XM_RIGHT, 1);
+	slider = xm_sliderf(form, 0, fval, 0, 1, cropzoom_change, 0);
+	XtVaSetValues(slider, XmNshowValue, False, (void*)0);
+	xm_attach_pos(slider, XM_TOP, 0);
+	xm_attach_pos(slider, XM_LEFT, 1);
+	xm_attach_form(slider, XM_RIGHT);
+
+	cropdir[0] = cropdir[1] = 0;
+	cmd_getprop_vec("xlivebg.crop_dir", cropdir);
+	lb = xm_label(form, "horizontal pan");
+	xm_attach_pos(lb, XM_TOP, 1);
+	xm_attach_pos(lb, XM_RIGHT, 1);
+	slider = xm_sliderf(form, 0, cropdir[0], -1, 1, cropdir_change, cropdir);
+	XtVaSetValues(slider, XmNshowValue, False, (void*)0);
+	xm_attach_pos(slider, XM_TOP, 1);
+	xm_attach_pos(slider, XM_LEFT, 1);
+	xm_attach_form(slider, XM_RIGHT);
+
+	lb = xm_label(form, "vertical pan");
+	xm_attach_pos(lb, XM_TOP, 2);
+	xm_attach_pos(lb, XM_RIGHT, 1);
+	slider = xm_sliderf(form, 0, cropdir[1], -1, 1, cropdir_change, cropdir + 1);
+	XtVaSetValues(slider, XmNshowValue, False, (void*)0);
+	xm_attach_pos(slider, XM_TOP, 2);
+	xm_attach_pos(slider, XM_LEFT, 1);
+	xm_attach_form(slider, XM_RIGHT);
+
+
+	/* --- framerate override --- */
 	subfrm = xm_frame(vbox, "Frame rate");
 	//hbox = xm_rowcol(subfrm, XmHORIZONTAL);
-	form = xm_form(subfrm);
+	form = xm_form(subfrm, 0);
 
 	user_fps = -1;
 	cmd_getprop_int("xlivebg.fps", &user_fps);
@@ -433,6 +483,18 @@ static void colprop_change(int r, int g, int b, void *cls)
 		vval[3] = 1.0f;
 		cmd_setprop_vec(prop->fullname, vval);
 	}
+}
+
+static void fitmode_change(Widget w, void *cls, void *calldata)
+{
+}
+
+static void cropzoom_change(Widget w, void *cls, void *calldata)
+{
+}
+
+static void cropdir_change(Widget w, void *cls, void *calldata)
+{
 }
 
 static void forcefps_handler(Widget w, void *cls, void *calldata)

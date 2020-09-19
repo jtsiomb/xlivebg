@@ -51,9 +51,12 @@ Widget xm_rowcol(Widget par, int orient)
 	return w;
 }
 
-Widget xm_form(Widget par)
+Widget xm_form(Widget par, int grid)
 {
-	Widget w = XmCreateForm(par, "form", 0, 0);
+	Arg arg;
+
+	XtSetArg(arg, XmNfractionBase, grid);
+	Widget w = XmCreateForm(par, "form", &arg, grid > 0 ? 1 : 0);
 	XtManageChild(w);
 	return w;
 }
@@ -315,10 +318,25 @@ static void *dirwidget(unsigned int dir)
 	}
 	return 0;
 }
+static void *dirpos(unsigned int dir)
+{
+	switch(dir) {
+	case XM_TOP: return XmNtopPosition;
+	case XM_BOTTOM: return XmNbottomPosition;
+	case XM_LEFT: return XmNleftPosition;
+	case XM_RIGHT: return XmNrightPosition;
+	}
+	return 0;
+}
 
 void xm_attach_widget(Widget w, unsigned int dir, Widget wtarg)
 {
 	XtVaSetValues(w, dirattach(dir), XmATTACH_WIDGET, dirwidget(dir), wtarg, (void*)0);
+}
+
+void xm_attach_pos(Widget w, unsigned int dir, int pos)
+{
+	XtVaSetValues(w, dirattach(dir), XmATTACH_POSITION, dirpos(dir), pos, (void*)0);
 }
 
 static void filesel_handler(Widget dlg, void *cls, void *calldata);
