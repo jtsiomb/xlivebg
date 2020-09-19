@@ -34,6 +34,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 static int load_plugins(const char *dirpath);
 static void update_cfg(const char *cfgpath, struct ts_value *tsval);
+static const char *get_builtin_str(const char *cfgpath);
+static float *get_builtin_num(const char *cfgpath);
+static int *get_builtin_int(const char *cfgpath);
+static float *get_builtin_vec(const char *cfgpath);
 
 static struct xlivebg_plugin *act;
 static struct xlivebg_plugin **plugins;
@@ -277,25 +281,41 @@ int xlivebg_havecfg(const char *cfgpath)
 
 const char *xlivebg_getcfg_str(const char *cfgpath, const char *def_val)
 {
+	const char *str;
 	if(!cfg.ts) return def_val;
+	if((str = get_builtin_str(cfgpath))) {
+		return str;
+	}
 	return ts_lookup_str(cfg.ts, cfgpath, def_val);
 }
 
 float xlivebg_getcfg_num(const char *cfgpath, float def_val)
 {
+	float *ptr;
 	if(!cfg.ts) return def_val;
+	if((ptr = get_builtin_num(cfgpath))) {
+		return *ptr;
+	}
 	return ts_lookup_num(cfg.ts, cfgpath, def_val);
 }
 
 int xlivebg_getcfg_int(const char *cfgpath, int def_val)
 {
+	int *ptr;
 	if(!cfg.ts) return def_val;
+	if((ptr = get_builtin_int(cfgpath))) {
+		return *ptr;
+	}
 	return ts_lookup_int(cfg.ts, cfgpath, def_val);
 }
 
 float *xlivebg_getcfg_vec(const char *cfgpath, float *def_val)
 {
+	float *vec;
 	if(!cfg.ts) return def_val;
+	if((vec = get_builtin_vec(cfgpath))) {
+		return vec;
+	}
 	return ts_lookup_vec(cfg.ts, cfgpath, def_val);
 }
 
@@ -622,4 +642,51 @@ static void update_cfg(const char *cfgpath, struct ts_value *tsval)
 			break;
 		}
 	}
+}
+
+static const char *get_builtin_str(const char *cfgpath)
+{
+	if(strcmp(cfgpath, CFGNAME_ACTIVE) == 0) {
+		return cfg.act_plugin;
+	}
+	if(strcmp(cfgpath, CFGNAME_IMAGE) == 0) {
+		return cfg.image;
+	}
+	if(strcmp(cfgpath, CFGNAME_ANIM_MASK) == 0) {
+		return cfg.anm_mask;
+	}
+	return 0;
+}
+
+static float *get_builtin_num(const char *cfgpath)
+{
+	if(strcmp(cfgpath, CFGNAME_CROP_ZOOM) == 0) {
+		return &cfg.zoom;
+	}
+	return 0;
+}
+
+static int *get_builtin_int(const char *cfgpath)
+{
+	if(strcmp(cfgpath, CFGNAME_FPS) == 0) {
+		return &cfg.fps_override;
+	}
+	if(strcmp(cfgpath, CFGNAME_FIT) == 0) {
+		return &cfg.fit;
+	}
+	return 0;
+}
+
+static float *get_builtin_vec(const char *cfgpath)
+{
+	if(strcmp(cfgpath, CFGNAME_COLOR) == 0 || strcmp(cfgpath, CFGNAME_COLOR_TOP) == 0) {
+		return &cfg.color[0].r;
+	}
+	if(strcmp(cfgpath, CFGNAME_COLOR_BOT) == 0) {
+		return &cfg.color[1].r;
+	}
+	if(strcmp(cfgpath, CFGNAME_CROP_DIR) == 0) {
+		return cfg.crop_dir;
+	}
+	return 0;
 }
