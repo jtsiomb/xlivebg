@@ -192,9 +192,9 @@ Widget xm_sliderf(Widget par, const char *text, float val, float min, float max,
 	if(ndecimal) {
 		XtSetArg(argv[argc], XmNdecimalPoints, ndecimal), argc++;
 	}
-	XtSetArg(argv[argc], XmNminimum, min * s), argc++;
-	XtSetArg(argv[argc], XmNmaximum, max * s), argc++;
-	XtSetArg(argv[argc], XmNvalue, val * s), argc++;
+	XtSetArg(argv[argc], XmNminimum, (int)(min * s)), argc++;
+	XtSetArg(argv[argc], XmNmaximum, (int)(max * s)), argc++;
+	XtSetArg(argv[argc], XmNvalue, (int)(val * s)), argc++;
 	XtSetArg(argv[argc], XmNshowValue, True), argc++;
 	XtSetArg(argv[argc], XmNorientation, XmHORIZONTAL), argc++;
 
@@ -337,6 +337,70 @@ void xm_attach_widget(Widget w, unsigned int dir, Widget wtarg)
 void xm_attach_pos(Widget w, unsigned int dir, int pos)
 {
 	XtVaSetValues(w, dirattach(dir), XmATTACH_POSITION, dirpos(dir), pos, (void*)0);
+}
+
+void xm_attach_pos_full(Widget w, int x0, int y0, int x1, int y1)
+{
+	Arg args[8];
+	int count = 0;
+	if(x0 >= 0) {
+		XtSetArg(args[count], XmNleftAttachment, XmATTACH_POSITION);
+		XtSetArg(args[count + 1], XmNleftPosition, x0);
+		count += 2;
+	}
+	if(y0 >= 0) {
+		XtSetArg(args[count], XmNtopAttachment, XmATTACH_POSITION);
+		XtSetArg(args[count + 1], XmNtopPosition, y0);
+		count += 2;
+	}
+	if(x1 >= 0) {
+		XtSetArg(args[count], XmNrightAttachment, XmATTACH_POSITION);
+		XtSetArg(args[count + 1], XmNrightPosition, x1);
+		count += 2;
+	}
+	if(y1 >= 0) {
+		XtSetArg(args[count], XmNbottomAttachment, XmATTACH_POSITION);
+		XtSetArg(args[count + 1], XmNbottomPosition, y1);
+		count += 2;
+	}
+	XtSetValues(w, args, count);
+}
+
+void xm_set_sliderf_value(Widget w, float val)
+{
+	int i, ndecimal = 0;
+	float s = 1.0f;
+
+	XtVaGetValues(w, XmNdecimalPoints, &ndecimal, (void*)0);
+	for(i=0; i<ndecimal; i++) {
+		s *= 10.0f;
+	}
+	XtVaSetValues(w, XmNvalue, (int)(val * s), (void*)0);
+}
+
+float xm_get_sliderf_value(Widget w)
+{
+	int i, ival, ndecimal = 0;
+	float s = 1.0f;
+
+	XtVaGetValues(w, XmNvalue, &ival, XmNdecimalPoints, &ndecimal, (void*)0);
+	for(i=0; i<ndecimal; i++) {
+		s *= 0.1f;
+	}
+	return ival * s;
+}
+
+int xm_select_option(Widget w, int opt)
+{
+	int count;
+	Widget *children;
+
+	XtVaGetValues(w, XmNnumChildren, &count, (void*)0);
+	if(opt < 0 || opt >= count) return -1;
+
+	XtVaGetValues(w, XmNchildren, &children, (void*)0);
+	XtVaSetValues(w, XmNmenuHistory, children[opt], (void*)0);
+	return 0;
 }
 
 static void filesel_handler(Widget dlg, void *cls, void *calldata);

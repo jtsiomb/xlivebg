@@ -88,11 +88,12 @@ static char *clean_path_str(char *s)
 
 static int init_gui(void)
 {
-	Widget bn, lb, chkbox, slider, frm, subfrm, vbox, subvbox, hbox, form, rightform;
+	Widget bn, lb, chkbox, slider, frm, subfrm, optmenu;
+	Widget vbox, subvbox, hbox, form, rightform;
 	char buf[512];
 	char *str;
 	float fval;
-	int forcefps;
+	int forcefps, fit;
 
 	create_menu();
 
@@ -160,7 +161,19 @@ static int init_gui(void)
 
 	hbox = xm_rowcol(subvbox, XmHORIZONTAL);
 	xm_label(hbox, "mode");
-	xm_va_option_menu(hbox, fitmode_change, 0, "Full", "Crop", "Stretch", (void*)0);
+	fit = 0;
+	if(cmd_getprop_str("xlivebg.fit", buf, sizeof buf) != -1) {
+		str = clean_path_str(buf);
+		if(strcmp(str, "full") == 0) {
+			fit = 0;
+		} else if(strcmp(str, "crop") == 0) {
+			fit = 1;
+		} else if(strcmp(str, "stretch") == 0) {
+			fit = 2;
+		}
+	}
+	optmenu = xm_va_option_menu(hbox, fitmode_change, 0, "Full", "Crop", "Stretch", (void*)0);
+	xm_select_option(optmenu, fit);
 
 	frm_cropopt = xm_frame(subvbox, "Crop options");
 	form = xm_form(frm_cropopt, 3);
@@ -196,6 +209,7 @@ static int init_gui(void)
 	xm_attach_pos(slider, XM_LEFT, 1);
 	xm_attach_form(slider, XM_RIGHT);
 
+	if(fit != 1) XtSetSensitive(frm_cropopt, 0);
 
 	/* --- framerate override --- */
 	subfrm = xm_frame(vbox, "Frame rate");
@@ -400,6 +414,8 @@ static void colopt_change(Widget w, void *cls, void *calldata)
 	int idx;
 	void *ptr;
 
+	/* TODO send config change */
+
 	XtVaGetValues(w, XmNuserData, &ptr, (void*)0);
 	idx = (int)ptr;
 
@@ -487,14 +503,29 @@ static void colprop_change(int r, int g, int b, void *cls)
 
 static void fitmode_change(Widget w, void *cls, void *calldata)
 {
+	void *udata;
+	int idx;
+	static const char *optstr[] = {"full", "crop", "stretch"};
+
+	XtVaGetValues(w, XmNuserData, &udata, (void*)0);
+	idx = (int)udata;
+
+	XtSetSensitive(frm_cropopt, idx == 1);
+	cmd_setprop_str("xlivebg.fit", optstr[idx]);
 }
 
 static void cropzoom_change(Widget w, void *cls, void *calldata)
 {
+	float val = xm_get_sliderf_value(w);
+	cmd_setprop_num("xlivebg.crop_zoom", val);
 }
 
 static void cropdir_change(Widget w, void *cls, void *calldata)
 {
+	float *valptr = cls;
+
+	*valptr = xm_get_sliderf_value(w);
+	cmd_setprop_vec("xlivebg.crop_dir", cropdir);
 }
 
 static void forcefps_handler(Widget w, void *cls, void *calldata)
