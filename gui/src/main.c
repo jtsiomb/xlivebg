@@ -36,7 +36,7 @@ static Widget win;
 static int use_bgimage, use_bgmask;
 static Widget bn_endcol, frm_cur;
 static Widget lb_status;
-static Widget spin_fps;
+static Widget slider_fps;
 static int user_fps = 30;
 static float bgcol[2][4];
 
@@ -83,10 +83,10 @@ static char *clean_path_str(char *s)
 
 static int init_gui(void)
 {
-	Widget bn, frm, subfrm, vbox, subvbox, hbox, form, rightform;
+	Widget bn, lb, chkbox, frm, subfrm, vbox, subvbox, hbox, form, rightform;
 	char buf[512];
 	char *str;
-	int fps = -1;
+	int forcefps;
 
 	create_menu();
 
@@ -149,20 +149,32 @@ static int init_gui(void)
 	XtSetSensitive(bn_endcol, 0);
 
 	subfrm = xm_frame(vbox, "Frame rate");
-	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
-	cmd_getprop_int("xlivebg.fps", &fps);
-	xm_checkbox(hbox, "Force", fps >= 0, forcefps_handler, 0);
+	//hbox = xm_rowcol(subfrm, XmHORIZONTAL);
+	form = xm_form(subfrm);
 
-	spin_fps = xm_spinboxi(hbox, 0, 0, 60, fps_change, 0);
-	if(fps < 0) {
+	user_fps = -1;
+	cmd_getprop_int("xlivebg.fps", &user_fps);
+
+	forcefps = user_fps > 0;
+	chkbox = xm_checkbox(form, "Force", forcefps, forcefps_handler, 0);
+	xm_attach_form(chkbox, XM_TOP | XM_BOTTOM | XM_LEFT);
+
+	if(!forcefps) {
 		long upd_rate;
-		XtSetSensitive(spin_fps, 0);
 		if(cmd_getupd(&upd_rate) >= 0) {
-			fps = 1000000 / upd_rate;
+			user_fps = 1000000 / upd_rate;
 		}
 	}
-	XtVaSetValues(spin_fps, XmNvalue, fps, (void*)0);
-	xm_label(hbox, "fps");
+
+	slider_fps = xm_slideri(form, 0, user_fps, 1, user_fps > 60 ? user_fps : 60,
+			fps_change, 0);
+	XtSetSensitive(slider_fps, forcefps);
+	xm_attach_form(slider_fps, XM_TOP | XM_BOTTOM);
+	xm_attach_widget(slider_fps, XM_LEFT, chkbox);
+
+	lb = xm_label(form, "fps");
+	xm_attach_form(lb, XM_TOP | XM_BOTTOM | XM_RIGHT);
+	xm_attach_widget(slider_fps, XM_RIGHT, lb);
 
 	gen_wallpaper_ui();
 
@@ -427,27 +439,22 @@ static void forcefps_handler(Widget w, void *cls, void *calldata)
 {
 	XmToggleButtonCallbackStruct *cbs = calldata;
 
-	XtSetSensitive(spin_fps, cbs->set);
+	XtSetSensitive(slider_fps, cbs->set);
 
 	if(cbs->set) {
-		XtVaSetValues(spin_fps, XmNposition, user_fps, (void*)0);
+		XtVaSetValues(slider_fps, XmNvalue, user_fps, (void*)0);
 		cmd_setprop_int("xlivebg.fps", user_fps);
 	} else {
-		long upd_rate;
-		if(cmd_getupd(&upd_rate) > 0) {
-			user_fps = 1000000 / upd_rate;
-		}
-		XtVaSetValues(spin_fps, XmNposition, user_fps, (void*)0);
 		cmd_setprop_int("xlivebg.fps", -1);
 	}
 }
 
 static void fps_change(Widget w, void *cls, void *calldata)
 {
-	XmSpinBoxCallbackStruct *cbs = calldata;
+	XmScaleCallbackStruct *cbs = calldata;
 
-	if(cbs->position != user_fps) {
-		user_fps = cbs->position;
+	if(cbs->value != user_fps) {
+		user_fps = cbs->value;
 		cmd_setprop_int("xlivebg.fps", user_fps);
 	}
 }
