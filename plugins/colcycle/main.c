@@ -188,8 +188,7 @@ static void draw(long time_msec, void *cls)
 	int i, num_scr, loc;
 	float xform[16];
 
-	glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT);
+	xlivebg_clear(GL_COLOR_BUFFER_BIT);
 
 	num_scr = xlivebg_screen_count();
 	for(i=0; i<num_scr; i++) {
@@ -235,6 +234,7 @@ static void draw_screen(int scr_idx, long time_msec)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glDisableVertexAttribArray(0);
 
 	assert(glGetError() == GL_NO_ERROR);
 }

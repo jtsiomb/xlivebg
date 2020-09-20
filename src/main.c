@@ -30,6 +30,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #endif
 #include <X11/extensions/shape.h>
 #include <GL/glx.h>
+#include "opengl.h"
 #include "app.h"
 #include "xlivebg.h"
 #include "cfg.h"
@@ -414,6 +415,7 @@ int xlivebg_init_gl(void)
 		return -1;
 	}
 	glXMakeCurrent(dpy, win, ctx);
+	init_opengl();
 	app_reshape(wattr.width, wattr.height);
 	XFree(vi);
 	return 0;

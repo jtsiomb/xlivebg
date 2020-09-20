@@ -24,7 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <dirent.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
-#include <GL/gl.h>
+#include "opengl.h"
 #include "xlivebg.h"
 #include "app.h"
 #include "imageman.h"
@@ -457,6 +457,75 @@ void xlivebg_gl_viewport(int sidx)
 	glViewport(scr->vport[0], scr->vport[1], scr->vport[2], scr->vport[3]);
 }
 
+void xlivebg_clear(unsigned int mask)
+{
+	static float varr[2][24] = {
+		{0, 0, 0, 1, 1, 0, 0, 0, 0, -1, 1, 0, 0, 0, 0, -1, -1, 0, 0, 0, 0, 1, -1, 0},
+		{5, 5, 5, -1, 1, 0, 5, 5, 5, -1, -1, 0, 5, 5, 5, 1, -1, 0, 5, 5, 5, 1, 1, 0}
+	};
+	float *vptr;
+	int i, cur_prog = 0;
+
+	if(cfg.bgmode < 0 || cfg.bgmode > 2) return;
+
+	if(cfg.bgmode == XLIVEBG_BG_SOLID) {
+		glClearColor(cfg.color[0].r, cfg.color[0].g, cfg.color[0].b, 1);
+		glClear(mask);
+		return;
+	}
+	vptr = varr[cfg.bgmode - 1];
+
+	glClear(mask & ~GL_COLOR_BUFFER_BIT);
+
+	glPushAttrib(GL_ENABLE_BIT | GL_TRANSFORM_BIT);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glDisable(GL_LIGHTING);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glDisable(GL_TEXTURE_1D);
+	glDisable(GL_TEXTURE_2D);
+
+	glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
+
+	if(xlivebg_gl_use_program) {
+		glGetIntegerv(GL_CURRENT_PROGRAM, &cur_prog);
+		xlivebg_gl_use_program(0);
+	}
+	if(xlivebg_gl_bind_buffer) {
+		xlivebg_gl_bind_buffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	vptr[0] = vptr[6] = cfg.color[0].r;
+	vptr[1] = vptr[7] = cfg.color[0].g;
+	vptr[2] = vptr[8] = cfg.color[0].b;
+	vptr[12] = vptr[18] = cfg.color[1].r;
+	vptr[13] = vptr[19] = cfg.color[1].g;
+	vptr[14] = vptr[20] = cfg.color[1].b;
+
+	glInterleavedArrays(GL_C3F_V3F, 0, vptr);
+
+	for(i=0; i<num_screens; i++) {
+		xlivebg_gl_viewport(i);
+		glDrawArrays(GL_QUADS, 0, 4);
+	}
+
+	glPopClientAttrib();
+	if(cur_prog) {
+		xlivebg_gl_use_program(cur_prog);
+	}
+
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glPopAttrib();
+}
+
 void xlivebg_calc_image_proj(int sidx, float img_aspect, float *xform)
 {
 	static const float ident[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
@@ -554,12 +623,16 @@ static int update_builtin_cfg(const char *cfgpath, struct ts_value *tsval)
 		}
 		return 1;
 	}
-	if(strcmp(cfgpath, CFGNAME_COLOR) == 0 || strcmp(cfgpath, CFGNAME_COLOR_TOP) == 0) {
+	if(strcmp(cfgpath, CFGNAME_COLOR) == 0) {
 		memcpy(cfg.color, tsval->vec, sizeof *cfg.color);
 		return 1;
 	}
-	if(strcmp(cfgpath, CFGNAME_COLOR_BOT) == 0) {
+	if(strcmp(cfgpath, CFGNAME_COLOR2) == 0) {
 		memcpy(cfg.color + 1, tsval->vec, sizeof *cfg.color);
+		return 1;
+	}
+	if(strcmp(cfgpath, CFGNAME_BGMODE) == 0) {
+		cfg.bgmode = cfg_parse_bgmode(tsval->str);
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_FPS) == 0) {
@@ -674,15 +747,18 @@ static int *get_builtin_int(const char *cfgpath)
 	if(strcmp(cfgpath, CFGNAME_FIT) == 0) {
 		return &cfg.fit;
 	}
+	if(strcmp(cfgpath, CFGNAME_BGMODE) == 0) {
+		return &cfg.bgmode;
+	}
 	return 0;
 }
 
 static float *get_builtin_vec(const char *cfgpath)
 {
-	if(strcmp(cfgpath, CFGNAME_COLOR) == 0 || strcmp(cfgpath, CFGNAME_COLOR_TOP) == 0) {
+	if(strcmp(cfgpath, CFGNAME_COLOR) == 0) {
 		return &cfg.color[0].r;
 	}
-	if(strcmp(cfgpath, CFGNAME_COLOR_BOT) == 0) {
+	if(strcmp(cfgpath, CFGNAME_COLOR2) == 0) {
 		return &cfg.color[1].r;
 	}
 	if(strcmp(cfgpath, CFGNAME_CROP_DIR) == 0) {

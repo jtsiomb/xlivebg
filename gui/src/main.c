@@ -93,7 +93,7 @@ static int init_gui(void)
 	char buf[512];
 	char *str;
 	float fval;
-	int forcefps, fit;
+	int forcefps, fit, bgmode;
 
 	create_menu();
 
@@ -143,17 +143,27 @@ static int init_gui(void)
 	xm_checkbox(subvbox, "Use mask", use_bgmask, bgmask_use_change, 0);
 	create_pathfield(subvbox, str, 0, bgmask_path_change, 0);
 
-	cmd_getprop_vec("xlivebg.color_top", bgcol[0]);
-	cmd_getprop_vec("xlivebg.color_bottom", bgcol[1]);
+	bgmode = 0;
+	if(cmd_getprop_str("xlivebg.bgmode", buf, sizeof buf) != -1) {
+		str = clean_path_str(buf);
+		if(strcmp(str, "vgrad") == 0) {
+			bgmode = 1;
+		} else if(strcmp(str, "hgrad") == 0) {
+			bgmode = 2;
+		}
+	}
+	cmd_getprop_vec("xlivebg.color", bgcol[0]);
+	cmd_getprop_vec("xlivebg.color2", bgcol[1]);
 
 	subfrm = xm_frame(vbox, "Color");
 	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
-	xm_va_option_menu(hbox, colopt_change, 0, "Solid color", "Vertical gradient", "Horizontal gradient", (void*)0);
+	optmenu = xm_va_option_menu(hbox, colopt_change, 0, "Solid color", "Vertical gradient", "Horizontal gradient", (void*)0);
+	xm_select_option(optmenu, bgmode);
 	color_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bgcol[0][0] * 65535.0f, bgcol[0][1] * 65535.0f,
 			bgcol[0][2] * 65535.0f, color_change, 0);
 	bn_endcol = color_button(hbox, BNCOL_WIDTH, BNCOL_HEIGHT, bgcol[1][0] * 65535.0f,
 			bgcol[1][1] * 65535.0f, bgcol[1][2] * 65535.0f, color_change, (void*)1);
-	XtSetSensitive(bn_endcol, 0);
+	XtSetSensitive(bn_endcol, bgmode > 0);
 
 	/* --- fit --- */
 	subfrm = xm_frame(vbox, "Background image fit");
@@ -164,9 +174,7 @@ static int init_gui(void)
 	fit = 0;
 	if(cmd_getprop_str("xlivebg.fit", buf, sizeof buf) != -1) {
 		str = clean_path_str(buf);
-		if(strcmp(str, "full") == 0) {
-			fit = 0;
-		} else if(strcmp(str, "crop") == 0) {
+		if(strcmp(str, "crop") == 0) {
 			fit = 1;
 		} else if(strcmp(str, "stretch") == 0) {
 			fit = 2;
@@ -413,11 +421,12 @@ static void colopt_change(Widget w, void *cls, void *calldata)
 {
 	int idx;
 	void *ptr;
-
-	/* TODO send config change */
+	static const char *bgmode_str[] = {"solid", "vgrad", "hgrad"};
 
 	XtVaGetValues(w, XmNuserData, &ptr, (void*)0);
 	idx = (int)ptr;
+
+	cmd_setprop_str("xlivebg.bgmode", bgmode_str[idx]);
 
 	if(idx <= 0) {
 		XtSetSensitive(bn_endcol, 0);
@@ -429,7 +438,7 @@ static void colopt_change(Widget w, void *cls, void *calldata)
 static void color_change(int r, int g, int b, void *cls)
 {
 	int cidx = (int)cls;
-	static const char *colprop_str[] = {"xlivebg.color_top", "xlivebg.color_bottom"};
+	static const char *colprop_str[] = {"xlivebg.color", "xlivebg.color2"};
 
 	bgcol[cidx][0] = r / 65535.0f;
 	bgcol[cidx][1] = g / 65535.0f;

@@ -38,6 +38,12 @@ enum {
 };
 
 enum {
+	XLIVEBG_BG_SOLID,
+	XLIVEBG_BG_VGRAD,
+	XLIVEBG_BG_HGRAD
+};
+
+enum {
 	XLIVEBG_PROP_UNKNOWN,
 	XLIVEBG_PROP_STRING,
 	XLIVEBG_PROP_NUMBER,
@@ -124,6 +130,8 @@ int xlivebg_defcfg_int(const char *cfgpath, int val);
 int xlivebg_defcfg_vec(const char *cfgpath, float *vec);
 
 void xlivebg_gl_viewport(int scr);
+
+void xlivebg_clear(unsigned int mask);
 
 /* xlivebg_calc_image_proj returns a projection matrix suitable for
  * transforming a fullscreen quad (-1,1), in such a way as to abide by the fit

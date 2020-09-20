@@ -9,7 +9,6 @@ char *cfgpath;
 void init_cfg(void)
 {
 	static float zero_vec[4];
-	float color[4];
 	struct ts_node *ts;
 	const char *str;
 	float *vec;
@@ -47,15 +46,14 @@ void init_cfg(void)
 	if((str = ts_lookup_str(ts, CFGNAME_ANIM_MASK, 0))) {
 		cfg.anm_mask = strdup(str);
 	}
-	if((vec = ts_lookup_vec(ts, CFGNAME_COLOR, 0))) {
-		memcpy(color, vec, sizeof color);
-	} else {
-		memcpy(color, zero_vec, sizeof color);
+	vec = ts_lookup_vec(ts, CFGNAME_COLOR, 0);
+	memcpy(cfg.color, vec ? vec : zero_vec, sizeof *cfg.color);
+	vec = ts_lookup_vec(ts, CFGNAME_COLOR2, 0);
+	memcpy(cfg.color + 1, vec ? vec : zero_vec, sizeof *cfg.color);
+
+	if((str = ts_lookup_str(ts, CFGNAME_BGMODE, 0))) {
+		cfg.bgmode = cfg_parse_bgmode(str);
 	}
-	vec = ts_lookup_vec(ts, CFGNAME_COLOR_TOP, color);
-	memcpy(cfg.color, vec, sizeof *cfg.color);
-	vec = ts_lookup_vec(ts, CFGNAME_COLOR_BOT, color);
-	memcpy(cfg.color + 1, vec, sizeof *cfg.color);
 
 	cfg.fps_override = ts_lookup_int(ts, CFGNAME_FPS, -1);
 	if(cfg.fps_override > 0) {
@@ -94,4 +92,20 @@ int cfg_parse_fit(const char *str)
 
 	fprintf(stderr, "invalid value to option \"" CFGNAME_FIT "\": %s\n", str);
 	return XLIVEBG_FIT_FULL;
+}
+
+int cfg_parse_bgmode(const char *str)
+{
+	if(strcasecmp(str, "solid") == 0) {
+		return XLIVEBG_BG_SOLID;
+	}
+	if(strcasecmp(str, "vgrad") == 0) {
+		return XLIVEBG_BG_VGRAD;
+	}
+	if(strcasecmp(str, "hgrad") == 0) {
+		return XLIVEBG_BG_HGRAD;
+	}
+
+	fprintf(stderr, "invalid value to option \"" CFGNAME_BGMODE "\": %s\n", str);
+	return XLIVEBG_BG_SOLID;
 }
