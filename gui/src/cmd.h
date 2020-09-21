@@ -22,6 +22,8 @@ int cmd_setprop_int(const char *name, int val);
 int cmd_setprop_num(const char *name, float val);
 int cmd_setprop_vec(const char *name, float *val);
 
+int cmd_rmprop(const char *name);
+
 int cmd_getupd(long *upd_rate_usec);
 
 #ifdef __cplusplus

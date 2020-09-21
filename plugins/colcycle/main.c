@@ -112,6 +112,7 @@ void set_palette(int idx, int r, int g, int b)
 
 static int init(void *cls)
 {
+	xlivebg_defcfg_str("xlivebg.colcycle.image", "");
 	return 0;
 }
 
@@ -126,6 +127,7 @@ static void start(long msec, void *cls)
 
 	argv[1] = (char*)xlivebg_getcfg_str("xlivebg.colcycle.imagedir", argv[1]);
 	argv[1] = (char*)xlivebg_getcfg_str("xlivebg.colcycle.image", argv[1]);
+	if(argv[1] && !*argv[1]) argv[1] = 0;
 
 	init_glext();
 

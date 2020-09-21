@@ -424,6 +424,19 @@ int xlivebg_setcfg_vec(const char *cfgpath, float *vec)
 	return 0;
 }
 
+int xlivebg_rmcfg(const char *cfgpath)
+{
+	struct ts_attr *attr = ts_lookup(cfg.ts, cfgpath);
+	if(!attr) return -1;
+
+	if(ts_remove_attr(attr->node, attr) == -1) {
+		return -1;
+	}
+	ts_free_attr(attr);
+	update_cfg(cfgpath, 0);
+	return 0;
+}
+
 int xlivebg_defcfg_str(const char *cfgpath, const char *str)
 {
 	if(xlivebg_havecfg(cfgpath)) return 0;
@@ -598,23 +611,25 @@ static char *skip_space(char *s)
 /* returns 1 if it handled the update, 0 otherwise */
 static int update_builtin_cfg(const char *cfgpath, struct ts_value *tsval)
 {
-	if(strcmp(cfgpath, CFGNAME_ACTIVE) == 0) {
+	if(strcmp(cfgpath, CFGNAME_ACTIVE) == 0 && tsval) {
 		struct xlivebg_plugin *p = find_plugin(tsval->str);
 		if(p) activate_plugin(p);
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_IMAGE) == 0 || strcmp(cfgpath, CFGNAME_ANIM_MASK) == 0) {
-		struct xlivebg_image *img;
-		int idx = find_image(tsval->str);
-		if(idx >= 0) {
-			img = get_image(idx);
-		} else {
-			if(!(img = malloc(sizeof *img)) || load_image(img, tsval->str) == -1) {
-				fprintf(stderr, "update_builtin_cfg(%s<-%s): failed to load image\n", cfgpath, tsval->str);
-				free(img);
-				return 1;
+		struct xlivebg_image *img = 0;
+		if(tsval) {
+			int idx = find_image(tsval->str);
+			if(idx >= 0) {
+				img = get_image(idx);
+			} else {
+				if(!(img = malloc(sizeof *img)) || load_image(img, tsval->str) == -1) {
+					fprintf(stderr, "update_builtin_cfg(%s<-%s): failed to load image\n", cfgpath, tsval->str);
+					free(img);
+					return 1;
+				}
+				add_image(img);
 			}
-			add_image(img);
 		}
 		if(strcmp(cfgpath, CFGNAME_IMAGE) == 0) {
 			set_bg_image(0, img);
@@ -624,35 +639,55 @@ static int update_builtin_cfg(const char *cfgpath, struct ts_value *tsval)
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_COLOR) == 0) {
-		memcpy(cfg.color, tsval->vec, sizeof *cfg.color);
+		if(tsval) {
+			memcpy(cfg.color, tsval->vec, sizeof *cfg.color);
+		} else {
+			memset(cfg.color, 0, sizeof *cfg.color);
+		}
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_COLOR2) == 0) {
-		memcpy(cfg.color + 1, tsval->vec, sizeof *cfg.color);
+		if(tsval) {
+			memcpy(cfg.color + 1, tsval->vec, sizeof *cfg.color);
+		} else {
+			memset(cfg.color, 0, sizeof *cfg.color);
+		}
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_BGMODE) == 0) {
-		cfg.bgmode = cfg_parse_bgmode(tsval->str);
+		if(tsval) {
+			cfg.bgmode = cfg_parse_bgmode(tsval->str);
+		} else {
+			cfg.bgmode = 0;
+		}
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_FPS) == 0) {
-		cfg.fps_override = tsval->inum;
-		if(cfg.fps_override > 0) {
-			cfg.fps_override_interval = 1000000 / cfg.fps_override;
+		if(tsval) {
+			cfg.fps_override = tsval->inum;
+			if(cfg.fps_override > 0) {
+				cfg.fps_override_interval = 1000000 / cfg.fps_override;
+			}
+		} else {
+			cfg.fps_override = -1;
 		}
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_FIT) == 0) {
-		cfg.fit = cfg_parse_fit(tsval->str);
+		cfg.fit = tsval ? cfg_parse_fit(tsval->str) : 0;
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_CROP_ZOOM) == 0) {
-		cfg.zoom = tsval->fnum;
+		cfg.zoom = tsval ? tsval->fnum : 1;
 		return 1;
 	}
 	if(strcmp(cfgpath, CFGNAME_CROP_DIR) == 0) {
-		cfg.crop_dir[0] = tsval->vec[0];
-		cfg.crop_dir[1] = tsval->vec[1];
+		if(tsval) {
+			cfg.crop_dir[0] = tsval->vec[0];
+			cfg.crop_dir[1] = tsval->vec[1];
+		} else {
+			cfg.crop_dir[0] = cfg.crop_dir[1] = 0;
+		}
 		return 1;
 	}
 

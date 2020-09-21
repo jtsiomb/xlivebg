@@ -121,6 +121,8 @@ int xlivebg_setcfg_num(const char *cfgpath, float val);
 int xlivebg_setcfg_int(const char *cfgpath, int val);
 int xlivebg_setcfg_vec(const char *cfgpath, float *vec);
 
+int xlivebg_rmcfg(const char *cfgpath);
+
 /* defcfg functions only set the configuration property if it's not already set
  * It's a way for wallpaper plugins to quickly set defaults during init
  */

@@ -529,6 +529,12 @@ void ts_free_tree(struct ts_node *tree)
 
 void ts_add_attr(struct ts_node *node, struct ts_attr *attr)
 {
+	if(attr->node) {
+		if(attr->node == node) return;
+		ts_remove_attr(attr->node, attr);
+	}
+	attr->node = node;
+
 	attr->next = 0;
 	if(node->attr_list) {
 		node->attr_tail->next = attr;
@@ -548,6 +554,30 @@ struct ts_attr *ts_get_attr(struct ts_node *node, const char *name)
 		}
 		attr = attr->next;
 	}
+	return 0;
+}
+
+int ts_remove_attr(struct ts_node *node, struct ts_attr *attr)
+{
+	struct ts_attr dummy, *iter = &dummy;
+	dummy.next = node->attr_list;
+
+	while(iter->next && iter->next != attr) {
+		iter = iter->next;
+	}
+	if(!iter->next) {
+		return -1;
+	}
+
+	attr->node = 0;
+
+	iter->next = attr->next;
+	if(!iter->next) {
+		node->attr_tail = iter;
+	}
+	node->attr_list = dummy.next;
+	node->attr_count--;
+	assert(node->attr_count >= 0);
 	return 0;
 }
 

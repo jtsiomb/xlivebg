@@ -254,6 +254,20 @@ int cmd_setprop_vec(const char *name, float *val)
 	return res;
 }
 
+int cmd_rmprop(const char *name)
+{
+	int s, len, res;
+
+	if((s = open_conn()) == -1) {
+		return -1;
+	}
+	len = sprintf(cmdbuf, "rmprop %s\n", name);
+	write(s, cmdbuf, len);
+	res = read_status(s);
+	close(s);
+	return res;
+}
+
 
 int cmd_getupd(long *ret)
 {

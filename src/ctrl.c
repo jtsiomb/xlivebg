@@ -178,6 +178,7 @@ static int proc_cmd_switch(int s, int argc, char **argv);
 static int proc_cmd_proplist(int s, int argc, char **argv);
 static int proc_cmd_setprop(int s, int argc, char **argv);
 static int proc_cmd_getprop(int s, int argc, char **argv);
+static int proc_cmd_rmprop(int s, int argc, char **argv);
 static int proc_cmd_save(int s, int argc, char **argv);
 static int proc_cmd_cfgpath(int s, int argc, char **argv);
 static int proc_cmd_ping(int s, int argc, char **argv);
@@ -198,6 +199,7 @@ struct {
 	{"getpropnum", proc_cmd_getprop},
 	{"getpropint", proc_cmd_getprop},
 	{"getpropvec", proc_cmd_getprop},
+	{"rmprop", proc_cmd_rmprop},
 	{"save", proc_cmd_save},
 	{"cfgpath", proc_cmd_cfgpath},
 	{"ping", proc_cmd_ping},
@@ -465,6 +467,23 @@ static int proc_cmd_getprop(int s, int argc, char **argv)
 		return -1;
 	}
 
+	return 0;
+}
+
+static int proc_cmd_rmprop(int s, int argc, char **argv)
+{
+	if(argc < 2) {
+		send_status(s, 0);
+		fprintf(stderr, "proc_cmd_rmprop: not enough arguments\n");
+		return -1;
+	}
+
+	if(xlivebg_rmcfg(argv[1]) == -1) {
+		send_status(s, 0);
+		fprintf(stderr, "proc_cmd_rmprop: failed to remove property %s\n", argv[1]);
+		return -1;
+	}
+	send_status(s, 0);
 	return 0;
 }
 

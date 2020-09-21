@@ -75,6 +75,7 @@ struct ts_attr {
 	struct ts_value val;
 
 	struct ts_attr *next;
+	struct ts_node *node;
 };
 
 int ts_init_attr(struct ts_attr *attr);
@@ -114,6 +115,7 @@ void ts_free_node(struct ts_node *n);	/**< also calls ts_destroy_node */
 void ts_free_tree(struct ts_node *tree);
 
 void ts_add_attr(struct ts_node *node, struct ts_attr *attr);
+int ts_remove_attr(struct ts_node *node, struct ts_attr *attr);
 struct ts_attr *ts_get_attr(struct ts_node *node, const char *name);
 
 const char *ts_get_attr_str(struct ts_node *node, const char *aname,

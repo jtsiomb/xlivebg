@@ -384,6 +384,7 @@ static void bgimage_use_change(Widget w, void *cls, void *calldata)
 		}
 	} else {
 		use_bgimage = 0;
+		cmd_rmprop("xlivebg.image");
 	}
 }
 
@@ -407,6 +408,7 @@ static void bgmask_use_change(Widget w, void *cls, void *calldata)
 		}
 	} else {
 		use_bgmask = 0;
+		cmd_rmprop("xlivebg.anim_mask");
 	}
 }
 
