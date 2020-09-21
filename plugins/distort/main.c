@@ -29,7 +29,7 @@ static struct xlivebg_plugin plugin = {
 	"Image distortion effect on the background image",
 	PROPLIST,
 	XLIVEBG_25FPS,
-	0, 0,
+	init, 0,
 	start, 0,
 	draw,
 	prop,
@@ -157,6 +157,7 @@ static void draw(long tmsec, void *cls)
 	int i, num_scr;
 	struct xlivebg_screen *scr;
 	struct xlivebg_image *img;
+	float xform[16];
 	float t = (float)tmsec / 1000.0f;
 
 	glClearColor(0, 0, 0, 1);
@@ -169,6 +170,10 @@ static void draw(long tmsec, void *cls)
 
 		if((img = xlivebg_bg_image(i)) && img->tex) {
 			struct xlivebg_image *amask = xlivebg_anim_mask(i);
+
+			xlivebg_calc_image_proj(i, (float)img->width / img->height, xform);
+			glMatrixMode(GL_PROJECTION);
+			glLoadMatrixf(xform);
 
 			glBindTexture(GL_TEXTURE_2D, img->tex);
 			glEnable(GL_TEXTURE_2D);
