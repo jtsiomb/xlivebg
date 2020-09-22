@@ -38,9 +38,9 @@ static struct xlivebg_plugin plugin = {
 
 static float ampl, freq;
 
-void register_plugin(void)
+int register_plugin(void)
 {
-	xlivebg_register_plugin(&plugin);
+	return xlivebg_register_plugin(&plugin);
 }
 
 static int init(void *cls)

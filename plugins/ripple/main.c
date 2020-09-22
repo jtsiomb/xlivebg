@@ -40,9 +40,9 @@ static float mouse_delta;
 
 extern const char ripple_vsdr, ripple_blur_psdr, ripple_psdr;
 
-void register_plugin(void)
+int register_plugin(void)
 {
-	xlivebg_register_plugin(&plugin);
+	return xlivebg_register_plugin(&plugin);
 }
 
 static int init(void *cls)

@@ -81,9 +81,9 @@ static const char *psdr =
 	"}\n";
 
 
-void register_plugin(void)
+int register_plugin(void)
 {
-	xlivebg_register_plugin(&colc_plugin);
+	return xlivebg_register_plugin(&colc_plugin);
 }
 
 void resize(int xsz, int ysz)

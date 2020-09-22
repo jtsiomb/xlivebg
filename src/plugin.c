@@ -88,7 +88,7 @@ static int load_plugins(const char *dirpath)
 	struct stat st;
 	char fname[1024];
 	void *so;
-	void (*reg)(void);
+	int (*reg)(void);
 
 	if(!(dir = opendir(dirpath))) {
 		return -1;
@@ -105,8 +105,7 @@ static int load_plugins(const char *dirpath)
 		}
 
 		if((so = dlopen(fname, RTLD_LAZY))) {
-			if((reg = dlsym(so, "register_plugin"))) {
-				reg();
+			if((reg = dlsym(so, "register_plugin")) && reg() != -1) {
 				plugins[num_plugins - 1]->so = so;
 				num++;
 			} else {
