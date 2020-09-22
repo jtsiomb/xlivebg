@@ -39,6 +39,7 @@ int app_init(int argc, char **argv)
 		if(plugin->init && plugin->init(plugin->data) == -1) {
 			fprintf(stderr, "xlivebg: plugin %s failed to initialize\n", plugin->name);
 			remove_plugin(i--);
+			num_plugins--;
 			continue;
 		}
 
