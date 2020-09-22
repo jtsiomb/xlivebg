@@ -113,11 +113,11 @@ static void emit_vertex(float x, float y, float u, float v, float au, float av,
 	glVertex2f(x, y);
 }
 
-static void distquad(float aspect, float t, struct xlivebg_image *amask)
+static void distquad(float t, struct xlivebg_image *amask)
 {
 	int i, j;
-	float du = 1.0f / (float)(USUB - 1);
-	float dv = 1.0f / (float)(VSUB - 1);
+	float du = 1.0f / (float)USUB;
+	float dv = 1.0f / (float)VSUB;
 	float dx = du * 2.0f;
 	float dy = dv * 2.0f;
 
@@ -178,7 +178,7 @@ static void draw(long tmsec, void *cls)
 			glBindTexture(GL_TEXTURE_2D, img->tex);
 			glEnable(GL_TEXTURE_2D);
 
-			distquad(scr->aspect, t, amask);
+			distquad(t, amask);
 		}
 	}
 }
