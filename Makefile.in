@@ -5,16 +5,16 @@ src = $(wildcard src/*.c)
 obj = $(src:.c=.o)
 bin = $(name)
 
-incdir = -Isrc -Iinclude -Ilibs/treestore/src
-libdir = -Llibs/treestore -L/usr/local/lib
+incdir = -Isrc -Iinclude -Ilibs/imago/src -Ilibs/treestore/src -I/usr/local/include
+libdir = -Llibs/imago -Llibs/treestore -L/usr/local/lib
 
 CFLAGS = -std=gnu89 -pedantic -Wall $(dbg) $(opt) -DPREFIX=\"$(PREFIX)\" \
-	$(CFLAGS_xrandr) $(incdir)
-LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_xrandr) -lX11 -lXext -lGL -ldl \
-	-limago -ltreestore
+	$(CFLAGS_cfg) $(CFLAGS_xrandr) $(incdir)
+LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_cfg) $(LDFLAGS_xrandr) -lX11 -lXext -lGL \
+	-ldl -limago -ltreestore -lpng -ljpeg -lz
 
 .PHONY: all
-all: $(bin) plugins gui bgimage.jpg
+all: $(bin) plugins gui doc
 
 # download test image
 bgimage.jpg:
@@ -35,7 +35,7 @@ install: $(bin)
 	mkdir -p $(DESTDIR)$(PREFIX)/bin $(DESTDIR)$(PREFIX)/include $(DESTDIR)$(PREFIX)/share/$(name)
 	cp $(bin) $(DESTDIR)$(PREFIX)/bin/$(bin)
 	cp include/xlivebg.h $(DESTDIR)$(PREFIX)/include/xlivebg.h
-	cd $(DESTDIR)$(PREFIX)/bin && ln -s $(bin) $(bin)-cmd
+	cd $(DESTDIR)$(PREFIX)/bin && rm -f $(bin)-cmd && ln -s $(bin) $(bin)-cmd
 #	cp data/* $(DESTDIR)$(PREFIX)/share/$(name)/
 
 .PHONY: install-all
@@ -44,6 +44,7 @@ install-all: install install-plugins install-gui
 .PHONY: uninstall
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(bin)
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(bin)-cmd
 	rm -f $(DESTDIR)$(PREFIX)/include/xlivebg.h
 #	rm -f $(DESTDIR)$(PREFIX)/share/$(name)/*
 #	rmdir $(DESTDIR)$(PREFIX)/share/$(name) || true
@@ -95,3 +96,9 @@ install-gui:
 .PHONY: uninstall-gui
 uninstall-gui:
 	$(MAKE) -C gui uninstall
+
+
+# ---- documentation rules ----
+.PHONY: doc
+doc:
+	$(MAKE) -C doc

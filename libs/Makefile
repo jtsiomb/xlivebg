@@ -1,10 +1,19 @@
 .PHONY: all
-all: treestore
+all: imago treestore
 
 .PHONY: clean
-clean: clean-treestore
+clean: clean-imago clean-treestore
 
-# treestore plugin
+# imago library
+.PHONY: imago
+imago:
+	$(MAKE) -C imago
+
+.PHONY: clean-imago
+clean-imago:
+	$(MAKE) -C imago clean
+
+# treestore library
 .PHONY: treestore
 treestore:
 	$(MAKE) -C treestore
