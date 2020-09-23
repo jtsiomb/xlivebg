@@ -1,0 +1,253 @@
+<html>
+	<head>
+		<title>xlivebg manual</title>
+		<link rel="stylesheet" type="text/css" href="style.css"/>
+	</head>
+	<body>
+		<h1>xlivebg manual</h1>
+		<hr/>
+		<h2>Table of Contents</h2>
+		<ul>
+			<li><a href="#about">About xlivebg</a></li>
+			<li><a href="#setup">Installation</a></li>
+			<li><a href="#config">Configuration</a></li>
+			<li><a href="#bg">Bundled live wallpapers</a></li>
+			<ul>
+				<li><a href="#bg_colcycle">colcycle</a>: color cycling</li>
+				<li><a href="#bg_distort">distort</a>: image distortion</li>
+				<li><a href="#bg_stars">stars</a>: starfield</li>
+			</ul>
+			<li><a href="#plugindev">Writing live wallpaper plugins</a></li>
+		</ul>
+
+		<hr/> <!-- SECTION ABOUT -->
+		<h2><a name="about">About xlivebg</a></h2>
+
+		<p>Xlivebg is a live wallpaper framework for the X window system. It provides all
+		the groundwork necessary for displaying animated graphics with OpenGL on the root
+		window, so that a variety of live wallpapers can be written without having to deal
+		with how to tie everything to the X window system, how to create the OpenGL context
+		itself, or how to present any configurable parameters of the live wallpaper to the
+		user.</p>
+
+		<p>A live wallpaper under xlivebg, is simply a small program compiled as a shared
+		library, which provides a number of callbacks to be called by xlivebg
+		(initialization, cleanup, drawing, etc), and (optionally) a list of
+		user-configurable options, to be presented on the wallpaper configuration GUI. See
+		the section on "<a href="#plugindev">writing live wallpaper plugins</a>" for
+		details.</p>
+
+		<p>Xlivebg and its wallpaper plugins are configurable by a simple text-based
+		configuration file. Configuration options can be changed on the fly, by sending
+		commands to a running xlivebg instance from the command line, or through the GUI
+		configuration tool which provides an easy way to tweak all the options
+		interactively. See the section on "<a href="#config">configuration</a>" for
+		details.</p>
+
+		<h3>License</h3>
+		<p>Copyright &#169; 2019-2020 John Tsiombikas
+		&lt;<a href="mailto:nuclear@member.fsf.org">nuclear@member.fsf.org</a>&gt;</p>
+
+		<p>Xlivebg is <a href="https://www.gnu.org/philosophy/free-sw.html">free software</a>.
+		Feel free to use, modify, and/or redistribute it under the terms of the GNU General
+		Public License version 3, or at your option any later version published by the Free
+		Software Foundation. See <a href="http://www.gnu.org/licenses/gpl-3.0.html">
+		http://www.gnu.org/licenses/gpl-3.0.html</a> for details.</p>
+
+		<hr/> <!-- SECTION SETUP -->
+		<h2><a name="setup">Installation</a></h2>
+
+		<p>The xlivebg distribution comes with four things:</p>
+		<ul>
+			<li><tt>xlivebg</tt>: the main live wallpaper program.</li>
+			<li>A number of bundled live wallpaper plugins under the <tt>plugins/</tt> directory.</li>
+			<li><tt>xlivebg-gui</tt>: an interactive configuration tool.</li>
+			<li><tt>xlivebg.h</tt>: API header file for building live wallpaper plugins.</li>
+		</ul>
+
+		<p>Xlivebg is distributed as source code. So unless your operating system distribution
+		comes with a pre-compiled package for xlivebg, you'll need to build it in order to
+		install it. Fret not however, as in writing xlivebg extra care was taken to minimize
+		dependencies to an absolute minimum, and make it very easy to build.</p>
+
+		<h3>Getting xlivebg</h3>
+
+		<p>To download the latest official release of xlivebg, head over to the 
+		<a href="http://nuclear.mutantstargoat.com/sw/xlivebg">xlivebg web site</a>,
+		or to the
+		<a href="http://github.com/jtsiomb/xlivebg/releases">github releases page</a>.</p>
+
+		<p>Alternatively, you may grab the current source code from the git repository, by
+		running: <tt>git clone https://github.com/jtsiomb/xlivebg</tt>.</p>
+
+		<h3>Build instructions</h3>
+
+		<p>To build xlivebg you first need to make sure you have the following
+		dependencies installed:</p>
+		<ul>
+			<li>OpenGL</li>
+			<li>Xlib (libX11, libXext, and optional but recommended: libXrandr)</li>
+			<li><a href="http://libpng.org/pub/png/libpng.html">libpng</a></li>
+			<li><a href="http://zlib.net">zlib</a></li>
+			<li><a href="https://www.ijg.org">jpeglib</a></li>
+		</ul>
+
+		<p>Additionally, to build the <tt>xlivebg-gui</tt> configuration tool, you need the
+		<a href="https://sourceforge.net/projects/motif">Motif toolkit</a>.</p>
+
+		<blockquote>
+			Tip: on Debian or Ubuntu and their derivatives, you can install all required
+			dependencies with the following command:
+			<pre>apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libpng-dev libjpeg-dev libmotif-dev</pre>
+		</blockquote>
+
+		<p>Then to build and install everything, change into the directory where you extracted the
+		xlivebg archive, or checked out from the xlivebg repository, and run:</p>
+		<code><pre>
+./configure
+make
+make install-all</pre></code>
+
+		<p>Make sure to run the last command as root, if you're installing on a system-wide
+		prefix. Also check out <tt>./configure --help</tt> for the available build
+		options.</p>
+		
+		<p>This will install all components of xlivebg, including the GUI configuration
+		tool, and the bundled plugins. If you'd rather just install only the main xlivebg
+		program, use <tt>make install</tt> instead, and then tou can separately install the
+		other components with <tt>make install-plugins</tt>, and <tt>make install-gui</tt>
+		as needed.</p>
+
+		<h3>Live wallpaper plugin directories</h3>
+
+		<p>Xlivebg searches for live wallpaper plugins in the following locations:<p>
+		<ul>
+			<li><tt><em>&lt;PREFIX&gt;</em>/lib/xlivebg/</tt></li>
+			<li><tt>~/.local/lib/xlivebg/</tt></li>
+			<li><tt>~/.xlivebg/plugins/</tt></li>
+		</ul>
+
+		<p>Where <tt><em>PREFIX</em></tt> is the installation prefix. So for instance, if
+		xlivebg was installed (as is the default) under <tt>/usr/local</tt>, the first plugin
+		lookup directory would be <tt>/usr/local/lib/xlivebg</tt>.</p>
+
+		<p>If multiple locations contain plugins, all of them are collected and made
+		available, unless there are two plugins with the same name, in which case only the
+		first one encountered is used.</p>
+
+		<blockquote>Hacking tip: in debug builds of xlivebg (<tt>NDEBUG</tt> not defined), the
+			current directory is checked for the presence of a <tt>plugins</tt> subdirectory,
+			and xlivebg attempts to use any shared libraries (anything with a <tt>.so</tt>
+			suffix) under that directory, as a live wallpaper plugin. This makes hacking on
+			live wallpaper plugins in the xlivebg source tree easier, as there's no need to
+			install the plugins all the time for trying out changes.</blockquote>
+
+		<hr/> <!-- SECTION CONFIG -->
+		<h2><a name="config">Configuration</a></h2>
+
+		<h3>Configuration file</h3>
+		<p>Xlivebg looks for the configuration file in the following locations, listed in
+		search order:</p>
+		<ul>
+			<li><tt>~/.xlivebg/config</tt></li>
+			<li><tt>~/.config/xlivebg.conf</tt> (preferred user configuration file location)</li>
+			<li><tt>/etc/xlivebg.conf</tt> (system-wide configuration)</li>
+		</ul>
+
+		<p>The search for configuration files stop at the first one that exists, so the ones
+		higher in that list, override any of the following if they also exist. Therefore you
+		can have a global configuration file, with site-wide defaults for all users, and
+		each user is able to copy it to their home directory and tweak its contents.</p>
+
+		<blockquote>Warning: sending the "<tt>save</tt>" command to xlivebg, or chosing to
+			"<em>save configuration</em>" from the GUI, will overwrite the second file on the
+			list above, if it already exists. Make sure to save a backup copy of that file,
+			if you made any manual configuration changes, before attempting to use the GUI
+			configuration utility.</blockquote>
+
+		<p>All the available configuration options for xlivebg and all bundled plugins from
+		the official distribution, are detailed in comments in the example configuration
+		file under <tt><a href="xlivebg.conf">docs/xlivebg.conf</a></tt>.</p>
+
+		<h3>xlivebg-gui: interactive GUI configuration tool</h3>
+
+		<img src="img/guishot.png" alt="GUI configuration tool"/>
+
+		<p>TODO</p>
+
+		<h3>xlivebg-cmd: command-line interactive control</h3>
+
+		<p>During installation, a symbolic link is created to <tt>xlivebg</tt>, under the
+		name <tt>xlivebg-cmd</tt>. When xlivebg is invoked as <tt>xlivebg-cmd</tt>, or
+		alternatively if it gets <tt>cmd</tt> as the first argument, it runs in client mode,
+		trying to connect to an existing xlivebg instance and send commands to it.</p>
+
+		<p>Running <tt>xlivebg-cmd help</tt> shows the list of commands available:</p>
+		<pre>
+Usage: xlivebg-cmd &lt;command&gt; [cmd-args]
+Commands:
+  ping: check to see if xlivebg is running
+  save: save current settings to user configuration file
+  getupd: print the current graphics update rate
+  list: get list of available live wallpapers
+  switch &lt;name&gt;: switch live wallpaper
+  lsprop [name]: list properties of named or current live wallpaper
+  setprop &lt;type&gt; &lt;property&gt; &lt;value&gt;: sets a property
+  getprop &lt;type&gt;: prints the current value of a property
+  help: print usage and exit
+
+  &lt;type&gt; is one of: text, number, integer, vector
+  &lt;property&gt; must be a full option pathname. For example: "xlivebg.image" or
+        "xlivebg.stars.speed". not just "image" or "speed".
+</pre>
+
+		<hr/> <!-- SECTION BG -->
+		<h2><a name="bg">Bundled live wallpapers</a></h2>
+
+		<p>Xlivebg comes bundled with a number of live wallpaper plugins.</p>
+
+		<h3><a name="bg_colcycle">colcycle: color cycling</a></h3>
+
+		<a href="img/colcycle.png"><img src="img/colcycle-thumb.png" alt="colcycle"/></a>
+
+		<p>Colcycle shows animated images utilizing the classic palette-cycling
+		technique. Supported file formats are LBM (ILBM/PBM/IFF), and JSON files from the
+		<a href="http://www.effectgames.com/demos/canvascycle/">canvascycle</a> website.</p>
+
+		<p>The colcycle live wallpaper plugin is derived from the colcycle image viewer, and you
+		can refer to its <a href="https://github.com/jtsiomb/colcycle/wiki">wiki page</a>
+		for instructions on how to download	some excellent color-cycling images to use with
+		it.</p>
+
+		<h3><a name="bg_distort">distort: image distortion</a></h3>
+
+		<a href="img/distort.jpg"><img src="img/distort-thumb.jpg" alt="distort"/></a>
+
+		<p>Distort performs an animated distortion effect on the whole, or selected parts,
+		of a background image.
+		Distorting the whole image works very well for abstract or underwater background
+		images, while having it affect only parts of the image is a powerful way
+		to produce subtle animated backgrounds, where only the reflection in a pond moves, or
+		the underwater part of a half-submerged-camera photograph is rippling.</p>
+
+		<p>To specify the parts of the background that should distort, you need to create an
+		animatiom mask image (see configuration option: <tt>anim_mask</tt>), which should be
+		black wherever the image should be static, white where the distortion needs to
+		happen, and ideally smooth transitions in between.</p>
+
+		<img src="img/ui_anim_mask.png" alt="anim_mask UI field"/>
+
+		<h3><a name="bg_stars">stars: starfield</a></h3>
+
+		<a href="img/stars.jpg"><img src="img/stars-thumb.png" alt="stars"/></a>
+
+		<p>A starfield effect with a bunch of configurable parameters, such as density,
+		speed, star size and color, and the option for the virtual "camera" to follow the
+		mouse pointer around the screen.</p>
+
+		<h2><a name="plugindev">Writing live wallpaper plugins</a></h2>
+
+		<p>TODO</p>
+
+	</body>
+</html>
