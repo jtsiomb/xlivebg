@@ -12,4 +12,4 @@ images= \
 all: $(images)
 
 %.png %.jpg:
-	wget -P img http://nuclear.mutantstargoat.com/sw/xlivebg/manual/img/$@
+	wget -P img http://nuclear.mutantstargoat.com/sw/xlivebg/manual/$@
