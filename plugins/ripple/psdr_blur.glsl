@@ -5,8 +5,14 @@ uniform float intensity;
 
 float lookup(in vec2 uv)
 {
-	return texture2D(tex, uv).x * 2.0 - 1.0;
+	return texture2D(tex, uv).x;// * 2.0 - 1.0;
 }
+
+vec4 outcol(float val)
+{
+	//float v = val * 0.5 + 0.5;
+	return vec4(val, val, val, 1.0);
+}	
 
 void main()
 {
@@ -27,7 +33,7 @@ void main()
 		lookup(uv - vec2(delta.x, 0.0)) +
 		lookup(uv + vec2(0.0, delta.y)) +
 		lookup(uv - vec2(0.0, delta.y));
-	float val = (tsum / 4.0 - lookup(uv)) * intensity * 0.5 + 0.5;
+	float val = (tsum / 4.0 - lookup(uv)) * 0.95;
 
-	gl_FragColor = vec4(val, val, val, 1.0);
+	gl_FragColor = outcol(clamp(val, -1.0, 1.0));
 }
