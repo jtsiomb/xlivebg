@@ -160,8 +160,7 @@ static void draw(long tmsec, void *cls)
 	float xform[16];
 	float t = (float)tmsec / 1000.0f;
 
-	glClearColor(0, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT);
+	xlivebg_clear(GL_COLOR_BUFFER_BIT);
 
 	num_scr = xlivebg_screen_count();
 	for(i=0; i<num_scr; i++) {
