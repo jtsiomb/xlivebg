@@ -18,4 +18,6 @@ extern GLBINDBUFFERFUNC xlivebg_gl_bind_buffer;
 
 int init_opengl(void);
 
+void dump_texture(unsigned int tex, const char *fname);
+
 #endif	/* OPENGL_H_ */
