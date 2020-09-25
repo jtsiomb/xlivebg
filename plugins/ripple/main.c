@@ -70,6 +70,8 @@ static void start(long time_msec, void *cls)
 	struct xlivebg_screen *scr = xlivebg_screen(0);
 	static unsigned char whitepix[256];
 
+	scr_width = scr_height = 0;
+
 	if(!(sdr_vis = create_sdrprog(&ripple_vsdr, &ripple_psdr))) {
 		return;
 	}
@@ -152,10 +154,16 @@ static void start(long time_msec, void *cls)
 
 static void stop(void *cls)
 {
-	if(ripple_tex[0]) glDeleteTextures(3, ripple_tex);
+	if(ripple_tex[0]) {
+		glDeleteTextures(3, ripple_tex);
+		ripple_tex[0] = ripple_tex[1] = ripple_tex[2] = 0;
+	}
 	if(blobtex) glDeleteTextures(1, &blobtex);
 	if(dummy_mask_tex) glDeleteTextures(1, &dummy_mask_tex);
-	if(fbo) glDeleteFramebuffers(1, &fbo);
+	if(fbo) {
+		glDeleteFramebuffers(1, &fbo);
+		fbo = 0;
+	}
 	if(sdr_vis) glDeleteProgram(sdr_vis);
 	if(sdr_blur) glDeleteProgram(sdr_blur);
 }
