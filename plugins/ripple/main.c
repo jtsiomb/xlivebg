@@ -34,7 +34,7 @@ static unsigned int ripple_tex[3];
 static unsigned int blobtex, dummy_mask_tex;
 static unsigned int frame;
 static unsigned int sdr_blur, sdr_vis;
-static int blur_dir_loc, blur_delta_loc, blur_intens_loc;
+static int blur_delta_loc;
 
 static float mpos[2], prev_mpos[2];
 
@@ -88,11 +88,7 @@ static void start(long time_msec, void *cls)
 		return;
 	}
 	glUseProgram(sdr_blur);
-	blur_dir_loc = glGetUniformLocation(sdr_blur, "dir");
 	blur_delta_loc = glGetUniformLocation(sdr_blur, "delta");
-	if((blur_intens_loc = glGetUniformLocation(sdr_blur, "intensity")) >= 0) {
-		glUniform1f(blur_intens_loc, 0.5);
-	}
 	if((loc = glGetUniformLocation(sdr_blur, "dest")) >= 0) {
 		glUniform1i(loc, 1);
 	}
@@ -197,8 +193,8 @@ static void update_ripple(long time_msec)
 	/* if the mouse cursor moved, draw it in the previous buffer first */
 	if(mpos[0] != prev_mpos[0] || mpos[1] != prev_mpos[1]) {
 		float ysz = PLONK_SIZE * scr_aspect;
-		float dx = mpos[0] - prev_mpos[0];
-		float dy = mpos[1] - prev_mpos[1];
+		/*float dx = mpos[0] - prev_mpos[0];
+		float dy = mpos[1] - prev_mpos[1];*/
 
 		glUseProgram(0);
 		glEnable(GL_TEXTURE_2D);
@@ -240,7 +236,6 @@ static void update_ripple(long time_msec)
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, ripple_tex[TEX_SRC]);
 	glUseProgram(sdr_blur);
-	if(blur_dir_loc >= 0) glUniform2f(blur_dir_loc, 1, 0);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0, 0);
@@ -262,6 +257,7 @@ static void draw(long time_msec, void *cls)
 	struct xlivebg_screen *scr;
 	struct xlivebg_image *img;
 	float xform[16];
+	float uoffs, voffs, uscale, vscale;
 
 	xlivebg_clear(GL_COLOR_BUFFER_BIT);
 
@@ -287,7 +283,6 @@ static void draw(long time_msec, void *cls)
 		xlivebg_gl_viewport(i);
 
 		if((img = xlivebg_bg_image(i)) && img->tex) {
-			float uoffs, voffs, uscale, vscale;
 			struct xlivebg_image *amask = xlivebg_anim_mask(i);
 
 			xlivebg_calc_image_proj(i, (float)img->width / img->height, xform);
