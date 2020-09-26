@@ -155,7 +155,7 @@ static int init_gui(void)
 	cmd_getprop_vec("xlivebg.color", bgcol[0]);
 	cmd_getprop_vec("xlivebg.color2", bgcol[1]);
 
-	subfrm = xm_frame(vbox, "Color");
+	subfrm = xm_frame(vbox, "Background color");
 	hbox = xm_rowcol(subfrm, XmHORIZONTAL);
 	optmenu = xm_va_option_menu(hbox, colopt_change, 0, "Solid color", "Vertical gradient", "Horizontal gradient", (void*)0);
 	xm_select_option(optmenu, bgmode);
