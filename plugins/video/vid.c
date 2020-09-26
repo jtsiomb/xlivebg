@@ -97,7 +97,7 @@ struct video_file *vid_open(const char *fname)
 	}
 
 	vf->sws = sws_getContext(vf->cctx->width, vf->cctx->height, vf->cctx->pix_fmt,
-			vf->cctx->width, vf->cctx->height, AV_PIX_FMT_RGB32, SWS_POINT, 0, 0, 0);
+			vf->cctx->width, vf->cctx->height, AV_PIX_FMT_BGR32, SWS_POINT, 0, 0, 0);
 	if(!vf->sws) {
 		fprintf(stderr, "open_video(%s): failed to allocate sws context\n", fname);
 		vid_close(vf);
@@ -152,13 +152,13 @@ size_t vid_frame_size(struct video_file *vf)
 	return vf->cctx->width * vf->cctx->height * 4;
 }
 
-int vid_get_frame(struct video_file *vf, uint32_t *img)
+int vid_get_frame(struct video_file *vf, void *img)
 {
 	AVPacket packet;
 	int res, frame_done = 0;
 
 	av_image_fill_arrays(vf->rgbfrm->data, vf->rgbfrm->linesize, (unsigned char*)img,
-			AV_PIX_FMT_RGB32, vf->cctx->width, vf->cctx->height, 1);
+			AV_PIX_FMT_BGR32, vf->cctx->width, vf->cctx->height, 1);
 
 retry:
 	while((res = av_read_frame(vf->avctx, &packet)) >= 0) {
@@ -166,8 +166,8 @@ retry:
 			avcodec_decode_video2(vf->cctx, vf->frm, &frame_done, &packet);
 
 			if(frame_done) {
-				sws_scale(vf->sws, vf->frm->data, vf->frm->linesize, 0, vf->cctx->height,
-						vf->rgbfrm->data, vf->rgbfrm->linesize);
+				sws_scale(vf->sws, (const uint8_t**)vf->frm->data, vf->frm->linesize,
+						0, vf->cctx->height, vf->rgbfrm->data, vf->rgbfrm->linesize);
 				av_packet_unref(&packet);
 				return 0;
 			}

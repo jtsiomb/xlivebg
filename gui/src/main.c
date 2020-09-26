@@ -304,7 +304,6 @@ static int create_bglist(Widget par)
 		XmString name = XmStringCreateSimple(bg->name);
 		XmListAddItemUnselected(lst, name, 0);
 		XmStringFree(name);
-		printf("adding: %s\n", bg->name);
 	}
 
 	if((bg = bg_active())) {

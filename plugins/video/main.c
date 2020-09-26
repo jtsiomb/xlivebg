@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <GL/gl.h>
+#include <pthread.h>
 #include "xlivebg.h"
 #include "vid.h"
 
@@ -29,6 +30,7 @@ static void prop(const char *prop, void *cls);
 static void draw(long tmsec, void *cls);
 static void draw_static(long tmsec, float aspect);
 static unsigned int nextpow2(unsigned int x);
+static void *thread_func(void *arg);
 
 #define PROPLIST	\
 	"proplist {\n" \
@@ -51,12 +53,22 @@ static struct xlivebg_plugin plugin = {
 	0, 0
 };
 
+#define NUM_BUF_FRAMES	64
+#define STATIC_SZ	128
+
 static struct video_file *vidfile;
 static int vid_width, vid_height, tex_width, tex_height;
 static unsigned int vid_tex, static_tex;
 static unsigned long interval;
-static uint32_t *framebuf;
-#define STATIC_SZ	128
+
+static unsigned char *framebuf, *framebuf_end, *inframe, *outframe;
+static int frame_size;
+
+static int stopped;
+static pthread_t thread;
+static pthread_mutex_t frm_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t frm_cond = PTHREAD_COND_INITIALIZER;
+
 
 int register_plugin(void)
 {
@@ -71,6 +83,8 @@ static int init(void *cls)
 
 static void start(long tmsec, void *cls)
 {
+	stopped = 0;
+
 	glGenTextures(1, &static_tex);
 	glBindTexture(GL_TEXTURE_2D, static_tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -88,16 +102,26 @@ static void start(long tmsec, void *cls)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	prop("video", 0);
+
+	pthread_create(&thread, 0, thread_func, 0);
 }
 
 static void stop(void *cls)
 {
+	pthread_mutex_lock(&frm_mutex);
+	stopped = 1;
+	pthread_mutex_unlock(&frm_mutex);
+
+	pthread_cond_signal(&frm_cond);
+	pthread_join(thread, 0);
+
 	if(static_tex) {
 		glDeleteTextures(1, &static_tex);
 	}
 	if(vid_tex) {
 		glDeleteTextures(1, &vid_tex);
 	}
+	tex_width = tex_height = 0;
 
 	if(vidfile) {
 		vid_close(vidfile);
@@ -114,23 +138,29 @@ static void prop(const char *prop, void *cls)
 	if(strcmp(prop, "video") == 0) {
 		int tw, th;
 		struct video_file *vf;
-		uint32_t *fb;
+		unsigned char *fb;
 		const char *fname = xlivebg_getcfg_str("xlivebg.video.video", 0);
 
 		if(!fname || !*fname || !(vf = vid_open(fname))) {
 			return;
 		}
 
-		if(!(fb = malloc(vid_frame_size(vf)))) {
+		if(!(fb = malloc(vid_frame_size(vf) * NUM_BUF_FRAMES))) {
 			fprintf(stderr, "video: failed to allocate frame buffer %u bytes\n", (unsigned int)vid_frame_size(vf));
 			vid_close(vf);
 			return;
 		}
+
+		pthread_mutex_lock(&frm_mutex);
 		free(framebuf);
+		frame_size = vid_frame_size(vf);
 		framebuf = fb;
+		framebuf_end = fb + frame_size * NUM_BUF_FRAMES;
+		inframe = outframe = framebuf;
 
 		if(vidfile) vid_close(vidfile);
 		vidfile = vf;
+		pthread_mutex_unlock(&frm_mutex);
 
 		plugin.upd_interval = vid_frame_interval(vidfile);
 
@@ -157,20 +187,26 @@ static void prop(const char *prop, void *cls)
 
 static void update_frame(unsigned long dt)
 {
-	int count = 0;
+	unsigned char *frame = 0;
 
 	interval += dt * 1000;
 
-	while(interval >= plugin.upd_interval) {
-		if(vid_get_frame(vidfile, framebuf) == -1) break;
-		count++;
+	pthread_mutex_lock(&frm_mutex);
+	while(interval >= plugin.upd_interval && inframe != outframe) {
+		frame = outframe;
+		outframe += frame_size;
+		if(outframe >= framebuf_end) outframe = framebuf;
+
 		interval -= plugin.upd_interval;
 	}
-	if(!count) return;
+	if(frame) {
+		pthread_cond_signal(&frm_cond);	/* wakeup thread, we removed frames */
 
-	glBindTexture(GL_TEXTURE_2D, vid_tex);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, vid_width, vid_height, GL_BGRA,
-			GL_UNSIGNED_BYTE, framebuf);
+		glBindTexture(GL_TEXTURE_2D, vid_tex);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, vid_width, vid_height, GL_RGBA,
+				GL_UNSIGNED_BYTE, frame);
+	}
+	pthread_mutex_unlock(&frm_mutex);
 }
 
 static void draw(long tmsec, void *cls)
@@ -266,4 +302,36 @@ static unsigned int nextpow2(unsigned int x)
 	x |= x >> 8;
 	x |= x >> 16;
 	return x + 1;
+}
+
+static unsigned char *nextfrm(unsigned char *frm)
+{
+	frm += frame_size;
+	return frm >= framebuf_end ? framebuf : frm;
+}
+
+	/*if(vid_get_frame(vidfile, framebuf) == -1) break;*/
+static void *thread_func(void *arg)
+{
+	int res;
+	unsigned char *frm, *next = 0;
+
+	pthread_mutex_lock(&frm_mutex);
+	for(;;) {
+		while(!stopped && (next = nextfrm(inframe)) == outframe) {
+			pthread_cond_wait(&frm_cond, &frm_mutex);
+		}
+		frm = inframe;
+		if(stopped) break;
+		pthread_mutex_unlock(&frm_mutex);
+
+		res = vid_get_frame(vidfile, frm);
+
+		pthread_mutex_lock(&frm_mutex);
+		if(res != -1) inframe = next;
+	}
+	pthread_mutex_unlock(&frm_mutex);
+
+	printf("video: exiting thread\n");
+	return 0;
 }
