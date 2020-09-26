@@ -156,6 +156,7 @@ int vid_get_frame(struct video_file *vf, void *img)
 {
 	AVPacket packet;
 	int res, frame_done = 0;
+	int num_retries = 0;
 
 	av_image_fill_arrays(vf->rgbfrm->data, vf->rgbfrm->linesize, (unsigned char*)img,
 			AV_PIX_FMT_BGR32, vf->cctx->width, vf->cctx->height, 1);
@@ -175,7 +176,7 @@ retry:
 		av_packet_unref(&packet);
 	}
 
-	if(res == AVERROR_EOF) {
+	if(res == AVERROR_EOF && num_retries == 0) {
 		av_seek_frame(vf->avctx, vf->vstream, 0, AVSEEK_FLAG_BYTE);
 		goto retry;
 	}

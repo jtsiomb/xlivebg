@@ -338,10 +338,10 @@ static int propcmd_type(const char *argv0)
 
 static int proc_cmd_setprop(int s, int argc, char **argv)
 {
-	int i, type;
+	int i, type, len, arglen;
 	int ival;
 	float fval;
-	char *endp;
+	char *endp, *argstr;
 	float vval[4] = {0, 0, 0, 1};
 
 	if(argc < 3) {
@@ -350,16 +350,26 @@ static int proc_cmd_setprop(int s, int argc, char **argv)
 		return -1;
 	}
 
+	arglen = 0;
 	fputs("CTRL: setprop", stdout);
 	for(i=1; i<argc; i++) {
-		printf(" %s", argv[i]);
+		len = printf(" %s", argv[i]);
+		if(i > 1) arglen += len;
 	}
 	putchar('\n');
+
 
 	type = propcmd_type(argv[0]);
 	switch(type) {
 	case XLIVEBG_PROP_STRING:
-		if(xlivebg_setcfg_str(argv[1], argv[2]) == -1) {
+		argstr = alloca(arglen + 1);
+		strcpy(argstr, argv[2]);
+		endp = argstr + strlen(argstr);
+		for(i=3; i<argc; i++) {
+			endp += sprintf(endp, " %s", argv[i]);
+		}
+		*endp = 0;
+		if(xlivebg_setcfg_str(argv[1], argstr) == -1) {
 			goto setfailed;
 		}
 		break;

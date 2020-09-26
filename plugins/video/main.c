@@ -30,6 +30,7 @@ static void prop(const char *prop, void *cls);
 static void draw(long tmsec, void *cls);
 static void draw_static(long tmsec, float aspect);
 static unsigned int nextpow2(unsigned int x);
+static void stop_thread(void);
 static void *thread_func(void *arg);
 
 #define PROPLIST	\
@@ -64,7 +65,7 @@ static unsigned long interval;
 static unsigned char *framebuf, *framebuf_end, *inframe, *outframe;
 static int frame_size;
 
-static int stopped;
+static int playing;
 static pthread_t thread;
 static pthread_mutex_t frm_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t frm_cond = PTHREAD_COND_INITIALIZER;
@@ -83,7 +84,7 @@ static int init(void *cls)
 
 static void start(long tmsec, void *cls)
 {
-	stopped = 0;
+	playing = 1;
 
 	glGenTextures(1, &static_tex);
 	glBindTexture(GL_TEXTURE_2D, static_tex);
@@ -102,18 +103,11 @@ static void start(long tmsec, void *cls)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	prop("video", 0);
-
-	pthread_create(&thread, 0, thread_func, 0);
 }
 
 static void stop(void *cls)
 {
-	pthread_mutex_lock(&frm_mutex);
-	stopped = 1;
-	pthread_mutex_unlock(&frm_mutex);
-
-	pthread_cond_signal(&frm_cond);
-	pthread_join(thread, 0);
+	stop_thread();
 
 	if(static_tex) {
 		glDeleteTextures(1, &static_tex);
@@ -151,6 +145,8 @@ static void prop(const char *prop, void *cls)
 			return;
 		}
 
+		stop_thread();
+
 		pthread_mutex_lock(&frm_mutex);
 		free(framebuf);
 		frame_size = vid_frame_size(vf);
@@ -182,6 +178,8 @@ static void prop(const char *prop, void *cls)
 		glScalef((float)vid_width / tex_width, (float)vid_height / tex_height, 1);
 
 		interval = 0;
+
+		pthread_create(&thread, 0, thread_func, 0);
 	}
 }
 
@@ -310,19 +308,34 @@ static unsigned char *nextfrm(unsigned char *frm)
 	return frm >= framebuf_end ? framebuf : frm;
 }
 
-	/*if(vid_get_frame(vidfile, framebuf) == -1) break;*/
+static void stop_thread(void)
+{
+	pthread_mutex_lock(&frm_mutex);
+	if(!playing) {
+		pthread_mutex_unlock(&frm_mutex);
+		return;
+	}
+	playing = 0;
+	pthread_mutex_unlock(&frm_mutex);
+
+	pthread_cond_signal(&frm_cond);
+	pthread_join(thread, 0);
+}
+
 static void *thread_func(void *arg)
 {
 	int res;
 	unsigned char *frm, *next = 0;
 
 	pthread_mutex_lock(&frm_mutex);
+	playing = 1;
+
 	for(;;) {
-		while(!stopped && (next = nextfrm(inframe)) == outframe) {
+		while(playing && (next = nextfrm(inframe)) == outframe) {
 			pthread_cond_wait(&frm_cond, &frm_mutex);
 		}
 		frm = inframe;
-		if(stopped) break;
+		if(!playing) break;
 		pthread_mutex_unlock(&frm_mutex);
 
 		res = vid_get_frame(vidfile, frm);
