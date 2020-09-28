@@ -30,6 +30,7 @@ static void prop(const char *prop, void *cls);
 static void draw(long tmsec, void *cls);
 static void draw_static(long tmsec, float aspect);
 static unsigned int nextpow2(unsigned int x);
+static unsigned char *nextfrm(unsigned char *frm);
 static void stop_thread(void);
 static void *thread_func(void *arg);
 
@@ -54,13 +55,14 @@ static struct xlivebg_plugin plugin = {
 	0, 0
 };
 
-#define NUM_BUF_FRAMES	64
+#define NUM_BUF_FRAMES	16
 #define STATIC_SZ	128
 
 static struct video_file *vidfile;
 static int vid_width, vid_height, tex_width, tex_height;
 static unsigned int vid_tex, static_tex;
 static unsigned long interval;
+static long prev_tmsec;
 
 static unsigned char *framebuf, *framebuf_end, *inframe, *outframe;
 static int frame_size;
@@ -103,6 +105,7 @@ static void start(long tmsec, void *cls)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	prop("video", 0);
+	prev_tmsec = tmsec;
 }
 
 static void stop(void *cls)
@@ -192,8 +195,7 @@ static void update_frame(unsigned long dt)
 	pthread_mutex_lock(&frm_mutex);
 	while(interval >= plugin.upd_interval && inframe != outframe) {
 		frame = outframe;
-		outframe += frame_size;
-		if(outframe >= framebuf_end) outframe = framebuf;
+		outframe = nextfrm(outframe);
 
 		interval -= plugin.upd_interval;
 	}
@@ -212,7 +214,7 @@ static void draw(long tmsec, void *cls)
 	int i, num_scr;
 	struct xlivebg_screen *scr;
 	float xform[16];
-	static long prev_tmsec, dt;
+	long dt;
 
 	dt = tmsec - prev_tmsec;
 	prev_tmsec = tmsec;

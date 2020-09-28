@@ -42,6 +42,7 @@ int vid_frame_height(struct video_file *vf);
 size_t vid_frame_size(struct video_file *vf);
 
 int vid_get_frame(struct video_file *vf, void *img);
+long vid_frameno(struct video_file *vf);
 
 #ifdef __cplusplus
 }

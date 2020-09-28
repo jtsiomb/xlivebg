@@ -33,6 +33,8 @@ struct video_file {
 	struct SwsContext *sws;
 
 	AVFrame *frm, *rgbfrm;
+
+	long frameno;
 };
 
 struct video_file *vid_open(const char *fname)
@@ -51,6 +53,7 @@ struct video_file *vid_open(const char *fname)
 		return 0;
 	}
 	memset(vf, 0, sizeof *vf);
+	vf->frameno = -1;
 
 	if(avformat_open_input(&vf->avctx, fname, 0, 0) != 0) {
 		fprintf(stderr, "open_video(%s): failed to open file\n", fname);
@@ -170,6 +173,7 @@ retry:
 				sws_scale(vf->sws, (const uint8_t**)vf->frm->data, vf->frm->linesize,
 						0, vf->cctx->height, vf->rgbfrm->data, vf->rgbfrm->linesize);
 				av_packet_unref(&packet);
+				vf->frameno++;
 				return 0;
 			}
 		}
@@ -177,9 +181,18 @@ retry:
 	}
 
 	if(res == AVERROR_EOF && num_retries == 0) {
-		av_seek_frame(vf->avctx, vf->vstream, 0, AVSEEK_FLAG_BYTE);
+		int64_t start_time = vf->avctx->start_time;
+		avformat_seek_file(vf->avctx, vf->vstream, INT_MIN, start_time, start_time, 0);
+		avcodec_flush_buffers(vf->cctx);
+		vf->frameno = -1;
+		num_retries++;
 		goto retry;
 	}
 
 	return -1;
+}
+
+long vid_frameno(struct video_file *vf)
+{
+	return vf->frameno;
 }
