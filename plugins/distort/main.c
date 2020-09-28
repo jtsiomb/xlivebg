@@ -14,13 +14,13 @@ static void prop(const char *prop, void *cls);
 	"        id = \"amplitude\"\n" \
 	"        desc = \"amplitude of the distortion\"\n" \
 	"        type = \"number\"\n" \
-	"        range = [0, 1]\n" \
+	"        range = [0, 0.1]\n" \
 	"    }\n" \
 	"    prop {\n" \
 	"        id = \"frequency\"\n" \
 	"        desc = \"frequency of the distortion\"\n" \
 	"        type = \"number\"\n" \
-	"        range = [0, 20]\n" \
+	"        range = [0, 50]\n" \
 	"    }\n" \
 	"}\n"
 

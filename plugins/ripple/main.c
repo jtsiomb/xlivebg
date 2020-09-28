@@ -1,3 +1,20 @@
+/*
+xlivebg - live wallpapers for the X window system
+Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 #define GL_GLEXT_PROTOTYPES
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,19 +29,31 @@ static void cleanup(void *cls);
 static void start(long time_msec, void *cls);
 static void resize(int x, int y);
 static void stop(void *cls);
+static void prop(const char *prop, void *cls);
 static void draw(long time_msec, void *cls);
 static unsigned int create_shader(const char *src, unsigned int type);
 static unsigned int create_sdrprog(const char *vsrc, const char *psrc);
 
+#define PROPLIST	\
+	"proplist {\n" \
+	"    prop {\n" \
+	"        id = \"raindrops\"\n" \
+	"        desc = \"number of raindrops per second\"\n" \
+	"        type = \"number\"\n" \
+	"        range = [0, 100]\n" \
+	"    }\n" \
+	"}\n"
+
 static struct xlivebg_plugin plugin = {
 	"ripple",
 	"Ripple",
-	0,
+	PROPLIST,
 	XLIVEBG_20FPS,
 	init, cleanup,
 	start, stop,
 	draw,
-	0
+	prop,
+	0, 0
 };
 
 static int scr_width, scr_height;
@@ -37,6 +66,8 @@ static unsigned int sdr_blur, sdr_vis;
 static int blur_delta_loc;
 
 static float mpos[2], prev_mpos[2];
+static float rain_rate, pending_drops;
+static long prev_upd;
 
 extern const char ripple_vsdr, ripple_blur_psdr, ripple_psdr;
 
@@ -56,6 +87,7 @@ int register_plugin(void)
 
 static int init(void *cls)
 {
+	xlivebg_defcfg_num("xlivebg.ripple.raindrops", 0);
 	return 0;
 }
 
@@ -150,6 +182,11 @@ static void start(long time_msec, void *cls)
 
 	/* initialize the first texture to 0.5 (which maps to 0 in the wave calculation) */
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	prop("raindrops", 0);
+
+	pending_drops = 0;
+	prev_upd = time_msec;
 }
 
 static void stop(void *cls)
@@ -166,6 +203,13 @@ static void stop(void *cls)
 	}
 	if(sdr_vis) glDeleteProgram(sdr_vis);
 	if(sdr_blur) glDeleteProgram(sdr_blur);
+}
+
+static void prop(const char *prop, void *cls)
+{
+	if(strcmp(prop, "raindrops") == 0) {
+		rain_rate = xlivebg_getcfg_num("xlivebg.ripple.raindrops", 0);
+	}
 }
 
 /* TODO: pow2 */
@@ -193,34 +237,53 @@ static void resize(int x, int y)
 	glUniform2f(blur_delta_loc, (float)TEX_SIZE_DIV / x, (float)TEX_SIZE_DIV / y);
 }
 
+static void plonk(float u, float v)
+{
+	glBegin(GL_QUADS);
+	glColor3f(1, 1, 1);
+	glTexCoord2f(0, 0);
+	glVertex2f(u - PLONK_SIZE, v + PLONK_SIZE * scr_aspect);
+	glTexCoord2f(1, 0);
+	glVertex2f(u + PLONK_SIZE, v + PLONK_SIZE * scr_aspect);
+	glTexCoord2f(1, 1);
+	glVertex2f(u + PLONK_SIZE, v - PLONK_SIZE * scr_aspect);
+	glTexCoord2f(0, 1);
+	glVertex2f(u - PLONK_SIZE, v - PLONK_SIZE * scr_aspect);
+	glEnd();
+}
+
 static void update_ripple(long time_msec)
 {
+	int mouse_moved;
+	float dt = (time_msec - prev_upd) / 1000.0f;
+	prev_upd = time_msec;
+
+	pending_drops += rain_rate * dt;
+	mouse_moved = mpos[0] != prev_mpos[0] || mpos[1] != prev_mpos[1];
+
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glViewport(0, 0, scr_width / TEX_SIZE_DIV, scr_height / TEX_SIZE_DIV);
 
-	/* if the mouse cursor moved, draw it in the previous buffer first */
-	if(mpos[0] != prev_mpos[0] || mpos[1] != prev_mpos[1]) {
-		float ysz = PLONK_SIZE * scr_aspect;
+	/* draw any new drops in the previous buffer first */
+	if(mouse_moved || pending_drops >= 1.0f) {
 		/*float dx = mpos[0] - prev_mpos[0];
 		float dy = mpos[1] - prev_mpos[1];*/
-
 		glUseProgram(0);
+
+		glPushAttrib(GL_ENABLE_BIT);
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, blobtex);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 
-		glBegin(GL_QUADS);
-		glColor3f(1, 1, 1);
-		glTexCoord2f(0, 0);
-		glVertex2f(mpos[0] - PLONK_SIZE, mpos[1] + ysz);
-		glTexCoord2f(1, 0);
-		glVertex2f(mpos[0] + PLONK_SIZE, mpos[1] + ysz);
-		glTexCoord2f(1, 1);
-		glVertex2f(mpos[0] + PLONK_SIZE, mpos[1] - ysz);
-		glTexCoord2f(0, 1);
-		glVertex2f(mpos[0] - PLONK_SIZE, mpos[1] - ysz);
-		glEnd();
+		while(pending_drops >= 1.0f) {
+			plonk(rand() * 2.0f / RAND_MAX - 1.0f, rand() * 2.0f / RAND_MAX - 1.0f);
+			pending_drops -= 1.0f;
+		}
+
+		if(mouse_moved) {
+			plonk(mpos[0], mpos[1]);
+		}
 
 		glDisable(GL_TEXTURE_2D);
 		glDisable(GL_BLEND);
