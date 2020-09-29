@@ -344,11 +344,13 @@ static int proc_cmd_setprop(int s, int argc, char **argv)
 	char *endp, *argstr;
 	float vval[4] = {0, 0, 0, 1};
 
+	/*
 	if(argc < 3) {
 		send_status(s, 0);
 		fprintf(stderr, "proc_cmd_setprop: not enough arguments\n");
 		return -1;
 	}
+	*/
 
 	arglen = 0;
 	fputs("CTRL: setprop", stdout);
@@ -363,7 +365,11 @@ static int proc_cmd_setprop(int s, int argc, char **argv)
 	switch(type) {
 	case XLIVEBG_PROP_STRING:
 		argstr = alloca(arglen + 1);
-		strcpy(argstr, argv[2]);
+		if(argc < 3) {
+			*argstr = 0;
+		} else {
+			strcpy(argstr, argv[2]);
+		}
 		endp = argstr + strlen(argstr);
 		for(i=3; i<argc; i++) {
 			endp += sprintf(endp, " %s", argv[i]);
@@ -374,21 +380,19 @@ static int proc_cmd_setprop(int s, int argc, char **argv)
 		}
 		break;
 	case XLIVEBG_PROP_NUMBER:
-		fval = strtod(argv[2], &endp);
+		fval = argc < 3 ? 0 : strtod(argv[2], &endp);
 		if(endp == argv[2] || xlivebg_setcfg_num(argv[1], fval) == -1) {
 			goto setfailed;
 		}
 		break;
 	case XLIVEBG_PROP_INTEGER:
-		ival = strtol(argv[2], &endp, 10);
+		ival = argc < 3 ? 0 : strtol(argv[2], &endp, 10);
 		if(endp == argv[2] || xlivebg_setcfg_int(argv[1], ival) == -1) {
 			goto setfailed;
 		}
 		break;
 	case XLIVEBG_PROP_VECTOR:
-		if(argc < 3) goto setfailed;
-
-		vval[0] = atof(argv[2]);
+		if(argc > 2) vval[0] = atof(argv[2]);
 		if(argc > 3) vval[1] = atof(argv[3]);
 		if(argc > 4) vval[2] = atof(argv[4]);
 		if(argc > 5) vval[3] = atof(argv[5]);

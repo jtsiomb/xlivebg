@@ -468,6 +468,7 @@ static void filesel_handler(Widget dlg, void *cls, void *calldata)
 
 
 static void pathfield_browse(Widget bn, void *cls, void *calldata);
+static void pathfield_clear(Widget bn, void *cls, void *calldata);
 static void pathfield_modify(Widget txf, void *cls, void *calldata);
 
 Widget create_pathfield(Widget par, const char *defpath, const char *filter,
@@ -487,6 +488,7 @@ Widget create_pathfield(Widget par, const char *defpath, const char *filter,
 	XtAddCallback(tx_path, XmNvalueChangedCallback, pathfield_modify, (void*)handler);
 
 	xm_button(hbox, "...", pathfield_browse, tx_path);
+	xm_button(hbox, "x", pathfield_clear, tx_path);
 	return tx_path;
 }
 
@@ -514,6 +516,11 @@ static void pathfield_browse(Widget bn, void *cls, void *calldata)
 	if(file_dialog(app_shell, initdir, 0, buf, sizeof buf)) {
 		XmTextFieldSetString(cls, buf);
 	}
+}
+
+static void pathfield_clear(Widget bn, void *cls, void *calldata)
+{
+	XmTextFieldSetString(cls, "");
 }
 
 static void pathfield_modify(Widget txf, void *cls, void *calldata)

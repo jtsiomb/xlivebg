@@ -138,7 +138,17 @@ static void prop(const char *prop, void *cls)
 		unsigned char *fb;
 		const char *fname = xlivebg_getcfg_str("xlivebg.video.video", 0);
 
-		if(!fname || !*fname || !(vf = vid_open(fname))) {
+		if(!fname || !*fname) {
+			stop_thread();
+			if(vidfile) {
+				vid_close(vidfile);
+				vidfile = 0;
+			}
+			plugin.upd_interval = XLIVEBG_15FPS;
+			return;
+		}
+
+		if(!(vf = vid_open(fname))) {
 			return;
 		}
 
