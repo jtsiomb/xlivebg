@@ -13,9 +13,11 @@
 			<li><a href="#config">Configuration</a></li>
 			<li><a href="#bg">Bundled live wallpapers</a></li>
 			<ul>
-				<li><a href="#bg_colcycle">colcycle</a>: color cycling</li>
-				<li><a href="#bg_distort">distort</a>: image distortion</li>
-				<li><a href="#bg_stars">stars</a>: starfield</li>
+				<li><a href="#bg_colcycle">Color cycling animation wallpaper</a> (colcycle)</li>
+				<li><a href="#bg_distort">Image distortion wallpaper</a> (distort)</li>
+				<li><a href="#bg_stars">Starfield wallpaper</a> (stars)</li>
+				<li><a href="#bg_ripple">Water ripples wallpaper</a> (ripple)</li>
+				<li><a href="#bg_video">Video playback wallpaper</a> (video)</li>
 			</ul>
 			<li><a href="#plugindev">Writing live wallpaper plugins</a></li>
 		</ul>
@@ -92,6 +94,11 @@
 			<li><a href="https://www.ijg.org">jpeglib</a></li>
 		</ul>
 
+		<p>Bundled wallpaper plugins may require extra dependencies. At the time of this
+		writing, only the <em>video</em> plugin needs extra libraries, specifically the
+		ffmpeg libraries: <em>libavformat</em>, <em>libavcodec</em>, <em>libavutil</em>, and
+		<em>swscale</em>.</p>
+
 		<p>Additionally, to build the <tt>xlivebg-gui</tt> configuration tool, you need the
 		<a href="https://sourceforge.net/projects/motif">Motif toolkit</a>.</p>
 
@@ -99,6 +106,8 @@
 			Tip: on Debian or Ubuntu and their derivatives, you can install all required
 			dependencies with the following command:
 			<pre>apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libpng-dev libjpeg-dev libmotif-dev</pre>
+			Also <pre>apt install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev</pre>, if
+			you wish to compile the video wallpaper plugin.
 		</blockquote>
 
 		<p>Then to build and install everything, change into the directory where you extracted the
@@ -206,7 +215,7 @@ Commands:
 
 		<p>Xlivebg comes bundled with a number of live wallpaper plugins.</p>
 
-		<h3><a name="bg_colcycle">colcycle: color cycling</a></h3>
+		<h3><a name="bg_colcycle">Color cycling animation wallpaper</a></h3>
 
 		<a href="img/colcycle.png"><img src="img/colcycle-thumb.png" alt="colcycle"/></a>
 
@@ -219,7 +228,14 @@ Commands:
 		for instructions on how to download	some excellent color-cycling images to use with
 		it.</p>
 
-		<h3><a name="bg_distort">distort: image distortion</a></h3>
+		<p>Plugin: <strong>colcycle</strong></p>
+		<table>
+			<tr><th>option</th><th>type</th><th>description</th></tr>
+			<tr><td>image</td><td>filepath</td><td>color-cycling image to use (LBM or
+					canvascycle-JSON)</td></tr>
+		</table>
+
+		<h3><a name="bg_distort">Image distortion wallpaper</a></h3>
 
 		<a href="img/distort.jpg"><img src="img/distort-thumb.jpg" alt="distort"/></a>
 
@@ -237,13 +253,67 @@ Commands:
 
 		<img src="img/ui_anim_mask.png" alt="anim_mask UI field"/>
 
-		<h3><a name="bg_stars">stars: starfield</a></h3>
+		<p>Plugin: <strong>distort</strong></p>
+		<table>
+			<tr><th>option</th><th>type</th><th>description</th></tr>
+			<tr><td>amplitude</td><td>number</td><td>amplitude of the distortion</td></tr>
+			<tr><td>frequency</td><td>number</td><td>spatial frequency of the
+					distortion</td></tr>
+		</table>
+
+		<h3><a name="bg_stars">Starfield wallpaper</a></h3>
 
 		<a href="img/stars.jpg"><img src="img/stars-thumb.png" alt="stars"/></a>
 
 		<p>A starfield effect with a bunch of configurable parameters, such as density,
 		speed, star size and color, and the option for the virtual "camera" to follow the
 		mouse pointer around the screen.</p>
+
+		<p>Plugin: <strong>stars</strong></p>
+		<table>
+			<tr><th>option</th><th>type</th><th>description</th></tr>
+			<tr><td>count</td><td>integer</td><td>total number of stars</td></tr>
+			<tr><td>speed</td><td>number</td><td>travel speed through the starfield</td></tr>
+			<tr><td>size</td><td>number</td><td>star size</td></tr>
+			<tr><td>color</td><td>vector</td><td>star color</td></tr>
+			<tr><td>follow</td><td>number</td><td>maximum displacement while following the
+					mouse pointer (0 to disable)</td></tr>
+			<tr><td>follow_speed</td><td>number</td><td>mouse following speed</td></tr>
+		</table>
+
+		<h3><a name="bg_ripple">Water ripples wallpaper</a></h3>
+
+		<a href="img/ripple.jpg"><img src="img/ripple-thumb.jpg" alt="ripple"/></a>
+
+		<p>Water ripples emanating from the movement of the mouse pointer, and optionally
+		from random raindrops. The ripples refract the background image as they start,
+		propagate, reflect on the sides of the screen, and eventually die down.</p>
+
+		<p>Plugin: <strong>ripple</strong></p>
+		<table>
+			<tr><th>option</th><th>type</th><th>description</th></tr>
+			<tr><td>raindrops</td><td>number</td><td>number of raindrops to spawn per second
+					(0 to disable)</td></tr>
+		</table>
+
+		<h3><a name="bg_video">Video playback wallpaper</a></h3>
+
+		<a href="img/video.jpg"><img src="img/video-thumb.jpg" alt="video"/></a>
+
+		<p>Any other effect that isn't yet available as a dedicated live wallpaper, or may
+		be hard to implement in real-time within reasonable CPU-usage constraints, can be
+		achieved by using a video file as a live wallpaper.</p>
+
+		<p>The video wallpaper allows any video file to be played back continuously in a
+		loop in the background. The intention is to loop short seamless clips, but you may
+		also use a whole feature film as a background if you wish; there is no file size or
+		duration restriction.</p>
+
+		<p>Plugin: <strong>video</strong></p>
+		<table>
+			<tr><th>option</th><th>type</th><th>description</th></tr>
+			<tr><td>video</td><td>filename</td><td>video file to be played</td></tr>
+		</table>
 
 		<h2><a name="plugindev">Writing live wallpaper plugins</a></h2>
 
