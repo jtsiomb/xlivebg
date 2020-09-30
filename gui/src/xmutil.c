@@ -480,7 +480,7 @@ Widget create_pathfield(Widget par, const char *defpath, const char *filter,
 	hbox = xm_rowcol(par, XmHORIZONTAL);
 
 	XtSetArg(args[0], XmNcolumns, 40);
-	XtSetArg(args[1], XmNeditable, 0);
+	XtSetArg(args[1], XmNeditable, 1);
 	XtSetArg(args[2], XmNuserData, cls);
 	tx_path = XmCreateTextField(hbox, "textfield", args, 3);
 	XtManageChild(tx_path);

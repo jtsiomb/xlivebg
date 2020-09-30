@@ -15,9 +15,7 @@ static void savecfg_handler(Widget w, void *cls, void *calldata);
 static void file_menu_handler(Widget lst, void *cls, void *calldata);
 static void help_menu_handler(Widget lst, void *cls, void *calldata);
 static void bgselect_handler(Widget lst, void *cls, void *calldata);
-static void bgimage_use_change(Widget w, void *cls, void *calldata);
 static void bgimage_path_change(const char *path, void *cls);
-static void bgmask_use_change(Widget w, void *cls, void *calldata);
 static void bgmask_path_change(const char *path, void *cls);
 static void colopt_change(Widget w, void *cls, void *calldata);
 static void color_change(int r, int g, int b, void *cls);
@@ -36,7 +34,6 @@ XtAppContext app;
 Widget app_shell;
 
 static Widget win;
-static int use_bgimage, use_bgmask;
 static Widget bn_endcol, frm_cur;
 static Widget lb_status;
 static Widget slider_fps;
@@ -121,37 +118,22 @@ static int init_gui(void)
 
 	if(cmd_getprop_str("xlivebg.image", buf, sizeof buf) != -1) {
 		str = clean_path_str(buf);
-		use_bgimage = 1;
 	} else {
 		str = 0;
-		use_bgimage = 0;
 	}
 	subfrm = xm_frame(vbox, "Background image");
-	subvbox = xm_rowcol(subfrm, XmVERTICAL);
-	xm_checkbox(subvbox, "Use image", use_bgimage, bgimage_use_change, 0);
-	create_pathfield(subvbox, str, 0, bgimage_path_change, 0);
+	create_pathfield(subfrm, str, 0, bgimage_path_change, 0);
 
 	if(cmd_getprop_str("xlivebg.anim_mask", buf, sizeof buf) != -1) {
 		str = clean_path_str(buf);
-		use_bgmask = 1;
 	} else {
 		str = 0;
-		use_bgmask = 0;
 	}
 	subfrm = xm_frame(vbox, "Animation mask");
-	subvbox = xm_rowcol(subfrm, XmVERTICAL);
-	xm_checkbox(subvbox, "Use mask", use_bgmask, bgmask_use_change, 0);
-	create_pathfield(subvbox, str, 0, bgmask_path_change, 0);
+	create_pathfield(subfrm, str, 0, bgmask_path_change, 0);
 
 	bgmode = 0;
-	if(cmd_getprop_str("xlivebg.bgmode", buf, sizeof buf) != -1) {
-		str = clean_path_str(buf);
-		if(strcmp(str, "vgrad") == 0) {
-			bgmode = 1;
-		} else if(strcmp(str, "hgrad") == 0) {
-			bgmode = 2;
-		}
-	}
+	cmd_getprop_int("xlivebg.bgmode", &bgmode);
 	cmd_getprop_vec("xlivebg.color", bgcol[0]);
 	cmd_getprop_vec("xlivebg.color2", bgcol[1]);
 
@@ -370,52 +352,14 @@ static void bgselect_handler(Widget lst, void *cls, void *calldata)
 	}
 }
 
-static void bgimage_use_change(Widget w, void *cls, void *calldata)
-{
-	Widget txf;
-	char *str;
-
-	if(XmToggleButtonGetState(w)) {
-		use_bgimage = 1;
-		txf = XtNameToWidget(XtParent(w), "rowcolumn.textfield");
-		if(txf && (str = XmTextFieldGetString(txf))) {
-			cmd_setprop_str("xlivebg.image", str);
-		}
-	} else {
-		use_bgimage = 0;
-		cmd_rmprop("xlivebg.image");
-	}
-}
-
 static void bgimage_path_change(const char *path, void *cls)
 {
-	if(use_bgimage) {
-		cmd_setprop_str("xlivebg.image", path);
-	}
-}
-
-static void bgmask_use_change(Widget w, void *cls, void *calldata)
-{
-	Widget txf;
-	char *str;
-
-	if(XmToggleButtonGetState(w)) {
-		use_bgmask = 1;
-		txf = XtNameToWidget(XtParent(w), "rowcolumn.textfield");
-		if(txf && (str = XmTextFieldGetString(txf))) {
-			cmd_setprop_str("xlivebg.anim_mask", str);
-		}
-	} else {
-		use_bgmask = 0;
-		cmd_rmprop("xlivebg.anim_mask");
-	}
+	cmd_setprop_str("xlivebg.image", path);
 }
 
 static void bgmask_path_change(const char *path, void *cls)
 {
-	if(use_bgmask) {
-		cmd_setprop_str("xlivebg.anim_mask", path);
-	}
+	cmd_setprop_str("xlivebg.anim_mask", path);
 }
 
 static void colopt_change(Widget w, void *cls, void *calldata)

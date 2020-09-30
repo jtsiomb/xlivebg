@@ -617,7 +617,8 @@ static int update_builtin_cfg(const char *cfgpath, struct ts_value *tsval)
 	}
 	if(strcmp(cfgpath, CFGNAME_IMAGE) == 0 || strcmp(cfgpath, CFGNAME_ANIM_MASK) == 0) {
 		struct xlivebg_image *img = 0;
-		if(tsval) {
+		const char *fname = 0;
+		if(tsval && tsval->str && *tsval->str) {
 			int idx = find_image(tsval->str);
 			if(idx >= 0) {
 				img = get_image(idx);
@@ -629,10 +630,15 @@ static int update_builtin_cfg(const char *cfgpath, struct ts_value *tsval)
 				}
 				add_image(img);
 			}
+			fname = tsval->str;
 		}
 		if(strcmp(cfgpath, CFGNAME_IMAGE) == 0) {
+			free(cfg.image);
+			cfg.image = fname ? strdup(fname) : 0;
 			set_bg_image(0, img);
 		} else {
+			free(cfg.anm_mask);
+			cfg.anm_mask = fname ? strdup(fname) : 0;
 			set_anim_mask(0, img);
 		}
 		return 1;
