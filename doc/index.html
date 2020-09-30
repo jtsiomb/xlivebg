@@ -20,6 +20,10 @@
 				<li><a href="#bg_video">Video playback wallpaper</a> (video)</li>
 			</ul>
 			<li><a href="#plugindev">Writing live wallpaper plugins</a></li>
+			<ul>
+				<li><a href="#api_intro">Introduction to the xlivebg API</a></li>
+				<li><a href="#api_minimal">Minimal xlivebg wallpaper plugin</a></li>
+			</ul>
 		</ul>
 
 		<hr/> <!-- SECTION ABOUT -->
@@ -342,7 +346,25 @@ Commands:
 
 		<h2><a name="plugindev">Writing live wallpaper plugins</a></h2>
 
+		<p>Even though xlivebg comes with a set of builtin wallpapers, it's main
+		purpose is to be a framework for enabling the creation of 3rd party live wallpapers.
+		The builtin wallpapers are mostly intended as examples of what can be done, rather
+		than provide the total sum of wallpapers for end users. To this end, xlivebg
+		provides an API for writing 3rd party live wallpapers, designed to be as unobtrusive
+		as possible, and yet to make it extremely simple to write live wallpapers.
+		Essentially xlivebg handles all the interactions with the X window system, sets up
+		an OpenGL context on an appropriate drawable, and gets out of the way of the live
+		wallpaper plugin, providing only a mechanism for settings, information about the
+		screens and their geometry, and a certain number of helper functions which can be
+		used at the plugin writer's discretion to make it dead-simple to do the right thing
+		while drawing with OpenGL.</p>
+
+		<h2><a name="api_intro">Introduction to the xlivebg API</a></h2>
+
 		<p>TODO</p>
 
+		<h2><a name="api_minimal">Minimal xlivebg wallpaper plugin</a></h2>
+
+		<p>TODO</p>
 	</body>
 </html>
