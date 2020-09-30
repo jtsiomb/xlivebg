@@ -1,15 +1,3 @@
-.PHONY: all
-all: distort stars colcycle ripple video
-
-.PHONY: clean
-clean: clean-distort clean-stars clean-colcycle clean-ripple clean-video
-
-.PHONY: install
-install: install-distort install-stars install-colcycle install-ripple install-video
-
-.PHONY: uninstall
-uninstall: uninstall-distort uninstall-stars uninstall-colcycle uninstall-ripple uninstall-video
-
 # distort plugin
 .PHONY: distort
 distort:

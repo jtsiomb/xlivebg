@@ -32,15 +32,10 @@ img.inline {
 	display: inline;
 }
 
-pre.code {
+code, pre.code, tt {
 	background-color: #111;
-	color: #db9;
-	font-size: 1.2em;
-}
-
-tt {
 	color: #fff;
-	font-size: 1.1em;
+	font-family: monospace;
 }
 
 pre.code .comment { color: #9db; }

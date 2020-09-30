@@ -104,10 +104,10 @@
 
 		<blockquote>
 			Tip: on Debian or Ubuntu and their derivatives, you can install all required
-			dependencies with the following command:
-			<pre>apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libpng-dev libjpeg-dev libmotif-dev</pre>
-			Also <pre>apt install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev</pre>, if
-			you wish to compile the video wallpaper plugin.
+			dependencies with the following command:<br/>
+			<tt><code>apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libpng-dev
+				libjpeg-dev libmotif-dev libavformat-dev libavcodec-dev libavutil-dev
+				libswscale-dev</code></tt>
 		</blockquote>
 
 		<p>Then to build and install everything, change into the directory where you extracted the
@@ -126,6 +126,13 @@ make install-all</pre></code>
 		program, use <tt>make install</tt> instead, and then tou can separately install the
 		other components with <tt>make install-plugins</tt>, and <tt>make install-gui</tt>
 		as needed.</p>
+
+		<p>If you wish to exclude any specific bundled wallpaper plugins from the build, you
+		may disable them by passing the <tt><code>--disable-plugin-&lt;name&gt;</tt></code>
+		option to <tt>configure</tt> for each plugin you wish to disable. For example if
+		you don't want to install the ffmpeg libraries, which are needed for the video plugin,
+		you may invoke configure like so:
+		<pre class="code">./configure --disable-plugin-video</pre>
 
 		<h3>Live wallpaper plugin directories</h3>
 
