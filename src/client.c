@@ -382,8 +382,13 @@ static void print_usage(void)
 {
 	printf("Usage: xlivebg-cmd <command> [cmd-args]\n");
 	printf("Commands:\n");
+	printf("  ping: check to see if xlivebg is running\n");
+	printf("  save: save current settings to user configuration file\n");
+	printf("  getupd: print the current graphics update rate\n");
 	printf("  list: get list of available live wallpapers\n");
 	printf("  switch <name>: switch live wallpaper\n");
 	printf("  lsprop [name]: list properties of named or current live wallpaper\n");
+	printf("  setprop <type> <property> <value>: sets a property\n");
+	printf("  getprop <type>: prints the current value of a property\n");
 	printf("  help: print usage and exit\n");
 }
