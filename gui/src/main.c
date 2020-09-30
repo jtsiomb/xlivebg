@@ -49,6 +49,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "failed to initialize ui\n");
 		return -1;
 	}
+	XtVaSetValues(app_shell, XmNtitle, "xlivebg configuration", (void*)0);
 	XtVaSetValues(app_shell, XmNallowShellResize, True, (void*)0);
 
 	if(cmd_ping() == -1) {
