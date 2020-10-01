@@ -20,15 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "xlivebg.h"
 
-unsigned int bgtex;
-unsigned long msec;
-long upd_interval_usec;
+extern unsigned int bgtex;
+extern unsigned long msec;
+extern long upd_interval_usec;
 
-int scr_width, scr_height;
+extern int scr_width, scr_height;
 
 #define MAX_SCR	32
-struct xlivebg_screen screen[MAX_SCR];
-int num_screens;
+extern struct xlivebg_screen screen[MAX_SCR];
+extern int num_screens;
 
 int app_init(int argc, char **argv);
 void app_cleanup(void);

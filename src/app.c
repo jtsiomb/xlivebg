@@ -24,6 +24,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "plugin.h"
 #include "cfg.h"
 
+unsigned int bgtex;
+unsigned long msec;
+long upd_interval_usec;
+
+int scr_width, scr_height;
+
+struct xlivebg_screen screen[MAX_SCR];
+int num_screens;
+
+
 int app_init(int argc, char **argv)
 {
 	int i, num_plugins;
