@@ -1,7 +1,7 @@
 xlivebg - live wallpapers for the X window system
 =================================================
 
-![logo](http://nuclear.mutantstargoat.com/sw/xlivebg/xlivebg_logo_sm.png)
+![logo](http://nuclear.mutantstargoat.com/sw/xlivebg/xlivebg_logo2_sm.png)
 
 About
 -----
@@ -23,7 +23,7 @@ function, which is called by xlivebg at (approximately) fixed intervals.
 For further information, build instructions, configuration and setup, and a
 guide for writing live wallpapers, refer to the manual:
 http://nuclear.mutantstargoat.com/sw/xlivebg/manual
-Also available under `doc/manual` in the source tree.
+Also available under the `doc` directory in the source tree.
 
 License
 -------

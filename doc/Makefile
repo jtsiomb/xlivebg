@@ -1,4 +1,5 @@
 images= \
+	img/xlivebg_logo.png \
 	img/colcycle.png \
 	img/colcycle-thumb.png \
 	img/distort.jpg \
