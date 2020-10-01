@@ -105,12 +105,12 @@ for i in $plugins; do
 	echo "	\$(MAKE) -C $i" >>plugins/Makefile
 	echo >>plugins/Makefile
 	echo "clean-$i:" >>plugins/Makefile
-	echo "	\$(MAKE) -C clean-$i" >>plugins/Makefile
+	echo "	\$(MAKE) -C $i clean" >>plugins/Makefile
 	echo >>plugins/Makefile
 	echo "install-$i:" >>plugins/Makefile
-	echo "	\$(MAKE) -C install-$i" >>plugins/Makefile
+	echo "	\$(MAKE) -C $i install" >>plugins/Makefile
 	echo >>plugins/Makefile
 	echo "uninstall-$i:" >>plugins/Makefile
-	echo "	\$(MAKE) -C uninstall-$i" >>plugins/Makefile
+	echo "	\$(MAKE) -C $i uninstall" >>plugins/Makefile
 	echo >>plugins/Makefile
 done
