@@ -33,8 +33,9 @@ struct cfg {
 	float crop_dir[2];
 
 	struct ts_node *ts;
-} cfg;
+};
 
+extern struct cfg cfg;
 extern char *cfgpath;
 
 #define CFGNAME_ACTIVE		"xlivebg.active"

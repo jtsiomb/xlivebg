@@ -4,6 +4,7 @@
 #include "treestore.h"
 #include "cfg.h"
 
+struct cfg cfg;
 char *cfgpath;
 
 void init_cfg(void)
