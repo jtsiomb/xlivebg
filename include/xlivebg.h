@@ -53,7 +53,7 @@ enum {
 
 typedef int (*xlivebg_init_func)(void*);
 typedef void (*xlivebg_cleanup_func)(void*);
-typedef void (*xlivebg_start_func)(long, void*);
+typedef int (*xlivebg_start_func)(long, void*);
 typedef void (*xlivebg_stop_func)(void*);
 typedef void (*xlivebg_draw_func)(long, void*);
 typedef void (*xlivebg_prop_func)(const char*, void*);

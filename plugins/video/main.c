@@ -24,7 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "vid.h"
 
 static int init(void *cls);
-static void start(long tmsec, void *cls);
+static int start(long tmsec, void *cls);
 static void stop(void *cls);
 static void prop(const char *prop, void *cls);
 static void draw(long tmsec, void *cls);
@@ -84,7 +84,7 @@ static int init(void *cls)
 	return 0;
 }
 
-static void start(long tmsec, void *cls)
+static int start(long tmsec, void *cls)
 {
 	playing = 1;
 
@@ -106,6 +106,8 @@ static void start(long tmsec, void *cls)
 
 	prop("video", 0);
 	prev_tmsec = tmsec;
+
+	return 0;
 }
 
 static void stop(void *cls)

@@ -26,7 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 static int init(void *cls);
 static void cleanup(void *cls);
-static void start(long time_msec, void *cls);
+static int start(long time_msec, void *cls);
 static void resize(int x, int y);
 static void stop(void *cls);
 static void prop(const char *prop, void *cls);
@@ -95,7 +95,7 @@ static void cleanup(void *cls)
 {
 }
 
-static void start(long time_msec, void *cls)
+static int start(long time_msec, void *cls)
 {
 	int i, j, loc;
 	unsigned char *blob;
@@ -105,7 +105,7 @@ static void start(long time_msec, void *cls)
 	scr_width = scr_height = 0;
 
 	if(!(sdr_vis = create_sdrprog(&ripple_vsdr, &ripple_psdr))) {
-		return;
+		return -1;
 	}
 	glUseProgram(sdr_vis);
 	/* tex_img in unit 0, tex_mask in unit 1, tex_ripple in unit 2 */
@@ -119,7 +119,7 @@ static void start(long time_msec, void *cls)
 	if(!(sdr_blur = create_sdrprog(&ripple_vsdr, &ripple_blur_psdr))) {
 		glUseProgram(0);
 		glDeleteProgram(sdr_vis);
-		return;
+		return -1;
 	}
 	glUseProgram(sdr_blur);
 	blur_delta_loc = glGetUniformLocation(sdr_blur, "delta");
@@ -187,6 +187,8 @@ static void start(long time_msec, void *cls)
 
 	pending_drops = 0;
 	prev_upd = time_msec;
+
+	return 0;
 }
 
 static void stop(void *cls)

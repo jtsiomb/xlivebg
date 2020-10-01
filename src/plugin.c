@@ -157,10 +157,15 @@ void activate_plugin(struct xlivebg_plugin *plugin)
 		return;
 	}
 
-	act = plugin;
 	if(plugin->start) {
-		plugin->start(msec, plugin->data);
+		if(plugin->start(msec, plugin->data) == -1) {
+			fprintf(stderr, "xlivebg: plugin %s failed to start\n", plugin->name);
+			if(act && act != plugin) {
+				activate_plugin(act);
+			}
+		}
 	}
+	act = plugin;
 
 	upd_interval_usec = act->upd_interval;
 

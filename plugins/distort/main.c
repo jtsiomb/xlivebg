@@ -1,10 +1,27 @@
+/*
+xlivebg - live wallpapers for the X window system
+Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 #include <stdio.h>
 #include <math.h>
 #include <GL/gl.h>
 #include "xlivebg.h"
 
 static int init(void *cls);
-static void start(long tmsec, void *cls);
+static int start(long tmsec, void *cls);
 static void draw(long tmsec, void *cls);
 static void prop(const char *prop, void *cls);
 
@@ -50,10 +67,11 @@ static int init(void *cls)
 	return 0;
 }
 
-static void start(long tmsec, void *cls)
+static int start(long tmsec, void *cls)
 {
 	prop("amplitude", 0);
 	prop("frequency", 0);
+	return 0;
 }
 
 static void prop(const char *prop, void *cls)
@@ -155,7 +173,6 @@ static void distquad(float t, struct xlivebg_image *amask)
 static void draw(long tmsec, void *cls)
 {
 	int i, num_scr;
-	struct xlivebg_screen *scr;
 	struct xlivebg_image *img;
 	float xform[16];
 	float t = (float)tmsec / 1000.0f;
@@ -164,7 +181,6 @@ static void draw(long tmsec, void *cls)
 
 	num_scr = xlivebg_screen_count();
 	for(i=0; i<num_scr; i++) {
-		scr = xlivebg_screen(i);
 		xlivebg_gl_viewport(i);
 
 		if((img = xlivebg_bg_image(i)) && img->tex) {
