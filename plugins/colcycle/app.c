@@ -361,7 +361,7 @@ static void set_image_palette(struct image *img)
 	}
 }
 
-struct xlivebg_plugin colc_plugin;
+extern struct xlivebg_plugin colc_plugin;
 
 static void show_image(struct image *img, long time_msec)
 {
