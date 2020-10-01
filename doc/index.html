@@ -4,13 +4,18 @@
 		<link rel="stylesheet" type="text/css" href="style.css"/>
 	</head>
 	<body>
-		<h1>xlivebg manual</h1>
+		<h1 class="title">xlivebg manual</h1>
 		<hr/>
 		<h2>Table of Contents</h2>
 		<ul>
 			<li><a href="#about">About xlivebg</a></li>
 			<li><a href="#setup">Installation</a></li>
 			<li><a href="#config">Configuration</a></li>
+			<ul>
+				<li><a href="#cfgfile">Configuration file</a></li>
+				<li><a href="#cfggui">xlivebg-gui: interactive GUI configuration tool</a></li>
+				<li><a href="#cfgcmd">xlivebg-cmd: command-line interactive control</a></li>
+			</ul>
 			<li><a href="#bg">Bundled live wallpapers</a></li>
 			<ul>
 				<li><a href="#bg_colcycle">Color cycling animation wallpaper</a> (colcycle)</li>
@@ -21,20 +26,49 @@
 			</ul>
 			<li><a href="#plugindev">Writing live wallpaper plugins</a></li>
 			<ul>
-				<li><a href="#api_intro">Introduction to the xlivebg API</a></li>
 				<li><a href="#api_minimal">Minimal xlivebg wallpaper plugin</a></li>
+				<ul>
+					<li><a href="#minimal_build">How to build</a></li>
+					<li><a href="#minimal_src">Source code overview</a></li>
+				</ul>
+
+				<li><a href="#api_ref">xlivebg API reference</a></li>
+				<ul>
+					<li><tt><a href="#apiref_register_plugin">xlivebg_register_plugin</a></tt></li>
+					<li><tt><a href="#apiref_screen_count">xlivebg_screen_count</a></tt></li>
+					<li><tt><a href="#apiref_screen">xlivebg_screen</a></tt></li>
+					<li><tt><a href="#apiref_bg_image">xlivebg_bg_image</a></tt></li>
+					<li><tt><a href="#apiref_anim_mask">xlivebg_anim_mask</a></tt></li>
+					<li><tt><a href="#apiref_memory_image">xlivebg_memory_image</a></tt></li>
+					<li><tt><a href="#apiref_image_texture">xlivebg_image_texture</a></tt></li>
+					<li><tt><a href="#apiref_fit_mode">xlivebg_fit_mode</a></tt></li>
+					<li><tt><a href="#apiref_crop_zoom">xlivebg_crop_zoom</a></tt></li>
+					<li><tt><a href="#apiref_crop_dir">xlivebg_crop_dir</a></tt></li>
+					<li><tt><a href="#apiref_havecfg">xlivebg_havecfg</a></tt></li>
+					<li><tt><a href="#apiref_getcfg_str">xlivebg_getcfg_(str|num|int|vec)</a></tt></li>
+					<li><tt><a href="#apiref_setcfg_str">xlivebg_setcfg_(str|num|int|vec)</a></tt></li>
+					<li><tt><a href="#apiref_rmcfg">xlivebg_rmcfg</a></tt></li>
+					<li><tt><a href="#apiref_defcfg_str">xlivebg_defcfg_(str|num|int|vec)</a></tt></li>
+					<li><tt><a href="#apiref_gl_viewport">xlivebg_gl_viewport</a></tt></li>
+					<li><tt><a href="#apiref_clear">xlivebg_clear</a></tt></li>
+					<li><tt><a href="#apiref_calc_image_proj">xlivebg_calc_image_proj</a></tt></li>
+					<li><tt><a href="#apiref_gl_image_proj">xlivebg_gl_image_proj</a></tt></li>
+					<li><tt><a href="#apiref_mouse_pos">xlivebg_mouse_pos</a></tt></li>
+				</ul>
+
 			</ul>
+			<li><a href="#faq">Frequently Asked Questions</a></li>
 		</ul>
 
 		<hr/> <!-- SECTION ABOUT -->
 		<h2><a name="about">About xlivebg</a></h2>
 
-		<p>Xlivebg is a live wallpaper framework for the X window system. It provides all
-		the groundwork necessary for displaying animated graphics with OpenGL on the root
-		window, so that a variety of live wallpapers can be written without having to deal
-		with how to tie everything to the X window system, how to create the OpenGL context
-		itself, or how to present any configurable parameters of the live wallpaper to the
-		user.</p>
+		<p>Xlivebg is a live wallpaper framework, and collection of live wallpapers, for the
+		X window system. It provides all the groundwork necessary for displaying animated
+		graphics with OpenGL on the root window, so that a variety of live wallpapers can be
+		written without having to deal with how to tie everything to the X window system,
+		how to create the OpenGL context itself, or how to present any configurable
+		parameters of the live wallpaper to the user.</p>
 
 		<p>A live wallpaper under xlivebg, is simply a small program compiled as a shared
 		library, which provides a number of callbacks to be called by xlivebg
@@ -60,7 +94,7 @@
 		Software Foundation. See <a href="http://www.gnu.org/licenses/gpl-3.0.html">
 		http://www.gnu.org/licenses/gpl-3.0.html</a> for details.</p>
 
-		<hr/> <!-- SECTION SETUP -->
+		<hr/> <!-- SECTION INSTALLATION -->
 		<h2><a name="setup">Installation</a></h2>
 
 		<p>The xlivebg distribution comes with four things:</p>
@@ -100,11 +134,11 @@
 
 		<p>Bundled wallpaper plugins may require extra dependencies. At the time of this
 		writing, only the <em>video</em> plugin needs extra libraries, specifically the
-		ffmpeg libraries: <em>libavformat</em>, <em>libavcodec</em>, <em>libavutil</em>, and
+		<a href="http://ffmpeg.org">ffmpeg</a> libraries: <em>libavformat</em>, <em>libavcodec</em>, <em>libavutil</em>, and
 		<em>swscale</em>.</p>
 
 		<p>Additionally, to build the <tt>xlivebg-gui</tt> configuration tool, you need the
-		<a href="https://sourceforge.net/projects/motif">Motif toolkit</a>.</p>
+		<a href="https://sourceforge.net/projects/motif">motif toolkit</a>.</p>
 
 		<blockquote>
 			Tip: on Debian or Ubuntu and their derivatives, you can install all required
@@ -165,7 +199,7 @@ make install-all</pre></code>
 		<hr/> <!-- SECTION CONFIG -->
 		<h2><a name="config">Configuration</a></h2>
 
-		<h3>Configuration file</h3>
+		<h3><a name="cfgfile">Configuration file</a></h3>
 		<p>Xlivebg looks for the configuration file in the following locations, listed in
 		search order:</p>
 		<ul>
@@ -189,7 +223,7 @@ make install-all</pre></code>
 		the official distribution, are detailed in comments in the example configuration
 		file under <tt><a href="xlivebg.conf">docs/xlivebg.conf</a></tt>.</p>
 
-		<h3>xlivebg-gui: interactive GUI configuration tool</h3>
+		<h3><a name="cfggui">xlivebg-gui: interactive GUI configuration tool</a></h3>
 
 		<img src="img/guishot.png" alt="GUI configuration tool"/>
 
@@ -213,7 +247,7 @@ make install-all</pre></code>
 		right pane presents controls for all the tweakable parameters of the currently
 		active wallpaper plugin.</p>
 
-		<h3>xlivebg-cmd: command-line interactive control</h3>
+		<h3><a name="cfgcmd">xlivebg-cmd: command-line interactive control</a></h3>
 
 		<p>During installation, a symbolic link is created to <tt>xlivebg</tt>, under the
 		name <tt>xlivebg-cmd</tt>. When xlivebg is invoked as <tt>xlivebg-cmd</tt>, or
@@ -221,7 +255,7 @@ make install-all</pre></code>
 		trying to connect to an existing xlivebg instance and send commands to it.</p>
 
 		<p>Running <tt>xlivebg-cmd help</tt> shows the list of commands available:</p>
-		<pre>
+		<code><pre>
 Usage: xlivebg-cmd &lt;command&gt; [cmd-args]
 Commands:
   ping: check to see if xlivebg is running
@@ -237,7 +271,7 @@ Commands:
   &lt;type&gt; is one of: text, number, integer, vector
   &lt;property&gt; must be a full option pathname. For example: "xlivebg.image" or
         "xlivebg.stars.speed". not just "image" or "speed".
-</pre>
+</pre></code>
 
 		<hr/> <!-- SECTION BG -->
 		<h2><a name="bg">Bundled live wallpapers</a></h2>
@@ -344,6 +378,7 @@ Commands:
 			<tr><td>video</td><td>filename</td><td>video file to be played</td></tr>
 		</table>
 
+		<hr/> <!-- SECTION API -->
 		<h2><a name="plugindev">Writing live wallpaper plugins</a></h2>
 
 		<p>Even though xlivebg comes with a set of builtin wallpapers, it's main
@@ -359,12 +394,498 @@ Commands:
 		used at the plugin writer's discretion to make it dead-simple to do the right thing
 		while drawing with OpenGL.</p>
 
-		<h2><a name="api_intro">Introduction to the xlivebg API</a></h2>
+		<h3><a name="api_minimal">Minimal xlivebg wallpaper plugin</a></h3>
 
-		<p>TODO</p>
+		<p>The best way to explain how to write live wallpapers, is to go through a simple
+		example. Such a minimal example plugin, is included with the xlivebg distribution,
+		under the <tt>doc/minimal_plugin</tt> directory.</p>
 
-		<h2><a name="api_minimal">Minimal xlivebg wallpaper plugin</a></h2>
+		<h4><a name="minimal_build">How to build</a></h4>
+		
+		<p>The simplest way to build and iterate on a live wallpaper, is to place it under
+		<tt>plugins</tt> in the xlivebg source tree. So as the first step, go on and copy
+		the <tt>minimal_plugin</tt> directory as <tt>plugins/minimal</tt>. To build it,
+		simply type <tt>make</tt> while in the plugin directory, or the xlivebg root.</p>
 
-		<p>TODO</p>
+		<p>To build a live wallpaper, all you need is to compile it as a shared library, and
+		make sure it can include the <tt>xlivebg.h</tt> header file, which is installed
+		under <tt>&lt;installation prefix&gt;/include</tt>. So feel free to use your own
+		out-of-tree build system if you prefer. There's no need to link with any xlivebg
+		libraries (there aren't any); calls to the xlivebg API entry points are left
+		unresolved, and are left to the dynamic loader to resolve them at load time from
+		symbols in the xlivebg executable itself.</p>
+		
+		<p>When xlivebg is compiled with debug enabled, it will automatically look into the
+		<tt>plugins</tt> directory to find wallpapers when executed from the project root,
+		so there's no need to install the minimal example, or any other live wallpaper
+		you're working on, in order to try your changes. Try that now: make sure you have
+		compiled xlivebg without the <tt>--disable-debug</tt> configure option, and run it
+		from the xlivebg root directory like so: <tt>./xlivebg</tt>. The message
+		<tt>xlivebg: registered plugin: minimal</tt> should appear on the terminal, and the
+		minimal wallpaper should be used if you have <tt>active = "minimal"</tt> in your
+		config file.</p>
+
+		<p>If you use the example <tt>Makefile</tt> for your own plugins, at minimum you
+		need to change the <em>name</em> variable at the top, and just include
+		<tt>../plugin.mk</tt>. If you need to pass additional flags to the C compiler, set
+		the <tt>plugin_cflags</tt> variable before the include line, and similarly for
+		linker flags set the <tt>plugin_ldflags</tt> variable.</p>
+
+		<h4><a name="minimal_src">Source code overview</a></h4>
+
+		<p>Live wallpapers typically start by including <tt>&lt;xlivebg.h&gt;</tt>, for the
+		xlivebg API, and <tt>&lt;GL/gl.h&gt;</tt>, to be able to call OpenGL functions for
+		drawing.</p>
+
+		<p>Every live wallpaper needs to define a <tt>register_plugin</tt> function, which
+		calls <tt>xlivebg_register_plugin</tt> passing a pointer to an
+		<tt>xlivebg_plugin</tt> structure to it, in order to register itself. This function
+		is called automatically by xlivebg for every plugin it attempts to load.</p>
+
+		<p>The plugin structure is defined in <tt>xlivebg.h</tt>:</p>
+		<code><pre class="code">
+<span class="keyword">struct</span> xlivebg_plugin {
+	<span class="keyword">char</span> *name, *desc;
+	<span class="keyword">char</span> *props;	<span class="comment">/* list of properties this plugin uses (to restart or call prop when any change) */</span>
+	<span class="keyword">long</span> upd_interval;	<span class="comment">/* requested update interval in microseconds */</span>
+	xlivebg_init_func init;		<span class="comment">/* called during init, with a valid OpenGL context */</span>
+	xlivebg_cleanup_func cleanup;	<span class="comment">/* called during shutdown (optional) */</span>
+	xlivebg_start_func start;	<span class="comment">/* called when the plugin is activated (optional) */</span>
+	xlivebg_stop_func stop;		<span class="comment">/* called when the plugin is deactivated (optional) */</span>
+	xlivebg_draw_func draw;		<span class="comment">/* called to draw every frame */</span>
+	xlivebg_prop_func prop;		<span class="comment">/* called when a property in props has changed (optional) */</span>
+
+	<span class="keyword">void</span> *data, *so;
+};</pre></code>
+
+		<p><tt>name</tt> is a mandatory field, which must point to a string with the
+		identifying name of the wallpaper.  The name is used for selecting the active
+		plugin, and as part of the configuration option pathnames, and must be unique. If
+		multiple plugins with identical names are located in the plugin search directories,
+		only the first one is loaded, the rest are ignored.</p>
+
+		<p><tt>desc</tt> should be a short description of what the live wallpaper does. It
+		might be presented as part of the user configuration UI, but has no other purpose at
+		the moment.</p>
+
+		<p><tt>props</tt> is an optional string to declare a list of tweakable properties
+		the plugin responds to at runtime. Usually these properties should be the same as
+		whatever configuration options are heeded by the plugin, so that they can all be
+		tweaked interactively by the user. This list is used by the configuration tool to
+		generate the plugin-specific configuration user interface. If left null, no
+		plugin-specific options will be presented in the GUI. The properties	list uses a
+		very simple hierarchical curly-brace notation, describing the type and values
+		accepted for each property. Search for <em>PROPLIST</em> in all the bundled plugins
+		to see examples of the syntax.</p>
+
+		<p><tt>upd_interval</tt> defines how often the plugin draw function should be
+		called, in microseconds. It's recommended to keep this interval as large as possible (and therefore
+		the framerate as low as possible), to avoid high CPU usage. This value can be
+		changed at any time during the execution of the live wallpaper if there's need to
+		vary the interval. Redraw times are approximate, and also the user can override this
+		with the <tt>fps</tt> option, so don't rely on being called at exactly the same
+		interval you asked for.</p>
+
+		<p>Finally there's a list of function pointers you can define, out of which only the
+		draw function is mandatory:</p>
+		<ul>
+			<li><tt>init</tt> is called when the plugin is initially registered. You don't
+				have an OpenGL context at this point, so defer any GL init to your start
+				function.</li>
+			<li><tt>cleanup</tt> is called at the very end before xlivebg exits, again no
+				valid OpenGL context at this point.</li>
+			<li><tt>start</tt> is called just as your plugin is activated, and
+				<tt>stop</tt> when your plugin is deactivated (the user selects another one,
+				or xlivebg is about to exit).</li>
+			<li><tt>draw</tt> will be called continuously while your plugin is activated.
+				This is where you use OpenGL to draw the live wallpaper visuals.</li>
+			<li><tt>prop</tt> is called whenever the user modifies a property which you
+				defined in your property list. If not defined, you will not receive
+				notification of property changes.</li>
+		</ul>
+
+		<p>In the case of the minimal example we can see the <tt>xlivebg_plugin</tt>
+		structure definition and the <tt>register_plugin</tt> function near the top:</p>
+
+		<code><pre class="code">
+<span class="pp">#define PROPLIST \
+    "proplist {\n" \
+    "    prop {\n" \
+    "        id = \"speed\"\n" \
+    "        desc = \"animation speed\"\n" \
+    "        type = \"number\"\n" \
+    "        range = [0, 10]\n" \
+    "    }\n" \
+    "}\n"</span>
+
+<span class="keyword">static struct</span> xlivebg_plugin plugin = {
+    <span class="string">"minimal"</span>,
+    <span class="string">"Minimal live wallpaper example"</span>,
+    PROPLIST,
+    XLIVEBG_20FPS,
+    init, 0,
+    start, 0,
+    draw,
+    prop,
+    0, 0
+};
+
+<span class="keyword">int</span> register_plugin(<span class="keyword">void</span>)
+{
+    <span class="keyword">return</span> xlivebg_register_plugin(&amp;plugin);
+}</code></pre>
+
+		<p>The plugin defines a single property of type number, with range of values
+		between 0 and 10. Declares its identifying name to be <em>minimal</em>, its update
+		rate to be the microsecond equivalent of 20 frames per second, and defines four
+		callbacks: <tt>init</tt>, <tt>start</tt>, <tt>draw</tt>, and <tt>prop</tt>.</p>
+
+		<p>The initialization function simply sets a default value for the only config
+		option used by the plugin. It's often necessary to define a default value,
+		otherwise the configuration UI might misbehave if there is no default value, nor any
+		user configuration option for a property:</p>
+<code><pre class="code">
+<span class="keyword">static int</span> init(<span class="keyword">void</span> *cls)
+{
+    xlivebg_defcfg_num(<span class="string">"xlivebg.minimal.speed"</span>, 1.0f);
+    <span class="keyword">return</span> 0;
+}</pre></code>
+
+		<p>The <tt>start</tt> function is usually where you create any OpenGL objects you're going to
+		need, such as textures, shaders, and so on. In this case the only thing it does is
+		to retrieve the current value of the "speed" configuration option, indirectly by
+		calling the <tt>prop</tt> function manually, which otherwise would only be called if
+		that value changes externally:</p>
+<code><pre class="code">
+<span class="keyword">static void</span> start(<span class="keyword">long</span> tmsec, <span class="keyword">void</span> *cls)
+{
+	 prop(<span class="string">"speed"</span>, 0);
+}
+
+<span class="keyword">static void</span> prop(<span class="keyword">const char</span> *prop, <span class="keyword">void</span> *cls)
+{
+    <span class="keyword">if</span>(strcmp(prop, <span class="string">"speed"</span>) == 0) {
+        speed = xlivebg_getcfg_num(<span class="string">"xlivebg.minimal.speed"</span>, 1.0f);
+    }
+}</pre></code>
+
+		<p>The first thing the <tt>draw</tt> function needs to do, is clear the screen
+		(ideally by calling <tt>xlivebg_clear</tt>, which handles clearing according to the
+		user-selected background color and mode (solid color or vertical/horizontal
+		gradient). If there's no way to see the background color behind the effect
+		implemented by the live wallpaper, there's no need to clear the framebuffer.</p>
+
+		<p>While the OpenGL context is bound to a single drawable spanning all screens in a
+		multi-screen scenario, it usually makes sense to treat drawing as separate for each
+		screen, by looping over the screens and setting up an appropriate OpenGL viewport
+		transformation for each. In this case the example code calls <tt>xlivebg_screen_count</tt> to 
+		determine the number of screens, and inside the loop for each screen, it calls the
+		<tt>xlivebg_gl_viewport</tt> helper to set up the GL viewport.</p>
+
+<code><pre class="code">
+num_scr = xlivebg_screen_count();
+<span class="keyword">for</span>(i=0; i&lt;num_scr; i++) {
+    xlivebg_gl_viewport(i);    <span class="comment">/* set the viewport for each screen */</span>
+
+    <span class="keyword">if</span>((img = xlivebg_bg_image(i))) {    <span class="comment">/* grab the selected background image */</span>
+        <span class="comment">/* compute the transformation necessary to fit the image to screen correctly */</span>
+        xlivebg_calc_image_proj(i, (<span class="keyword">float</span>)img-&gt;width / img-&gt;height, xform);
+        glMatrixMode(GL_PROJECTION);
+        glLoadMatrixf(xform);
+
+        glBindTexture(GL_TEXTURE_2D, img-&gt;tex);
+        glEnable(GL_TEXTURE_2D);
+
+        <span class="comment">/* draw a fullscreen quad with texture coordinates and vertex positions */</span>
+        glBegin(GL_QUADS);
+        <span class="comment">/* ... glVertex2f and glTexCoord2f calls ... */</span>
+        glEnd();
+    }
+}</pre></code>
+
+		<p>The <tt>xlivebg_bg_image</tt> function takes the screen number as an argument,
+		and returns a pointer to a <tt>struct xlivebg_image</tt> structure for the
+		currently selected background image. This structure has a <tt>tex</tt> field with
+		the OpenGL texture id corresponding to this image, which can be used to draw it as a
+		texture-mapped fullscreen quad. Of course not all wallpaper plugins need to use "the
+		background image" if it doens't make sense to do so.</p>
+
+		<p>Another interesting mechanism at play here has to do with how to fit a background
+		image of an arbitrary aspect ratio, to the screen with its own arbitrary aspect
+		ratio in a pleasing manner. The user has the option to select to either stretch the
+		image to fill the whole screen, show the whole image, potentially leaving black (or
+		background-colored) bars if the image aspect ratio doesn't match the screen's, or
+		crop it with a user-controllable zoom and pan factor. To implement all that
+		correctly, xlivebg provides the <tt>xlivebg_calc_image_proj</tt> helper, which
+		returns the projection matrix which can be used to simply draw a fullscreen
+		<tt>[-1, 1]</tt> quad, and have it transformed appropriately to satisfy the fit
+		option. Again for some wallpapers this will not be useful or necessary, but it's
+		convenient if it happens to be applicable.</p>
+
+		<h3><a name="api_ref">xlivebg API reference</a></h3>
+
+		<p>List of all the function provided by the xlivebg API. For more details about the
+		<tt>xlivebg_plugin</tt> structure see the discussion in the pre class="code"vious section, and
+		for everything else refer to the header file itself: <tt>xlivebg.h</tt>.</p>
+
+		<h4><a name="apiref_register_plugin">xlivebg_register_plugin</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_register_plugin(<span class="keyword">struct</span> xlivebg_plugin *plugin)</code>
+
+		<p>Needs to be called by the plugin's <tt>register_plugin</tt> function, to provide
+		the <tt>xlivebg_plugin</tt> structure to the live wallpaper system. See discussion
+		in the pre class="code"vious section for details.</p>
+
+		<p>Returns -1 if plugin registration fails</p>
+
+		<h4><a name="apiref_screen_count">xlivebg_screen_count</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_screen_count(<span class="keyword">void</span>)</code>
+
+		<p>Returns the number of screens covered by the wallpaper window.</p>
+
+		<h4><a name="apiref_screen">xlivebg_screen</a></h4>
+
+		<code><span class="keyword">struct</span> xlivebg_screen *xlivebg_screen(<span class="keyword">int</span> scr_idx)</code>
+
+		<p>Returns a pointer to a sturcture with per-screen information, for the specified
+		screen (0-based index). See the header file for details on the screen structure.</p>
+
+		<h4><a name="apiref_bg_image">xlivebg_bg_image</a></h4>
+
+		<code><span class="keyword">struct</span> xlivebg_image *xlivebg_bg_image(<span class="keyword">int</span> scr_idx)</code>
+
+		<p>Returns a pointer to an <tt>xlivebg_image</tt> structure for the background image
+		selected for this screen (0-based index), or null if no background image is selected.
+		See the header file for details on the	image structure.</p>
+
+		<h4><a name="apiref_anim_mask">xlivebg_anim_mask</a></h4>
+
+		<code><span class="keyword">struct</span> xlivebg_image *xlivebg_anim_mask(<span class="keyword">int</span> scr)</code>
+
+		<p>Returns a pointer to an <tt>xlivebg_image</tt> structure for the selected
+		animation mask. The concept behind the animation mask, is that the user can provide a
+		monochrome image to mask areas of the screen to animate or remain static. What this
+		means for each wallpaper, if anything, is left open. If no animation mask is
+		selected, null is returned.</p>
+
+		<h4><a name="apiref_memory_image">xlivebg_memory_image</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_memory_image(<span class="keyword">struct</span> xlivebg_image *img, <span class="keyword">void</span> *data, long datasz)</code>
+
+		<p>Creates an <tt>xlivebg_image</tt> by parsing an in-memory image file blob. The
+		second argument is the pointer to the memory buffer, while the third argument
+		specifies its size in bytes. Supported file formats: PNG, JPEG, TGA, PPM/PGM,
+		LBM/PBM, RGBE<p>
+
+		<blockquote>Note: To allow this function to be usable without an OpenGL context (callable from
+		<tt>init</tt>), it does not attempt to create the texture corresponding to this
+		image, and therefore the <tt>tex</tt> field will be null. To force the creation of
+		the OpenGL texture before use, make sure to call <tt>xlivebg_image_texture</tt>
+		instead of accessing the <tt>tex</tt> field directly.</blockquote>
+
+		<p>Returns 0 for success, and -1 for failure.</p>
+
+		<h4><a name="apiref_image_texture">xlivebg_image_texture</a></h4>
+
+		<code><span class="keyword">unsigned</span> <span class="keyword">int</span> xlivebg_image_texture(<span class="keyword">struct</span> xlivebg_image *img)</code>
+
+		<p>Returns the OpenGL texture id corresponding to this <tt>xlivebg_image</tt>,
+		making sure to create the OpenGL texture first if it's not already created.</p>
+
+		<h4><a name="apiref_fit_mode">xlivebg_fit_mode</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_fit_mode(<span class="keyword">int</span> scr)</code>
+
+		<p>Returns the selected fit mode for background images:</p>
+		<ul>
+			<li><tt>XLIVEBG_FIT_FULL</tt>: show the full image, leaving background-colored
+				bars if necessary (if the aspect ratio of the image and the screen are not
+				identical)</li>
+			<li><tt>XLIVEBG_FIT_CROP</tt>: crop the image with user-selectable crop and pan
+				(see <tt><a href="#apiref_crop_zoom">xlivebg_crop_zoom</a></tt> and
+				<tt><a href="#apiref_crop_dir">xlivebg_crop_dir</a></tt>).</li>
+			<li><tt>XLIVEBG_FIT_STRETCH</tt>: stretch the image to cover the whole screen,
+				distorting its aspect ratio if necessary.</li>
+		</ul>			
+
+		<h4><a name="apiref_crop_zoom">xlivebg_crop_zoom</a></h4>
+
+		<code><span class="keyword">float</span> xlivebg_crop_zoom(<span class="keyword">int</span> scr)</code>
+
+		<p>Returns the selected zoom factor for the crop fit mode. Typically a value between
+		0 and 1, with 0 being equivalent to the "full" fit mode leaving visible bars if the
+		aspect ratio doesn't match, and 1 being fully zoomed in with no background visible,
+		and a configurable panning for the cropped dimension (see
+		<tt><a href="#apiref_crop_dir">xlivebg_crop_dir</a></tt>).</p>
+
+		<h4><a name="apiref_crop_dir">xlivebg_crop_dir</a></h4>
+
+		<code><span class="keyword">void</span> xlivebg_crop_dir(<span class="keyword">int</span> scr, <span class="keyword">float</span> *dirvec)</code>
+
+		<p>Expects an array of two floats in the second argument, and writes the amount of
+		panning to be used for each direction in case cropping makes it larger than the
+		visible frame.</p>
+
+		<h4><a name="apiref_havecfg">xlivebg_havecfg</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_havecfg(<span class="keyword">const char</span> *cfgpath)</code>
+
+		<p>Takes a configuration property path, and returns 1 if it exists, or 0 if it's not
+		defined. Path example: <tt>xlivebg.stars.count</tt> corresponds to a configuration
+		property defined as</p>
+<code><pre class="code">
+xlivebg {
+    stars {          <span class="comment"># stars wallpaper options</span>
+        count = 100  <span class="comment"># number of stars</span>
+    }
+}</pre class="code"></code>
+
+		<h4><a name="apiref_getcfg_str">xlivebg_getcfg_str</a></h4>
+
+		<code><span class="keyword">const char</span> *xlivebg_getcfg_str(<span class="keyword">const char</span> *cfgpath, <span class="keyword">const char</span> *def_val)</code>
+
+		<p>Returns a pointer to a "string" configuration property. If the property is
+		undefined, <tt>def_val</tt> is returned.</p>
+
+		<h4><a name="apiref_getcfg_num">xlivebg_getcfg_num</a></h4>
+
+		<code><span class="keyword">float</span> xlivebg_getcfg_num(<span class="keyword">const char</span> *cfgpath, <span class="keyword">float</span> def_val)</code>
+
+		<p>Returns the value of a "number" configuration property. If the property is
+		undefined, <tt>def_val</tt> is returned.</p>
+
+		<h4><a name="apiref_getcfg_int">xlivebg_getcfg_int</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_getcfg_int(<span class="keyword">const char</span> *cfgpath, <span class="keyword">int</span> def_val)</code>
+
+		<p>Returns the value of an "integer" configuration property. If the property is
+		undefined, <tt>def_val</tt> is returned.</p>
+
+		<h4><a name="apiref_getcfg_vec">xlivebg_getcfg_vec</a></h4>
+
+		<code><span class="keyword">float</span> *xlivebg_getcfg_vec(<span class="keyword">const char</span> *cfgpath, <span class="keyword">float</span> *def_val)</code>
+
+		<p>Returns a pointer to the value of a "vector" configuration property. If the
+		property is undefined, <tt>def_val</tt> is returned.</p>
+
+		<h4><a name="apiref_setcfg_str">xlivebg_setcfg_str</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_setcfg_str(<span class="keyword">const char</span> *cfgpath, <span class="keyword">const char</span> *str)</code>
+
+		<p>Sets the value of a string configuration property.
+		Returns 0 for success, -1 for failure.</p>
+
+		<h4><a name="apiref_setcfg_num">xlivebg_setcfg_num</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_setcfg_num(<span class="keyword">const char</span> *cfgpath, <span class="keyword">float</span> val)</code>
+
+		<p>Sets the value of a number configuration property. Returns 0 for success, -1 for
+		failure.</p>
+
+		<h4><a name="apiref_setcfg_int">xlivebg_setcfg_int</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_setcfg_int(<span class="keyword">const char</span> *cfgpath, <span class="keyword">int</span> val)</code>
+
+		<p>Sets the value of an integer configuration property. Returns 0 for success, -1
+		for failure.</p>
+
+		<h4><a name="apiref_setcfg_vec">xlivebg_setcfg_vec</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_setcfg_vec(<span class="keyword">const char</span> *cfgpath, <span class="keyword">float</span> *vec)</code>
+
+		<p>Expects a pointer to an array of 4 floats, and sets the value of a vector
+		configuration property. Returns 0 for success, -1 for failure.</p>
+
+		<h4><a name="apiref_rmcfg">xlivebg_rmcfg</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_rmcfg(<span class="keyword">const char</span> *cfgpath)</code>
+
+		<p>Undefines a configuration property. Returns 0 for success, -1 for failure.</p>
+
+		<h4><a name="apiref_defcfg_str">xlivebg_defcfg_str</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_defcfg_str(<span class="keyword">const char</span> *cfgpath, <span class="keyword">const char</span> *str)</code>
+
+		<p>Set the default value of a string configuration property, to be returned by the
+		equivalent "get" function if the property is not defined. Returns 0 for success, -1
+		for failure.</p>
+
+		<h4><a name="apiref_defcfg_num">xlivebg_defcfg_num</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_defcfg_num(<span class="keyword">const char</span> *cfgpath, <span class="keyword">float</span> val)</code>
+
+		<p>Set the default value of a number configuration property, to be returned by the
+		equivalent "get" function if the property is not defined. Returns 0 for success, -1
+		for failure.</p>
+
+		<h4><a name="apiref_defcfg_int">xlivebg_defcfg_int</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_defcfg_int(<span class="keyword">const char</span> *cfgpath, <span class="keyword">int</span> val)</code>
+
+		<p>Set the default value of an integer configuration property, to be returned by the
+		equivalent "get" function if the property is not defined. Returns 0 for success, -1
+		for failure.</p>
+
+		<h4><a name="apiref_defcfg_vec">xlivebg_defcfg_vec</a></h4>
+
+		<code><span class="keyword">int</span> xlivebg_defcfg_vec(<span class="keyword">const char</span> *cfgpath, <span class="keyword">float</span> *vec)</code>
+
+		<p>Expects an array of 4 floats as its second argument, and sets the default value
+		of a vector configuration property, to be returned by the equivalent "get" function
+		if the property is not defined. Returns 0 for success, -1 for failure.</p>
+
+		<h4><a name="apiref_gl_viewport">xlivebg_gl_viewport</a></h4>
+
+		<code><span class="keyword">void</span> xlivebg_gl_viewport(<span class="keyword">int</span> scr_idx)</code>
+
+		<p>Calls <tt>glViewport</tt> to set the viewport transformation which can be used to
+		draw to the specified screen (0-based screen index).</p>
+
+		<h4><a name="apiref_clear">xlivebg_clear</a></h4>
+
+		<code><span class="keyword">void</span> xlivebg_clear(<span class="keyword">unsigned</span> <span class="keyword">int</span> clear_mask)</code>
+
+		<p>Handles clearing the screen according to the background color and mode (solid
+		color, vertical/horizontal gradient) selected by the user. It takes the same
+		argument expected by <tt>glClear</tt>, so that it can clear the depth and stencil
+		buffers at the same time if required.</p>
+
+		<h4><a name="apiref_calc_image_proj">xlivebg_calc_image_proj</a></h4>
+
+		<code><span class="keyword">void</span> xlivebg_calc_image_proj(<span class="keyword">int</span> scr_idx, <span class="keyword">float</span> img_aspect, <span class="keyword">float</span> *xform)</code>
+
+		<p>Takes a screen number, the aspect ratio of the background image, and a pointer to
+		an array of 16 floats, and calculates the projection matrix necessary to transform a
+		fullscreen <tt>[-1, 1]</tt> quad to the screen in a way that conforms to the
+		user-selected fit mode (see <a href="#apiref_fit_mode">xlivebg_fit_mode</a>). This
+		matrix is in OpenGL-native order, and can be passed directly to
+		<tt>glLoadMatrixf</tt> or <tt>glUniformMatrix4f</tt> without transposing it.</p>
+
+		<h4><a name="apiref_gl_image_proj">xlivebg_gl_image_proj</a></h4>
+
+		<code><span class="keyword">void</span> xlivebg_gl_image_proj(<span class="keyword">int</span> scr_idx, <span class="keyword">float</span> img_aspect)</code>
+
+		<p>This is a convenience function, equivalent to:</p>
+<code><pre class="code">
+<span class="keyword">float</span> matrix[16];
+xlivebg_calc_image_prog(scr_idx, aspect_ratio, matrix);
+glMatrixMode(GL_PROJECTION);
+glLoadMatrixf(matrix);</pre class="code"></code>
+
+		<h4><a name="apiref_mouse_pos">xlivebg_mouse_pos</a></h4>
+
+		<code><span class="keyword">void</span> xlivebg_mouse_pos(<span class="keyword">int</span> *mx, <span class="keyword">int</span> *my)</code>
+
+		<p>Returns the current mouse position in pixels, through the <tt>mx</tt> and
+		<tt>my</tt> pointer arguments.</p>
+
+		<hr/> <!-- SECTION FAQ -->
+		<h2><a name="faq">Frequently Asked Questions</a></h2>
+
+		<h3><a name="faq1">1. I'm running a standalone compositor (like xcompmgr), and
+				xlivebg does nothing, or produces a corrupted picture</a></h3>
+		<p>Try passing the <tt><code>-n</code></tt> option to xlivebg, to instruct it to create
+		its own "desktop" window, instead of trying to draw on the root or virtual root.</p>
 	</body>
 </html>

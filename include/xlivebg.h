@@ -66,17 +66,17 @@ struct xlivebg_image {
 };
 
 struct xlivebg_screen {
-	int x, y, width, height;
-	int root_width, root_height;
-	int phys_width, phys_height;
-	float aspect;
+	int x, y, width, height;		/* screen offset and dimensions */
+	int root_width, root_height;	/* dimensions of the X root window */
+	int phys_width, phys_height;	/* physical dimensions of the display */
+	float aspect;					/* aspect ratio (width / height) */
 
-	char *name;
+	char *name;						/* screen name (if available) */
 
 	struct xlivebg_image *bgimg;
 	int num_bgimg;
 
-	int vport[4];
+	int vport[4];		/* OpenGL viewport to use for drawing to this screen */
 };
 
 struct xlivebg_plugin {
@@ -93,14 +93,25 @@ struct xlivebg_plugin {
 	void *data, *so;
 };
 
+/* Needs to be called by the plugin's register_plugin function, to provide the
+ * xlivebg_plugin structure to the live wallpaper system.
+ */
 int xlivebg_register_plugin(struct xlivebg_plugin *plugin);
 
 int xlivebg_screen_count(void);
 struct xlivebg_screen *xlivebg_screen(int idx);
 
+/* xlivebg_bg_image and xlivebg_anim_mask, return the selected background image
+ * or animation mask (image) for the requested screen, or null if no image is
+ * selected.
+ */
 struct xlivebg_image *xlivebg_bg_image(int scr);
 struct xlivebg_image *xlivebg_anim_mask(int scr);
 
+/* xlivebg_memory_image creates an xlivebg_image by parsing an image file blob
+ * provided in a memory buffer starting from data, with size datasz (in bytes).
+ * Supported formats: PNG, JPEG, TGA, PPM/PGM, LBM/PBM, RGBE
+ */
 int xlivebg_memory_image(struct xlivebg_image *img, void *data, long datasz);
 unsigned int xlivebg_image_texture(struct xlivebg_image *img);
 

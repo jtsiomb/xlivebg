@@ -1,5 +1,5 @@
 body {
-	background-color: #1a1a1a;
+	background-color: #1f1f1f;
 	color: #ccc;
 	font-family: "Palatino", Georgia, serif;
 	font-size: large;
@@ -12,9 +12,9 @@ p {
 	text-align: justify;
 }
 
-h1, h2 {
+h1, h2, h3, h4 {
 	font-family: sans-serif;
-	/*text-shadow: 3px 3px 3px black;*/
+	text-shadow: 3px 3px 3px black;
 }
 
 img {
@@ -38,9 +38,10 @@ code, pre.code, tt {
 	font-family: monospace;
 }
 
-pre.code .comment { color: #9db; }
-pre.code .keyword { color: #d93; }
-pre.code .literal.string { color: #d88; }
+code .comment, pre.code .comment { color: #9db; }
+code .keyword, pre.code .keyword { color: #fa7; }
+code .string, pre.code .string { color: #c54; }
+code .string, pre.code .pp { color: #b26; }
 
 a:link { color: #d22; }
 a:visited { color: #a22; }
@@ -50,6 +51,7 @@ a:active { color: #fa0; }
 h1 { color: #9bd; }
 h2 { color: #79b; }
 h3 { color: #bd9; }
+h4 { color: #dac; }
 .title { color: #db9; }
 .center { text-align: center; }
 
