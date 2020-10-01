@@ -553,12 +553,13 @@ Commands:
 }</pre></code>
 
 		<p>The <tt>start</tt> function is usually where you create any OpenGL objects you're going to
-		need, such as textures, shaders, and so on. In this case the only thing it does is
+		need, such as textures, shaders, and so on. It should return 0 for success, or -1
+		for failure. In the case of the minimal plugin, the only thing it does is
 		to retrieve the current value of the "speed" configuration option, indirectly by
 		calling the <tt>prop</tt> function manually, which otherwise would only be called if
 		that value changes externally:</p>
 <code><pre class="code">
-<span class="keyword">static void</span> start(<span class="keyword">long</span> tmsec, <span class="keyword">void</span> *cls)
+<span class="keyword">static int</span> start(<span class="keyword">long</span> tmsec, <span class="keyword">void</span> *cls)
 {
 	 prop(<span class="string">"speed"</span>, 0);
 }
