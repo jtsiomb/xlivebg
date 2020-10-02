@@ -25,13 +25,35 @@ guide for writing live wallpapers, refer to the manual:
 http://nuclear.mutantstargoat.com/sw/xlivebg/manual
 Also available under the `doc` directory in the source tree.
 
+  - Project website: http://nuclear.mutantstargoat.com/sw/xlivebg
+  - Source code repository: https://github.com/jtsiomb/xlivebg
+  - Latest release (1.0): http://nuclear.mutantstargoat.com/sw/xlivebg/releases/xlivebg-1.0.tar.gz
+
 License
 -------
 Copyright (C) 2019-2020 John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software, feel free to use, modify and/or redistribute it
 under the terms of the GNU General Public License version 3, or at your option
-any later version published by the Free Software Foundation.
+any later version published by the Free Software Foundation. See COPYING for
+details.
+
+Contact
+-------
+For bug reports, head over to the github issues page:
+https://github.com/jtsiomb/xlivebg/issues
+
+For xlivebg-related discussion, support questions, development, bug reports,
+feature requests, and patches, feel free to join the xlivebg mailing list:
+  - Subscribe: xlivebg-subscribe@mutantstargoat.com
+  - Post: xlivebg@mutantstargoat.com
+
+Mailing list rules: no large attachments, no html emails, no top-posting. Send
+only plain text emails,	hard-wrapped at 72 columns. Replies should quote only
+the relevant part of the previous message, and respond immediately under it
+
+For anything else, feel free to contact me at: nuclear@member.fsf.org. Only
+plain-text emails, hard-wrapped at 72-columns will be accepted.
 
 FAQ
 ---
