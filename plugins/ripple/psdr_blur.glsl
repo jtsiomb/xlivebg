@@ -20,7 +20,7 @@ void main()
 		lookup(uv - vec2(delta.x, 0.0)) +
 		lookup(uv + vec2(0.0, delta.y)) +
 		lookup(uv - vec2(0.0, delta.y));
-	float val = (tsum / 2.0 - (texture2D(dest, uv).x * 2.0 - 1.0)) * 0.95;
+	float val = (tsum / 2.0 - (texture2D(dest, uv).x * 2.0 - 1.0)) * 0.94;
 
 	gl_FragColor = outcol(val);
 }

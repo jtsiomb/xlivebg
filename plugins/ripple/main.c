@@ -266,6 +266,9 @@ static void update_ripple(long time_msec)
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glViewport(0, 0, scr_width / TEX_SIZE_DIV, scr_height / TEX_SIZE_DIV);
 
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
 	/* draw any new drops in the previous buffer first */
 	if(mouse_moved || pending_drops >= 1.0f) {
 		/*float dx = mpos[0] - prev_mpos[0];
