@@ -62,14 +62,15 @@ static unsigned int fbo;
 static unsigned int ripple_tex[3];
 static unsigned int blobtex, dummy_mask_tex;
 static unsigned int frame;
-static unsigned int sdr_blur, sdr_vis;
+static unsigned int sdr_waves, sdr_vis;
 static int blur_delta_loc;
 
 static float mpos[2], prev_mpos[2];
 static float rain_rate, pending_drops;
 static long prev_upd;
 
-extern const char ripple_vsdr, ripple_blur_psdr, ripple_psdr;
+extern const char ripple_vsdr, ripple_psdr;
+extern const char ripple_waves_vsdr, ripple_waves_psdr;
 
 #define BLOBTEX_SIZE	64
 #define TEX_SRC		(frame & 1)
@@ -116,14 +117,14 @@ static int start(long time_msec, void *cls)
 		glUniform1i(loc, 2);
 	}
 
-	if(!(sdr_blur = create_sdrprog(&ripple_vsdr, &ripple_blur_psdr))) {
+	if(!(sdr_waves = create_sdrprog(&ripple_waves_vsdr, &ripple_waves_psdr))) {
 		glUseProgram(0);
 		glDeleteProgram(sdr_vis);
 		return -1;
 	}
-	glUseProgram(sdr_blur);
-	blur_delta_loc = glGetUniformLocation(sdr_blur, "delta");
-	if((loc = glGetUniformLocation(sdr_blur, "dest")) >= 0) {
+	glUseProgram(sdr_waves);
+	blur_delta_loc = glGetUniformLocation(sdr_waves, "delta");
+	if((loc = glGetUniformLocation(sdr_waves, "dest")) >= 0) {
 		glUniform1i(loc, 1);
 	}
 
@@ -204,7 +205,7 @@ static void stop(void *cls)
 		fbo = 0;
 	}
 	if(sdr_vis) glDeleteProgram(sdr_vis);
-	if(sdr_blur) glDeleteProgram(sdr_blur);
+	if(sdr_waves) glDeleteProgram(sdr_waves);
 }
 
 static void prop(const char *prop, void *cls)
@@ -235,7 +236,7 @@ static void resize(int x, int y)
 				0, GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels);
 	}
 
-	glUseProgram(sdr_blur);
+	glUseProgram(sdr_waves);
 	glUniform2f(blur_delta_loc, (float)TEX_SIZE_DIV / x, (float)TEX_SIZE_DIV / y);
 }
 
@@ -265,9 +266,6 @@ static void update_ripple(long time_msec)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glViewport(0, 0, scr_width / TEX_SIZE_DIV, scr_height / TEX_SIZE_DIV);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
 
 	/* draw any new drops in the previous buffer first */
 	if(mouse_moved || pending_drops >= 1.0f) {
@@ -311,7 +309,7 @@ static void update_ripple(long time_msec)
 	glBindTexture(GL_TEXTURE_2D, ripple_tex[TEX_AUX]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, ripple_tex[TEX_SRC]);
-	glUseProgram(sdr_blur);
+	glUseProgram(sdr_waves);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0, 0);
@@ -348,6 +346,9 @@ static void draw(long time_msec, void *cls)
 
 	update_ripple(time_msec);
 
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.5f);
+
 	glUseProgram(sdr_vis);
 	/* use the destination of the blur from update_ripple as texture 1*/
 	glActiveTexture(GL_TEXTURE2);
@@ -361,14 +362,21 @@ static void draw(long time_msec, void *cls)
 		if((img = xlivebg_bg_image(i)) && img->tex) {
 			struct xlivebg_image *amask = xlivebg_anim_mask(i);
 
-			xlivebg_calc_image_proj(i, (float)img->width / img->height, xform);
-			glMatrixMode(GL_PROJECTION);
-			glLoadMatrixf(xform);
-
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, amask ? amask->tex : dummy_mask_tex);
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, img->tex);
+
+
+			xlivebg_calc_image_proj(i, (float)img->width / img->height, xform);
+			/* cheap-invert the matrix to apply it to the texture coordinates */
+			xform[0] = 1.0f / xform[0];
+			xform[5] = 1.0f / xform[5];
+			xform[12] = -xform[12] * xform[0];
+			xform[13] = -xform[13] * xform[5];
+
+			glMatrixMode(GL_TEXTURE);
+			glLoadMatrixf(xform);
 
 			uoffs = (float)scr->x / scr->root_width;
 			voffs = (float)scr->y / scr->root_height;
@@ -397,6 +405,7 @@ static void draw(long time_msec, void *cls)
 	}
 
 	glUseProgram(0);
+	glDisable(GL_ALPHA_TEST);
 }
 
 static unsigned int create_shader(const char *src, unsigned int type)
