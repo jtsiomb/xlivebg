@@ -184,6 +184,8 @@ static int start(long time_msec, void *cls)
 	/* initialize the first texture to 0.5 (which maps to 0 in the wave calculation) */
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	glAlphaFunc(GL_GREATER, 0.5f);	/* using alpha-testing for non-stretch fits */
+
 	prop("raindrops", 0);
 
 	pending_drops = 0;
@@ -347,7 +349,6 @@ static void draw(long time_msec, void *cls)
 	update_ripple(time_msec);
 
 	glEnable(GL_ALPHA_TEST);
-	glAlphaFunc(GL_GREATER, 0.5f);
 
 	glUseProgram(sdr_vis);
 	/* use the destination of the blur from update_ripple as texture 1*/
