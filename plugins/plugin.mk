@@ -5,8 +5,9 @@ so = $(name).so
 
 proj_root = ../..
 
-CFLAGS = -pedantic -Wall -g -O3 -ffast-math -fPIC -I$(proj_root)/include $(plugin_cflags)
-LDFLAGS = $(plugin_ldflags)
+CFLAGS = -pedantic -Wall -g -O3 -ffast-math -fPIC -I$(proj_root)/include \
+		 $(CFLAGS_cfg) $(plugin_cflags)
+LDFLAGS = $(LDFLAGS_cfg) $(plugin_ldflags)
 
 $(so): $(obj)
 	$(CC) -o $@ -shared $(obj) $(LDFLAGS)

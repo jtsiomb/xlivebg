@@ -1,4 +1,6 @@
 export PREFIX
+export CFLAGS_cfg
+export LDFLAGS_cfg
 name = xlivebg
 
 src = $(wildcard src/*.c)

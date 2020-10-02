@@ -23,7 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #if defined(__WATCOMC__) || defined(_MSC_VER)
 #include <malloc.h>
 #else
+#ifndef __FreeBSD__
 #include <alloca.h>
+#endif
 #endif
 #include "imagelbm.h"
 

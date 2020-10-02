@@ -9,8 +9,8 @@ warn = -Wall -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 def = -DMINIGLUT_USE_LIBC
 inc = -I../libs/treestore/src
 
-CFLAGS = $(warn) -g -MMD $(def) $(inc)
-LDFLAGS = ../libs/treestore/libtreestore.a -lXm -lXt -lX11 -lGL -lm
+CFLAGS = $(warn) -g -MMD $(def) $(inc) $(CFLAGS_cfg)
+LDFLAGS = $(LDFLAGS_cfg) ../libs/treestore/libtreestore.a -lXm -lXt -lX11 -lGL -lm
 
 $(bin): $(obj)
 	$(CC) -o $@ $(obj) $(LDFLAGS)

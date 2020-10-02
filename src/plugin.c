@@ -19,7 +19,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#ifndef __FreeBSD__
 #include <alloca.h>
+#endif
 #include <unistd.h>
 #include <dirent.h>
 #include <dlfcn.h>

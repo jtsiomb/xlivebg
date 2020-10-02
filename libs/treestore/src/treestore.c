@@ -8,7 +8,9 @@
 #ifdef WIN32
 #include <malloc.h>
 #else
+#ifndef __FreeBSD__
 #include <alloca.h>
+#endif
 #endif
 
 struct ts_node *ts_text_load(struct ts_io *io);

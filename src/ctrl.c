@@ -20,7 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#ifndef __FreeBSD__
 #include <alloca.h>
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
