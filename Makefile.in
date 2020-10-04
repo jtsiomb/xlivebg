@@ -30,7 +30,7 @@ clean:
 	rm -f $(obj) $(bin)
 
 .PHONY: clean-all
-clean-all: clean clean-plugins clean-gui
+clean-all: clean clean-libs clean-plugins clean-gui
 
 .PHONY: install
 install: $(bin)
@@ -79,7 +79,7 @@ libs:
 
 .PHONY: clean-libs
 clean-libs:
-	$(MAKE) -C libs
+	$(MAKE) -C libs clean
 
 
 # ---- GUI rules ----
