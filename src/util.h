@@ -27,6 +27,7 @@ struct color {
 
 char *get_home_dir(void);
 char *get_config_path(void);
+char *get_save_config_path(void);
 
 int get_num_outputs(Display *dpy);
 void get_output(Display *dpy, int idx, struct xlivebg_screen *scr);

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "treestore.h"
 #include "cfg.h"
+#include "util.h"
 
 struct cfg cfg;
 char *cfgpath;
@@ -22,6 +23,7 @@ void init_cfg(void)
 	if(!(cfgpath = get_config_path())) {
 		if(!(ts = ts_alloc_node()) || !(ts->name = strdup("xlivebg"))) {
 			fprintf(stderr, "failed to create root config node\n");
+			ts_free_node(ts);
 			return;
 		}
 		return;
@@ -76,7 +78,7 @@ void init_cfg(void)
 
 int save_cfg(const char *fname)
 {
-	return ts_save(cfg.ts, fname ? fname : cfgpath);
+	return ts_save(cfg.ts, fname ? fname : get_save_config_path());
 }
 
 int cfg_parse_fit(const char *str)

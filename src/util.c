@@ -26,7 +26,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #endif
 #include "util.h"
 
-static char *homedir, *cfgfile;
+static char *homedir;
+
+static const char *cfgpath_fmt[] = {
+	"%s/.xlivebg/config",
+	"%s/.config/xlivebg.conf",
+	"/etc/xlivebg.conf",
+	0
+};
 
 char *get_home_dir(void)
 {
@@ -52,38 +59,46 @@ char *get_home_dir(void)
 	return homedir;
 }
 
-char *get_config_path(void)
+char *get_save_config_path(void)
 {
-	FILE *fp;
-	char *fname = 0;
+	static char *fname;
 	char *home = get_home_dir();
 
-	if(!cfgfile) {
+	if(!fname) {
+		if(!(fname = malloc(strlen(home) + strlen(cfgpath_fmt[1]) + 1))) {
+			perror("get_save_config_path: malloc failed");
+			return 0;
+		}
+	}
+
+	sprintf(fname, cfgpath_fmt[1], home);
+	return fname;
+}
+
+char *get_config_path(void)
+{
+	int i;
+	FILE *fp;
+	static char *fname;
+	char *home = get_home_dir();
+
+	if(!fname) {
 		if(!(fname = malloc(strlen(home) + 32))) {
 			perror("get_config_path: malloc failed");
 			return 0;
 		}
-
-		sprintf(fname, "%s/.xlivebg/config", home);
-		if((fp = fopen(fname, "r"))) {
-			fclose(fp);
-			goto done;
-		}
-		sprintf(fname, "%s/.config/xlivebg.conf", home);
-		if((fp = fopen(fname, "r"))) {
-			fclose(fp);
-			goto done;
-		}
-		sprintf(fname, "/etc/xlivebg.conf");
-		if((fp = fopen(fname, "r"))) {
-			fclose(fp);
-			goto done;
-		}
-
-done:	cfgfile = fname;
 	}
 
-	return cfgfile;
+	for(i=0; cfgpath_fmt[i]; i++) {
+		sprintf(fname, cfgpath_fmt[i], home);
+		if((fp = fopen(fname, "r"))) {
+			fclose(fp);
+			return fname;
+		}
+	}
+
+	free(fname);
+	return 0;
 }
 
 
