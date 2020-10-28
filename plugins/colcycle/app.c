@@ -198,11 +198,11 @@ static int32_t cycle_offset(enum cycle_mode mode, int32_t rate, int32_t rsize, i
 #define CALC_TIME(res, anim_rate, time_msec) \
 	asm volatile ( \
 		"\n\tmull %1"	/* edx:eax <- eax(rate << 8) * msec */ \
-		"\n\tmovl $280000, %%ebx" \
-		"\n\tdivl %%ebx"	/* eax <- edx:eax / ebx */ \
+		"\n\tmovl $280000, %%ecx" \
+		"\n\tdivl %%ecx"	/* eax <- edx:eax / ebx */ \
 		: "=a" (res) \
 		: "g" ((uint32_t)(time_msec)), "a" ((anim_rate) << 8) \
-		: "ebx", "edx" )
+		: "ecx", "edx" )
 #endif	/* __GNUC__ */
 
 #ifdef __WATCOMC__
