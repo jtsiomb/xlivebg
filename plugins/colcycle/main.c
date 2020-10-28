@@ -146,7 +146,9 @@ static int start(long msec, void *cls)
 	argv[1] = (char*)xlivebg_getcfg_str("xlivebg.colcycle.image", argv[1]);
 	if(argv[1] && !*argv[1]) argv[1] = 0;
 
-	init_glext();
+	if(init_glext() == -1) {
+		return -1;
+	}
 
 	fbwidth = 640;
 	fbheight = 480;
@@ -357,10 +359,18 @@ static int init_glext(void)
 	XWindowAttributes wattr;
 	Display *dpy = glXGetCurrentDisplay();
 	Window win = glXGetCurrentDrawable();
-	int scr;
+	int scr, glver;
 
 	if(init_done) return 0;
 	init_done = 1;
+
+	glver = atoi((char*)glGetString(GL_VERSION));
+	if(glver < 2) {
+		extstr = (char*)glGetString(GL_EXTENSIONS);
+		if(!strstr(extstr, "GL_ARB_fragment_shader")) {
+			return -1;
+		}
+	}
 
 	XGetWindowAttributes(dpy, win, &wattr);
 	scr = XScreenNumberOfScreen(wattr.screen);
