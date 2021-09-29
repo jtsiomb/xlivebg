@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 	if(!(app_shell = XtVaOpenApplication(&app, "xlivebg-gui", 0, 0, &argc, argv,
 					0, sessionShellWidgetClass, (void*)0))) {
 		fprintf(stderr, "failed to initialize ui\n");
-		return -1;
+		return 1;
 	}
 	XtVaSetValues(app_shell, XmNtitle, "xlivebg configuration", (void*)0);
 	XtVaSetValues(app_shell, XmNallowShellResize, True, (void*)0);
