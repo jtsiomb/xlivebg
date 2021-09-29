@@ -109,8 +109,8 @@ static int read_body_pbm(struct img_io *io, struct bitmap_header *bmhd, struct i
 static int read_compressed_scanline(struct img_io *io, unsigned char *scanline, int width);
 
 #ifdef IMAGO_LITTLE_ENDIAN
-static uint16_t swap16(uint16_t x);
-static uint32_t swap32(uint32_t x);
+static uint16_t img_swap16(uint16_t x);
+static uint32_t img_swap32(uint32_t x);
 #endif
 
 
@@ -181,8 +181,8 @@ static int read_header(struct img_io *io, struct chdr *hdr)
 		return -1;
 	}
 #ifdef IMAGO_LITTLE_ENDIAN
-	hdr->id = swap32(hdr->id);
-	hdr->size = swap32(hdr->size);
+	hdr->id = img_swap32(hdr->id);
+	hdr->size = img_swap32(hdr->size);
 #endif
 	return 0;
 }
@@ -305,13 +305,13 @@ static int read_bmhd(struct img_io *io, struct bitmap_header *bmhd)
 		return -1;
 	}
 #ifdef IMAGO_LITTLE_ENDIAN
-	bmhd->width = swap16(bmhd->width);
-	bmhd->height = swap16(bmhd->height);
-	bmhd->xoffs = swap16(bmhd->xoffs);
-	bmhd->yoffs = swap16(bmhd->yoffs);
-	bmhd->colorkey = swap16(bmhd->colorkey);
-	bmhd->pgwidth = swap16(bmhd->pgwidth);
-	bmhd->pgheight = swap16(bmhd->pgheight);
+	bmhd->width = img_swap16(bmhd->width);
+	bmhd->height = img_swap16(bmhd->height);
+	bmhd->xoffs = img_swap16(bmhd->xoffs);
+	bmhd->yoffs = img_swap16(bmhd->yoffs);
+	bmhd->colorkey = img_swap16(bmhd->colorkey);
+	bmhd->pgwidth = img_swap16(bmhd->pgwidth);
+	bmhd->pgheight = img_swap16(bmhd->pgheight);
 #endif
 	return 0;
 }
@@ -322,8 +322,8 @@ static int read_crng(struct img_io *io, struct crng *crng)
 		return -1;
 	}
 #ifdef IMAGO_LITTLE_ENDIAN
-	crng->rate = swap16(crng->rate);
-	crng->flags = swap16(crng->flags);
+	crng->rate = img_swap16(crng->rate);
+	crng->flags = img_swap16(crng->flags);
 #endif
 	return 0;
 }
@@ -442,12 +442,12 @@ static int read_compressed_scanline(struct img_io *io, unsigned char *scanline, 
 }
 
 #ifdef IMAGO_LITTLE_ENDIAN
-static uint16_t swap16(uint16_t x)
+static uint16_t img_swap16(uint16_t x)
 {
 	return (x << 8) | (x >> 8);
 }
 
-static uint32_t swap32(uint32_t x)
+static uint32_t img_swap32(uint32_t x)
 {
 	return (x << 24) | ((x & 0xff00) << 8) | ((x & 0xff0000) >> 8) | (x >> 24);
 }
