@@ -16,7 +16,7 @@ LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_cfg) $(LDFLAGS_xrandr) -lX11 -lXext -lGL
 	$(libdl) -limago -ltreestore -lpng -ljpeg -lz
 
 .PHONY: all
-all: $(bin) plugins gui doc
+all: $(bin) plugins $(gui_target) doc
 
 # download test image
 bgimage.jpg:

@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199900
 #include <stdint.h>
 #else
-#include <sys/types.h>
+#include <inttypes.h>
 #endif
 #include "imago2.h"
 

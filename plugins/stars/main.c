@@ -303,7 +303,6 @@ static void draw_stars(long tmsec)
 	ssize = star_size * 0.035f;
 
 	vptr = varr;
-	//glBegin(GL_QUADS);
 	for(i=0; i<star_count; i++) {
 		pos = star[i].pos;
 		z = fmod(pos.z + tsec * star_speed, STAR_DEPTH);
@@ -338,7 +337,6 @@ static void draw_stars(long tmsec)
 		TEXCOORD(0, 0);
 		VERTEX(x0, y0, pos.z - ssize * 16.0);
 	}
-	//glEnd();
 
 	glInterleavedArrays(GL_T2F_C4UB_V3F, 0, varr);
 	glDrawElements(GL_TRIANGLES, star_count * 6, GL_UNSIGNED_SHORT, iarr);
@@ -346,7 +344,6 @@ static void draw_stars(long tmsec)
 	vptr = varr;
 	glBindTexture(GL_TEXTURE_2D, xlivebg_image_texture(&pimg));
 	sz = ssize * 4.0;
-	//glBegin(GL_QUADS);
 	for(i=0; i<star_count; i++) {
 		pos = star[i].pos;
 		z = fmod(pos.z + tsec * star_speed, STAR_DEPTH);
@@ -363,7 +360,6 @@ static void draw_stars(long tmsec)
 		TEXCOORD(0, 1);
 		VERTEX(pos.x - sz, pos.y + sz, pos.z - ssize);
 	}
-	//glEnd();
 	glDrawElements(GL_TRIANGLES, star_count * 6, GL_UNSIGNED_SHORT, iarr);
 
 	glDisableClientState(GL_VERTEX_ARRAY_POINTER);

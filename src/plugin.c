@@ -164,6 +164,7 @@ void activate_plugin(struct xlivebg_plugin *plugin)
 			fprintf(stderr, "xlivebg: plugin %s failed to start\n", plugin->name);
 			if(act && act != plugin) {
 				activate_plugin(act);
+				return;
 			}
 		}
 	}
