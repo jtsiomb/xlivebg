@@ -7,7 +7,8 @@ images= \
 	img/guishot.png \
 	img/stars.jpg \
 	img/stars-thumb.png \
-	img/ui_anim_mask.png
+	img/ui_anim_mask.png \
+	img/distlogo_arch.png
 
 .PHONY: all
 all: $(images)
