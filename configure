@@ -82,6 +82,10 @@ else
 	echo 'dbg = -DNDEBUG' >>Makefile
 fi
 
+if [ `uname -s` != OpenBSD ]; then
+	echo 'libdl = -ldl' >>Makefile
+fi
+
 if $have_xrandr; then
 	echo 'CFLAGS_xrandr = -DHAVE_XRANDR' >>Makefile
 	echo 'LDFLAGS_xrandr = -lXrandr' >>Makefile

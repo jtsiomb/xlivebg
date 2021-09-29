@@ -13,7 +13,7 @@ libdir = -Llibs/imago -Llibs/treestore -L/usr/local/lib
 CFLAGS = -std=gnu89 -pedantic -Wall $(dbg) $(opt) -DPREFIX=\"$(PREFIX)\" \
 	$(CFLAGS_cfg) $(CFLAGS_xrandr) $(incdir)
 LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_cfg) $(LDFLAGS_xrandr) -lX11 -lXext -lGL \
-	-ldl -limago -ltreestore -lpng -ljpeg -lz
+	$(libdl) -limago -ltreestore -lpng -ljpeg -lz
 
 .PHONY: all
 all: $(bin) plugins gui doc
