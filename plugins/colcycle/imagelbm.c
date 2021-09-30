@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #if defined(__WATCOMC__) || defined(_MSC_VER)
 #include <malloc.h>
 #else
-#ifndef __FreeBSD__
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <alloca.h>
 #endif
 #endif
@@ -109,8 +109,8 @@ static int read_body_pbm(FILE *fp, struct bitmap_header *bmhd, struct image *img
 static int read_compressed_scanline(FILE *fp, unsigned char *scanline, int width);
 static int read16(FILE *fp, uint16_t *res);
 static int read32(FILE *fp, uint32_t *res);
-static uint16_t swap16(uint16_t x);
-static uint32_t swap32(uint32_t x);
+static uint16_t bswap16(uint16_t x);
+static uint32_t bswap32(uint32_t x);
 
 int file_is_lbm(FILE *fp)
 {
@@ -139,7 +139,7 @@ void print_chunkid(uint32_t id)
 {
 	char str[5] = {0};
 #ifdef LENDIAN
-	id = swap32(id);
+	id = bswap32(id);
 #endif
 	memcpy(str, &id, 4);
 	puts(str);
@@ -181,8 +181,8 @@ static int read_header(FILE *fp, struct chdr *hdr)
 		return -1;
 	}
 #ifdef LENDIAN
-	hdr->id = swap32(hdr->id);
-	hdr->size = swap32(hdr->size);
+	hdr->id = bswap32(hdr->id);
+	hdr->size = bswap32(hdr->size);
 #endif
 	return 0;
 }
@@ -297,13 +297,13 @@ static int read_bmhd(FILE *fp, struct bitmap_header *bmhd)
 		return -1;
 	}
 #ifdef LENDIAN
-	bmhd->width = swap16(bmhd->width);
-	bmhd->height = swap16(bmhd->height);
-	bmhd->xoffs = swap16(bmhd->xoffs);
-	bmhd->yoffs = swap16(bmhd->yoffs);
-	bmhd->colorkey = swap16(bmhd->colorkey);
-	bmhd->pgwidth = swap16(bmhd->pgwidth);
-	bmhd->pgheight = swap16(bmhd->pgheight);
+	bmhd->width = bswap16(bmhd->width);
+	bmhd->height = bswap16(bmhd->height);
+	bmhd->xoffs = bswap16(bmhd->xoffs);
+	bmhd->yoffs = bswap16(bmhd->yoffs);
+	bmhd->colorkey = bswap16(bmhd->colorkey);
+	bmhd->pgwidth = bswap16(bmhd->pgwidth);
+	bmhd->pgheight = bswap16(bmhd->pgheight);
 #endif
 	return 0;
 }
@@ -314,8 +314,8 @@ static int read_crng(FILE *fp, struct crng *crng)
 		return -1;
 	}
 #ifdef LENDIAN
-	crng->rate = swap16(crng->rate);
-	crng->flags = swap16(crng->flags);
+	crng->rate = bswap16(crng->rate);
+	crng->flags = bswap16(crng->flags);
 #endif
 	return 0;
 }
@@ -438,7 +438,7 @@ static int read16(FILE *fp, uint16_t *res)
 		return -1;
 	}
 #ifdef LENDIAN
-	*res = swap16(*res);
+	*res = bswap16(*res);
 #endif
 	return 0;
 }
@@ -449,17 +449,17 @@ static int read32(FILE *fp, uint32_t *res)
 		return -1;
 	}
 #ifdef LENDIAN
-	*res = swap32(*res);
+	*res = bswap32(*res);
 #endif
 	return 0;
 }
 
-static uint16_t swap16(uint16_t x)
+static uint16_t bswap16(uint16_t x)
 {
 	return (x << 8) | (x >> 8);
 }
 
-static uint32_t swap32(uint32_t x)
+static uint32_t bswap32(uint32_t x)
 {
 	return (x << 24) | ((x & 0xff00) << 8) | ((x & 0xff0000) >> 8) | (x >> 24);
 }

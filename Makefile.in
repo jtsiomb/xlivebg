@@ -7,8 +7,9 @@ src = $(wildcard src/*.c)
 obj = $(src:.c=.o)
 bin = $(name)
 
-incdir = -Isrc -Iinclude -Ilibs/imago/src -Ilibs/treestore/src -I/usr/local/include
-libdir = -Llibs/imago -Llibs/treestore -L/usr/local/lib
+incdir = -Isrc -Iinclude -Ilibs/imago/src -Ilibs/treestore/src -I/usr/local/include \
+		 -I/usr/X11R6/include
+libdir = -Llibs/imago -Llibs/treestore -L/usr/local/lib -L/usr/X11R6/lib
 
 CFLAGS = -std=gnu89 -pedantic -Wall $(dbg) $(opt) -DPREFIX=\"$(PREFIX)\" \
 	$(CFLAGS_cfg) $(CFLAGS_xrandr) $(incdir)
@@ -16,7 +17,7 @@ LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_cfg) $(LDFLAGS_xrandr) -lX11 -lXext -lGL
 	$(libdl) -limago -ltreestore -lpng -ljpeg -lz
 
 .PHONY: all
-all: $(bin) plugins $(gui_target) doc
+all: $(bin) plugins $(gui_target)
 
 # download test image
 bgimage.jpg:

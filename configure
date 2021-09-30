@@ -52,7 +52,8 @@ done
 
 check_header()
 {
-	if echo "#include <$2>" | cpp $CFLAGS >/dev/null 2>&1; then
+	definc='-I/usr/local/include -I/usr/X11R6/include'
+	if echo "#include <$2>" | cpp $definc $CFLAGS >/dev/null 2>&1; then
 		echo "Looking for $2 ... OK"
 		eval have_$1=true
 		return 0

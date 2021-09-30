@@ -8,7 +8,7 @@
 #ifdef WIN32
 #include <malloc.h>
 #else
-#ifndef __FreeBSD__
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <alloca.h>
 #endif
 #endif
