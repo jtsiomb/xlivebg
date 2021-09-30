@@ -57,8 +57,9 @@ plain-text emails, hard-wrapped at 72-columns will be accepted.
 
 FAQ
 ---
-1. Q: I'm running a standalone compositor (like `xcompmgr`), and xlivebg does
-      nothing, or produces a corrupted picture.
+1. Q: I'm running xlivebg and nothing happens. I'm still seeing the previous
+      desktop wallpaper, a black screen, or a corrupted/broken screen.
 
-   A: Try passing the `-n` option to xlivebg, to instruct it to create its own
-      "desktop" window, instead of trying to draw on the root or virtual root.
+   A: Try passing the `-n` option to xlivebg. This forces xlivebg to create its
+      own "desktop" window, instead of trying to draw on the root or virtual
+      root window.
