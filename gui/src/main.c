@@ -264,7 +264,7 @@ static void create_menu(void)
 
 	sabout = XmStringCreateSimple("About");
 	XmVaCreateSimplePulldownMenu(menubar, "helpmenu", 1, help_menu_handler,
-			XmVaPUSHBUTTON, sabout, 'A', 0, 0, (void*)0);
+			XmVaPUSHBUTTON, sabout, 'A', (void*)0, (void*)0, (void*)0);
 	XmStringFree(sabout);
 }
 
