@@ -1,4 +1,4 @@
-// Perlin noise code taken from John @nowl gist: https://gist.github.com/nowl/828013
+/* Perlin noise code taken from John @nowl gist: https://gist.github.com/nowl/828013 */
 
 int noise2(int x, int y);
 float lin_inter(float x, float y, float s);

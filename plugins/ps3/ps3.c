@@ -1,6 +1,6 @@
 /*
 xlivebg - live wallpapers for the X window system
-Copyright (C) 2019-2020  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2019-2021  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -15,18 +15,27 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+/* Plugin author: mdecicco */
 #define GL_GLEXT_PROTOTYPES
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#if defined(__WATCOMC__) || defined(_MSC_VER)
+#include <malloc.h>
+#else
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
+#include <alloca.h>
+#endif
+#endif
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "xlivebg.h"
 #include "ps3.h"
 #include "props.h"
 #include "noise.h"
-#include "shaders.h"
+
+unsigned int create_sdrprog(const char *vsrc, const char *psrc);
 
 static vertex *varr = NULL;
 static unsigned int *iarr = NULL;
@@ -44,26 +53,35 @@ static float speed = SPEED_DEFAULT;
 static float scale = SCALE_DEFAULT;
 static float light_a = LIGHT_ANGLE_DEFAULT;
 static float wave_color[3] = WAVE_COLOR_DEFAULT_INIT;
+static float wave_color_default[3] = WAVE_COLOR_DEFAULT_INIT;
 
 extern const char wave_v, wave_f;
 
 
 int init(void *cls) {
+	unsigned int x, z;
+	unsigned int *ibase;
+
 	xlivebg_defcfg_num("xlivebg.ps3.light_angle", LIGHT_ANGLE_DEFAULT);
 	xlivebg_defcfg_num("xlivebg.ps3.chaos", CHAOS_DEFAULT);
 	xlivebg_defcfg_num("xlivebg.ps3.detail", DETAIL_DEFAULT);
 	xlivebg_defcfg_num("xlivebg.ps3.speed", SPEED_DEFAULT);
 	xlivebg_defcfg_num("xlivebg.ps3.scale", SCALE_DEFAULT);
-	xlivebg_defcfg_vec("xlivebg.ps3.wave_color", WAVE_COLOR_DEFAULT);
+	xlivebg_defcfg_vec("xlivebg.ps3.wave_color", wave_color_default);
 	w = 1250;
 	l = 500;
 	prog = vao = vbo = ibo = 0;
 
-	varr = (vertex*)malloc(sizeof(vertex) * w * l);
-	iarr = (unsigned int*)malloc(sizeof(unsigned int) * w * l * 4);
-	unsigned int* ibase = iarr;
-	for (unsigned int x = 0;x < w;x++) {
-		for (unsigned int z = 0;z < l;z++) {
+	if(!(varr = malloc(sizeof(vertex) * w * l))) {
+		return -1;
+	}
+	if(!(iarr = malloc(sizeof(unsigned int) * w * l * 4))) {
+		free(varr);
+		return -1;
+	}
+	ibase = iarr;
+	for (x = 0;x < w;x++) {
+		for (z = 0;z < l;z++) {
 			vertex* v = &varr[x + (z * w)];
 			v->pos.x = (((float)x / (float)w) - 0.5f) * 2.1f;
 			v->pos.z = ((float)z / (float)l) - 0.5f;
@@ -132,13 +150,15 @@ int start(long tmsec, void *cls) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 4 * (w - 1) * (l - 1), iarr, GL_STATIC_DRAW);
 
-	// position
+	/* position */
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	// normal
-	// glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)sizeof(vec3));
-	// glEnableVertexAttribArray(1);
+	/* normal */
+	/*
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)sizeof(vec3));
+	glEnableVertexAttribArray(1);
+	*/
 
 	glBindVertexArray(0);
 
@@ -157,7 +177,7 @@ void prop(const char *name, void *cls) {
 	} else if (strcmp(name, "scale") == 0) {
 		scale = xlivebg_getcfg_num("xlivebg.ps3.scale", SCALE_DEFAULT);
 	} else if (strcmp(name, "wave_color") == 0) {
-		float* col = xlivebg_getcfg_vec("xlivebg.ps3.wave_color", WAVE_COLOR_DEFAULT);
+		float* col = xlivebg_getcfg_vec("xlivebg.ps3.wave_color", wave_color_default);
 		wave_color[0] = col[0];
 		wave_color[1] = col[1];
 		wave_color[2] = col[2];
@@ -165,24 +185,25 @@ void prop(const char *name, void *cls) {
 }
 
 void draw(long tmsec, void *cls) {
-	float proj[16];
+	int i, num_scr;
 	prev_upd = tmsec;
 
 	xlivebg_clear(GL_COLOR_BUFFER_BIT);
 
-	int num_scr = xlivebg_screen_count();
-	for (int i = 0;i < num_scr;i++) {
-		struct xlivebg_screen* scr = xlivebg_screen(i);
+	num_scr = xlivebg_screen_count();
+	for (i = 0;i < num_scr;i++) {
 		xlivebg_gl_viewport(i);
 		draw_wave(tmsec);
 	}
 }
 
 void draw_wave(long tmsec) {
+	float tsec;
+
 	if (!prog || !vao || !vbo || !ibo) return;
 
-	// todo: move this to vertex shader / calculate normals
-	float tsec = (float)tmsec / 1000.0f;
+	/* todo: move this to vertex shader / calculate normals */
+	tsec = (float)tmsec / 1000.0f;
 
 	glPushAttrib(GL_ENABLE_BIT);
 	glDisable(GL_DEPTH_TEST);
@@ -208,7 +229,7 @@ void draw_wave(long tmsec) {
 	glUniform3fv(wave_color_l, 1, wave_color);
 
 	glBindVertexArray(vao);
-	
+
 	glDrawElements(GL_QUADS, 4 * (w - 1) * (l - 1), GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
@@ -230,3 +251,76 @@ void perspective(float *m, float vfov, float aspect, float znear, float zfar) {
 	m[11] = -1.0f;
 }
 
+unsigned int create_shader(const char *src, unsigned int type) {
+	unsigned int sdr;
+	int status, log_len;
+
+	printf("compiling %s shader ... ", type == GL_VERTEX_SHADER ? "vertex" : "pixel");
+	fflush(stdout);
+
+	if(!(sdr = glCreateShader(type))) {
+		fprintf(stderr, "failed to create shader\n");
+		return 0;
+	}
+	glShaderSource(sdr, 1, &src, 0);
+	glCompileShader(sdr);
+
+	glGetShaderiv(sdr, GL_COMPILE_STATUS, &status);
+	glGetShaderiv(sdr, GL_INFO_LOG_LENGTH, &log_len);
+
+	printf("%s\n", status ? "done" : "failed");
+	if(log_len) {
+		char *buf = alloca(log_len + 1);
+		glGetShaderInfoLog(sdr, log_len + 1, 0, buf);
+		printf("%s\n", buf);
+	}
+
+	if(!status) {
+		glDeleteShader(sdr);
+		return 0;
+	}
+	return sdr;
+}
+
+unsigned int create_sdrprog(const char *vsrc, const char *psrc) {
+	int status, log_len;
+	unsigned int prog;
+	unsigned int vs, ps;
+
+	if(!(vs = create_shader(vsrc, GL_VERTEX_SHADER))) {
+		return 0;
+	}
+	if(!(ps = create_shader(psrc, GL_FRAGMENT_SHADER))) {
+		glDeleteShader(vs);
+		return 0;
+	}
+
+	printf("linking shader program ... ");
+	fflush(stdout);
+
+	if(!(prog = glCreateProgram())) {
+		glDeleteShader(vs);
+		glDeleteShader(ps);
+		fprintf(stderr, "failed to create shader program\n");
+		return 0;
+	}
+	glAttachShader(prog, vs);
+	glAttachShader(prog, ps);
+	glLinkProgram(prog);
+
+	glGetProgramiv(prog, GL_LINK_STATUS, &status);
+	glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &log_len);
+
+	puts(status ? "done" : "failed");
+	if(log_len) {
+		char *buf = alloca(log_len + 1);
+		glGetProgramInfoLog(prog, log_len + 1, 0, buf);
+		puts(buf);
+	}
+
+	if(!status) {
+		glDeleteProgram(prog);
+		return 0;
+	}
+	return prog;
+}
