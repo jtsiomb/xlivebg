@@ -34,7 +34,7 @@ Building and Installing
 
 After running:
 ```
-git clone https://github.com/jtsiomb/xlivebg/
+git clone https://github.com/jtsiomb/xlivebg
 cd xlivebg
 ```
 
