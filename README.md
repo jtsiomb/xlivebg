@@ -38,7 +38,7 @@ git clone https://github.com/jtsiomb/xlivebg
 cd xlivebg
 ```
 
-Debian will require at least the following libraries to be installed via:
+Debian-based distros will require the following libraries to be installed via:
 ```
 sudo apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libpng-dev libjpeg-dev libmotif-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libglu1-mesa-dev 
 ```
@@ -47,8 +47,9 @@ Then you can build normally with:
 ```
 ./configure
 make
-sudo make install
+sudo make install-all
 ```
+(You don't have to run `sudo` if you only wish to install for the current user.
 
 
 License
