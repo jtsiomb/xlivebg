@@ -40,7 +40,7 @@ cd xlivebg
 
 Debian will require at least the following libraries to be installed via:
 ```
-sudo apt-get install libjpeg-dev libmotif-dev libavcodec-dev libavformat-dev libswscale-dev libglu1-mesa-dev
+sudo apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libpng-dev libjpeg-dev libmotif-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libglu1-mesa-dev 
 ```
 
 Then you can build normally with:
