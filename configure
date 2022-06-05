@@ -73,18 +73,6 @@ check_header jpeg jpeglib.h || exit 1
 check_header motif Xm/Xm.h || \
 	echo "motif library not found, won't be able to build xlivebg-gui. Install motif and re-run configure, if you want the GUI."
 
-if echo $plugins | grep video >/dev/null; then
-	check_header avcodec libavcodec/avcodec.h
-	check_header avformat libavformat/avformat.h
-	check_header swscale libswscale/swscale.h
-	check_header avutil libavutil/imgutils.h
-
-	if ! ($have_avcodec && $have_avformat && $have_swscale && $have_avutil); then
-		echo 'One or more ffmpeg libraries are missing, disabling video live wallpaper plugin.'
-		disable_plugin video
-	fi
-fi
-
 echo
 echo "Enabled plugins: $plugins"
 echo
