@@ -23,7 +23,6 @@
 				<li class="toc"><a href="#bg_distort">Image distortion wallpaper</a> (distort)</li>
 				<li class="toc"><a href="#bg_stars">Starfield wallpaper</a> (stars)</li>
 				<li class="toc"><a href="#bg_ripple">Water ripples wallpaper</a> (ripple)</li>
-				<li class="toc"><a href="#bg_video">Video playback wallpaper</a> (video)</li>
 			</ul>
 			<li class="toc"><a href="#plugindev">Writing live wallpaper plugins</a></li>
 			<ul>
@@ -142,11 +141,6 @@
 			<li><a href="https://www.ijg.org">jpeglib</a></li>
 		</ul>
 
-		<p>Bundled wallpaper plugins may require extra dependencies. At the time of this
-		writing, only the <em>video</em> plugin needs extra libraries, specifically the
-		<a href="http://ffmpeg.org">ffmpeg</a> libraries: <em>libavformat</em>, <em>libavcodec</em>, <em>libavutil</em>, and
-		<em>swscale</em>.</p>
-
 		<p>Additionally, to build the <tt>xlivebg-gui</tt> configuration tool, you need the
 		<a href="https://sourceforge.net/projects/motif">motif toolkit</a>.</p>
 
@@ -154,8 +148,7 @@
 			Tip: on Debian or Ubuntu and their derivatives, you can install all required
 			dependencies with the following command:<br/>
 			<tt><code>apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libglu1-mesa-dev
-				libpng-dev libjpeg-dev libmotif-dev libavformat-dev libavcodec-dev libavutil-dev
-				libswscale-dev</code></tt>
+				libpng-dev libjpeg-dev libmotif-dev</code></tt>
 		</blockquote>
 
 		<p>Then to build and install everything, change into the directory where you extracted the
@@ -177,10 +170,9 @@ make install-all</pre></code>
 
 		<p>If you wish to exclude any specific bundled wallpaper plugins from the build, you
 		may disable them by passing the <tt><code>--disable-plugin-&lt;name&gt;</tt></code>
-		option to <tt>configure</tt> for each plugin you wish to disable. For example if
-		you don't want to install the ffmpeg libraries, which are needed for the video plugin,
-		you may invoke configure like so:
-		<pre class="code">./configure --disable-plugin-video</pre>
+		option to <tt>configure</tt> for each plugin you wish to disable. For to disable the
+		"ripple" wallpaper plugin, you may invoke configure like so:
+		<pre class="code">./configure --disable-plugin-ripple</pre>
 
 		<h3>Live wallpaper plugin directories</h3>
 
@@ -367,25 +359,6 @@ Commands:
 			<tr><th>option</th><th>type</th><th>description</th></tr>
 			<tr><td>raindrops</td><td>number</td><td>number of raindrops to spawn per second
 					(0 to disable)</td></tr>
-		</table>
-
-		<h3><a name="bg_video">Video playback wallpaper</a></h3>
-
-		<a href="img/video.jpg"><img src="img/video-thumb.jpg" alt="video"/></a>
-
-		<p>Any other effect that isn't yet available as a dedicated live wallpaper, or may
-		be hard to implement in real-time within reasonable CPU-usage constraints, can be
-		achieved by using a video file as a live wallpaper.</p>
-
-		<p>The video wallpaper allows any video file to be played back continuously in a
-		loop in the background. The intention is to loop short seamless clips, but you may
-		also use a whole feature film as a background if you wish; there is no file size or
-		duration restriction.</p>
-
-		<p>Plugin: <strong>video</strong></p>
-		<table>
-			<tr><th>option</th><th>type</th><th>description</th></tr>
-			<tr><td>video</td><td>filename</td><td>video file to be played</td></tr>
 		</table>
 
 		<hr/> <!-- SECTION API -->
