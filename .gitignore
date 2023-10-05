@@ -8,3 +8,5 @@ xlivebg
 *.a
 xlivebg-cmd
 xlivebg-gui
+Makefile
+config.prev
