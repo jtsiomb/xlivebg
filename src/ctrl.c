@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
 #include <unistd.h>
@@ -31,6 +31,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ctrl.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "util.h"
+
 
 struct client {
 	int s;

@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
 #include <unistd.h>

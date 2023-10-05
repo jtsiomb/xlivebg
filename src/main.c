@@ -51,7 +51,9 @@ int client_main(int argc, char **argv);
 static Window create_xwindow(int width, int height, unsigned int flags);
 static void netwm_setprop_atom(Window win, const char *prop, const char *val);
 static XVisualInfo *choose_visual(void);
+#ifdef HAVE_XRANDR
 static void detect_outputs(void);
+#endif
 static int proc_xevent(XEvent *ev);
 static void send_expose(Window win);
 static void sighandler(int s);
@@ -64,7 +66,9 @@ static Window win, root;
 static GLXContext ctx;
 static XVisualInfo *visinf;
 static Atom xa_wm_proto, xa_wm_delwin;
+#ifdef HAVE_XRANDR
 static int have_xrandr, xrandr_evbase, xrandr_errbase;
+#endif
 
 static volatile int quit;
 static int mapped;
@@ -286,8 +290,10 @@ static Window create_xwindow(int width, int height, unsigned int flags)
 	XSetWindowAttributes xattr;
 	long xattr_mask, evmask;
 	Window parent;
+#ifdef ShapeInput
 	Region rgn;
 	XRectangle rect;
+#endif
 
 	if(!(visinf = choose_visual())) {
 		fprintf(stderr, "failed to find appropriate visual\n");
@@ -429,6 +435,7 @@ void xlivebg_destroy_gl(void)
 	glXDestroyContext(dpy, ctx);
 }
 
+#ifdef HAVE_XRANDR
 static void detect_outputs(void)
 {
 	int i;
@@ -447,6 +454,7 @@ static void detect_outputs(void)
 				scr->width, scr->height, scr->x, scr->y);
 	}
 }
+#endif
 
 static int proc_xevent(XEvent *ev)
 {

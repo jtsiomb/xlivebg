@@ -4,10 +4,10 @@
 #include <GL/gl.h>
 
 #ifndef GL_CURRENT_PROGRAM
-#define GL_CURRENT_PROGRAM foo
+#define GL_CURRENT_PROGRAM 0x8b8d
 #endif
 #ifndef GL_ARRAY_BUFFER
-#define GL_ARRAY_BUFFER foo
+#define GL_ARRAY_BUFFER 0x8892
 #endif
 
 typedef void (*GLUSEPROGRAMFUNC)(unsigned int);

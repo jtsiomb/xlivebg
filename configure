@@ -66,6 +66,7 @@ check_header()
 	fi
 }
 
+check_header alloca alloca.h
 check_header xrandr X11/extensions/Xrandr.h || \
 	echo "libXrandr is an optional dependency, but it's highly recommended to install it and re-run configure, if possible."
 check_header png png.h || exit 1
@@ -97,6 +98,10 @@ if [ `uname -s` != OpenBSD ]; then
 	echo 'libdl = -ldl' >>Makefile
 fi
 
+if $have_alloca; then
+	echo 'CFLAGS_alloca = -DHAVE_ALLOCA_H' >>Makefile
+fi
+
 if $have_xrandr; then
 	echo 'CFLAGS_xrandr = -DHAVE_XRANDR' >>Makefile
 	echo 'LDFLAGS_xrandr = -lXrandr' >>Makefile
@@ -119,7 +124,7 @@ if [ -n "$LDFLAGS" ]; then
 	echo 'export LDFLAGS_cfg' >>plugins/Makefile
 fi
 echo '.PHONY: all clean install uninstall' >>plugins/Makefile
-echo "all: $plugins" >>plugins/Makefile
+echo "all: `echo $plugins`" >>plugins/Makefile
 echo "clean: `echo $plugins     | sed 's/\(^\| \)/ clean-/g'`" >>plugins/Makefile
 echo "install: `echo $plugins   | sed 's/\(^\| \)/ install-/g'`" >>plugins/Makefile
 echo "uninstall: `echo $plugins | sed 's/\(^\| \)/ uninstall-/g'`" >>plugins/Makefile
@@ -141,3 +146,6 @@ for i in $plugins; do
 	echo "	\$(MAKE) -C $i uninstall" >>plugins/Makefile
 	echo >>plugins/Makefile
 done
+
+echo $0 $* >config.prev
+chmod 777 config.prev

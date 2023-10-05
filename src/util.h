@@ -18,8 +18,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <stddef.h>
+#include <sys/un.h>
 #include <X11/Xlib.h>
 #include "xlivebg.h"
+
+#ifndef SUN_LEN
+#define SUN_LEN(p)	(offsetof(struct sockaddr_un, sun_path) + strlen((p)->sun_path))
+#endif
 
 struct color {
 	float r, g, b, a;

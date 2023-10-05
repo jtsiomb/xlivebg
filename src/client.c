@@ -20,13 +20,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "ctrl.h"
+#include "util.h"
+
 
 static int cmd_generic(int argc, char **argv);
 static int cmd_getupd(int argc, char **argv);

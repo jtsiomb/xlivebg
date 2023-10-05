@@ -12,8 +12,8 @@ incdir = -Isrc -Iinclude -Ilibs/imago/src -Ilibs/treestore/src -I/usr/local/incl
 libdir = -Llibs/imago -Llibs/treestore -L/usr/local/lib -L/usr/X11R6/lib
 
 CFLAGS = -std=gnu89 -pedantic -Wall $(dbg) $(opt) -DPREFIX=\"$(PREFIX)\" \
-	$(CFLAGS_cfg) $(CFLAGS_xrandr) $(incdir)
-LDFLAGS = -rdynamic $(libdir) $(LDFLAGS_cfg) $(LDFLAGS_xrandr) -lX11 -lXext -lGL \
+	$(CFLAGS_cfg) $(CFLAGS_xrandr) $(CFLAGS_alloca) $(incdir)
+LDFLAGS = $(libdir) $(LDFLAGS_cfg) $(LDFLAGS_xrandr) -lX11 -lXext -lGL \
 	$(libdl) -limago -ltreestore -lpng -ljpeg -lz
 
 .PHONY: all

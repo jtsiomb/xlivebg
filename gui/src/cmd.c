@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
@@ -8,6 +9,10 @@
 #include "cmd.h"
 
 #define SOCK_PATH	"/tmp/xlivebg.sock"
+
+#ifndef SUN_LEN
+#define SUN_LEN(p)	(offsetof(struct sockaddr_un, sun_path) + strlen((p)->sun_path))
+#endif
 
 static int read_line(int fd, char *line, int maxsz);
 static int read_status(int fd);
