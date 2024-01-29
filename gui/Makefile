@@ -34,4 +34,5 @@ install: $(bin)
 	cp $(bin) $(DESTDIR)$(PREFIX)/bin/$(bin)
 
 .PHONY: uninstall
+uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(bin)
