@@ -29,6 +29,29 @@ Also available under the `doc` directory in the source tree.
   - Source code repository: https://github.com/jtsiomb/xlivebg
   - Latest release (1.0): http://nuclear.mutantstargoat.com/sw/xlivebg/releases/xlivebg-1.0.tar.gz
 
+Building and Installing
+-------
+
+After running:
+```
+git clone https://github.com/jtsiomb/xlivebg
+cd xlivebg
+```
+
+Debian-based distros will require the following libraries to be installed via:
+```
+sudo apt install libx11-dev libxext-dev libxrandr-dev libglx-dev libpng-dev libjpeg-dev libmotif-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libglu1-mesa-dev 
+```
+
+Then you can build normally with:
+```
+./configure
+make
+sudo make install-all
+```
+(You don't have to run `sudo` if you only wish to install for the current user.
+
+
 License
 -------
 Copyright (C) 2019-2021 John Tsiombikas <nuclear@member.fsf.org>
