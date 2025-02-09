@@ -411,6 +411,9 @@ const char *file_dialog(Widget shell, const char *start_dir, const char *filter,
 	Arg argv[3];
 	int argc = 0;
 	XmString xmstr_startdir = 0, xmstr_filter = 0;
+	XmString stitle;
+
+	stitle = XmStringCreateSimple("File dialog");
 
 	if(start_dir && *start_dir) {
 		xmstr_startdir = XmStringCreateSimple((char*)start_dir);
@@ -429,10 +432,12 @@ const char *file_dialog(Widget shell, const char *start_dir, const char *filter,
 	memcpy(buf, &bufsz, sizeof bufsz);
 
 	dlg = XmCreateFileSelectionDialog(app_shell, "filesb", argv, argc);
+	XtVaSetValues(dlg, XmNdialogTitle, stitle, (void*)0);
 	XtAddCallback(dlg, XmNcancelCallback, filesel_handler, 0);
 	XtAddCallback(dlg, XmNokCallback, filesel_handler, buf);
 	XtManageChild(dlg);
 
+	XmStringFree(stitle);
 	if(xmstr_startdir) XmStringFree(xmstr_startdir);
 	if(xmstr_filter) XmStringFree(xmstr_filter);
 
