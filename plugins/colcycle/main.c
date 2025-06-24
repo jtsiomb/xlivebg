@@ -38,9 +38,13 @@ static unsigned int next_pow2(unsigned int x);
 static int enable_vsync(void);
 static int init_glext(void);
 
-static void (*glx_swap_interval_ext)(Display*, Window, int);
-static void (*glx_swap_interval_mesa)(int);
-static void (*glx_swap_interval_sgi)(int);
+typedef void (*glx_swapint_ext_func)(Display*, Window, int);
+typedef void (*glx_swapint_mesa_func)(int);
+typedef void (*glx_swapint_sgi_func)(int);
+
+glx_swapint_ext_func glx_swap_interval_ext;
+glx_swapint_mesa_func glx_swap_interval_mesa;
+glx_swapint_sgi_func glx_swap_interval_sgi;
 
 #define PROPLIST	\
 	"proplist {\n" \
@@ -350,7 +354,7 @@ static int enable_vsync(void)
 	return -1;
 }
 
-#define get_proc_addr(s)	(void (*)())glXGetProcAddress((unsigned char*)(s));
+#define get_proc_addr(s)	glXGetProcAddress((unsigned char*)(s));
 
 static int init_glext(void)
 {
@@ -380,13 +384,13 @@ static int init_glext(void)
 	}
 
 	if(strstr(extstr, "GLX_EXT_swap_control")) {
-		glx_swap_interval_ext = get_proc_addr("glXSwapIntervalEXT");
+		glx_swap_interval_ext = (glx_swapint_ext_func)get_proc_addr("glXSwapIntervalEXT");
 	}
 	if(strstr(extstr, "GLX_MESA_swap_control")) {
-		glx_swap_interval_mesa = get_proc_addr("glXSwapIntervalMESA");
+		glx_swap_interval_mesa = (glx_swapint_mesa_func)get_proc_addr("glXSwapIntervalMESA");
 	}
 	if(strstr(extstr, "GLX_SGI_swap_control")) {
-		glx_swap_interval_sgi = get_proc_addr("glXSwapIntervalSGI");
+		glx_swap_interval_sgi = (glx_swapint_sgi_func)get_proc_addr("glXSwapIntervalSGI");
 	}
 	return 0;
 }
